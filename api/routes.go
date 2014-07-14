@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gorilla/mux"
+	"github.com/steeve/pulsar/bittorrent"
 )
 
 var routes *mux.Router
@@ -12,7 +13,7 @@ const (
 	PREFIX = "plugin://plugin.video.pulsar"
 )
 
-func Routes() *mux.Router {
+func Routes(btService *bittorrent.BTService) *mux.Router {
 	if routes == nil {
 		router := mux.NewRouter()
 
@@ -31,6 +32,8 @@ func Routes() *mux.Router {
 		router.HandleFunc("/shows/{showId}/seasons/{season}/episodes", ShowEpisodes).Name("show_season_episodes")
 		router.HandleFunc("/shows/{showId}/seasons/{season}/episodes/{episode}/links", ShowEpisodeLinks).Name("show_episode_links")
 
+		router.HandleFunc("/play/{uri}", Play(btService)).Name("play")
+
 		routes = router
 	}
 
@@ -38,7 +41,7 @@ func Routes() *mux.Router {
 }
 
 func UrlFor(name string, args ...string) string {
-	url, err := Routes().Get(name).URLPath(args...)
+	url, err := routes.Get(name).URLPath(args...)
 	if err != nil {
 		fmt.Println(err)
 		return ""

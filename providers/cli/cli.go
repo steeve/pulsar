@@ -88,9 +88,7 @@ func (searcher *CLISearcher) SearchMovieLinks(movie *tmdb.Movie) []string {
 func (searcher *CLISearcher) SearchEpisodeLinks(episode *trakt.ShowEpisode) []string {
 	normalized_title := episode.Show.Title
 	normalized_title = strings.ToLower(normalized_title)
-	normalized_title = regexp.MustCompile(`\(\d+\)`).ReplaceAllString(normalized_title, " ")
-	normalized_title = regexp.MustCompile(`\W+`).ReplaceAllString(normalized_title, " ")
-	normalized_title = regexp.MustCompile(`\s+`).ReplaceAllString(normalized_title, " ")
+	normalized_title = regexp.MustCompile(`(\d+|\W+|\s+)`).ReplaceAllString(normalized_title, " ")
 	normalized_title = strings.TrimSpace(normalized_title)
 
 	payload := &SearchPayload{

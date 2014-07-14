@@ -39,3 +39,12 @@ type Addon struct {
 	Requires     []*Import
 	Extensions   []*Extension
 }
+
+type setting struct {
+	ID    string
+	value string
+}
+
+type settings struct {
+	Settings []*setting
+}

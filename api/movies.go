@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 
@@ -104,7 +103,8 @@ func MovieLinks(w http.ResponseWriter, r *http.Request) {
 
 	choice := xbmc.ListDialog("Choose your stream", choices...)
 	if choice >= 0 {
-		rUrl := fmt.Sprintf("plugin://plugin.video.xbmctorrent/play/%s", url.QueryEscape(torrents[choice].URI))
+		rUrl := UrlFor("play", torrents[choice].URI)
+		// rUrl := fmt.Sprintf("plugin://plugin.video.pulsar/play/%s", url.QueryEscape(torrents[choice].URI))
 		http.Redirect(w, r, rUrl, http.StatusFound)
 	}
 }
@@ -112,6 +112,7 @@ func MovieLinks(w http.ResponseWriter, r *http.Request) {
 func MoviePlay(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	torrents := movieLinks(vars["imdbId"])
-	rUrl := fmt.Sprintf("plugin://plugin.video.xbmctorrent/play/%s", url.QueryEscape(torrents[0].URI))
+	// rUrl := fmt.Sprintf("plugin://plugin.video.xbmctorrent/play/%s", url.QueryEscape(torrents[0].URI))
+	rUrl := UrlFor("play", "uri", torrents[0].URI)
 	http.Redirect(w, r, rUrl, http.StatusFound)
 }

@@ -44,8 +44,9 @@ func GetShow(showId int) *Show {
 	})
 	switch t := show.RawPopularity.(type) {
 	case string:
-		popularity, _ := strconv.ParseFloat(t, 64)
-		show.Popularity = popularity
+		if popularity, err := strconv.ParseFloat(t, 64); err == nil {
+			show.Popularity = popularity
+		}
 	case float64:
 		show.Popularity = t
 	}
