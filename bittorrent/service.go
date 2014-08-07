@@ -8,6 +8,13 @@ import (
 	"github.com/steeve/libtorrent-go"
 )
 
+var dhtBootstrapNodes = []string{
+	"router.bittorrent.com",
+	"router.utorrent.com",
+	"dht.transmissionbt.com",
+	"dht.aelitis.com", // Vuze
+}
+
 type ProxySettings struct {
 	Hostname             string
 	Port                 int
@@ -123,6 +130,11 @@ func (s *BTService) startServices() {
 
 	s.log.Info("Starting DHT...")
 	s.Session.Start_dht()
+	for _, node := range dhtBootstrapNodes {
+		pair := libtorrent.NewStd_pair_string_int(node, 6881)
+		defer libtorrent.DeleteStd_pair_string_int(pair)
+		s.Session.Add_dht_router(pair)
+	}
 
 	s.log.Info("Starting LSD...")
 	s.Session.Start_lsd()

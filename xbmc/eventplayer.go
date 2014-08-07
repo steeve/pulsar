@@ -1,0 +1,38 @@
+package xbmc
+
+type EventPlayer struct {
+	handle int
+}
+
+func NewEventPlayer() *EventPlayer {
+	retVal := -1
+	executeJSONRPCEx("EventPlayer_Create", &retVal, nil)
+	if retVal < 0 {
+		return nil
+	}
+	return &EventPlayer{
+		handle: retVal,
+	}
+}
+
+func (ep *EventPlayer) PopEvent() string {
+	var retVal string
+	executeJSONRPCEx("EventPlayer_PopEvent", &retVal, Args{ep.handle})
+	return retVal
+}
+
+func (ep *EventPlayer) Clear() {
+	retVal := -1
+	executeJSONRPCEx("EventPlayer_Clear", &retVal, Args{ep.handle})
+}
+
+func (ep *EventPlayer) IsPlaying() bool {
+	retVal := 0
+	executeJSONRPCEx("Player_IsPlaying", &retVal, nil)
+	return retVal != 0
+}
+
+func (ep *EventPlayer) Close() {
+	retVal := 0
+	executeJSONRPCEx("EventPlayer_Delete", &retVal, Args{ep.handle})
+}

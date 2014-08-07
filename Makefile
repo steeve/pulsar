@@ -81,13 +81,6 @@ else
 endif
 
 vendor_libs_darwin:
-	@for dylib in $(BUILD_PATH)/$(OUTPUT_NAME) $(BUILD_PATH)/libtorrent-rasterbar.7.dylib; do \
-		for dep in `otool -L $$dylib | grep -v $$dylib | grep /usr/local | awk '{print $$1}'`; do \
-			cp -f $$dep $(BUILD_PATH) && \
-            chmod 644 $(BUILD_PATH)/`basename $$dep` && \
-            install_name_tool -change $$dep @rpath/`basename $$dep` $(BUILD_PATH)/`basename $$dylib`; \
-        done; \
-    done
 
 vendor_libs_android:
 

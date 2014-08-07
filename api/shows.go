@@ -1,45 +1,42 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
-	"net/url"
 	"strconv"
+	"strings"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
+	"github.com/steeve/pulsar/bittorrent"
 	"github.com/steeve/pulsar/providers"
-	"github.com/steeve/pulsar/providers/cli"
 	"github.com/steeve/pulsar/trakt"
 	"github.com/steeve/pulsar/xbmc"
 )
 
-func renderShows(shows trakt.ShowList, w http.ResponseWriter, r *http.Request) {
+func renderShows(shows trakt.ShowList, ctx *gin.Context) {
 	items := make(xbmc.ListItems, 0, len(shows))
 	for _, show := range shows {
 		item := show.ToListItem()
-		item.Path = UrlFor("show_seasons", "showId", show.TVDBId)
+		item.Path = UrlForXBMC("/show/%s/seasons", show.TVDBId)
 		items = append(items, item)
 	}
 
-	json.NewEncoder(w).Encode(xbmc.NewView("tvshows", items))
+	ctx.JSON(200, xbmc.NewView("tvshows", items))
 }
 
-func PopularShows(w http.ResponseWriter, r *http.Request) {
-	renderShows(trakt.TrendingShows(), w, r)
+func PopularShows(ctx *gin.Context) {
+	renderShows(trakt.TrendingShows(), ctx)
 }
 
-func SearchShows(w http.ResponseWriter, r *http.Request) {
+func SearchShows(ctx *gin.Context) {
 	query := xbmc.Keyboard("", "Search Shows")
 	if query != "" {
-		renderShows(trakt.SearchShows(query), w, r)
+		renderShows(trakt.SearchShows(query), ctx)
 	}
 }
 
-func ShowSeasons(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	show := trakt.NewShow(vars["showId"])
+func ShowSeasons(ctx *gin.Context) {
+	show := trakt.NewShow(ctx.Params.ByName("showId"))
 	seasons := show.Seasons()
 
 	items := make(xbmc.ListItems, 0, len(seasons))
@@ -48,54 +45,64 @@ func ShowSeasons(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		item := season.ToListItem()
-		item.Path = UrlFor("show_season_episodes", "showId", show.TVDBId, "season", strconv.Itoa(season.Season))
+		item.Path = UrlForXBMC("/show/%s/season/%d/episodes", show.TVDBId, season.Season)
 		items = append(items, item)
 	}
 
-	json.NewEncoder(w).Encode(xbmc.NewView("seasons", items))
+	ctx.JSON(200, xbmc.NewView("seasons", items))
 }
 
-func ShowEpisodes(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	show := trakt.NewShow(vars["showId"])
-	seasonNumber, _ := strconv.Atoi(vars["season"])
+func ShowEpisodes(ctx *gin.Context) {
+	show := trakt.NewShow(ctx.Params.ByName("showId"))
+	seasonNumber, _ := strconv.Atoi(ctx.Params.ByName("season"))
 	season := show.Season(seasonNumber)
 	episodes := season.Episodes()
 
 	items := make(xbmc.ListItems, 0, len(episodes))
 	for _, episode := range episodes {
 		item := episode.ToListItem()
-		item.Path = UrlFor("show_episode_links",
-			"showId", show.TVDBId,
-			"season", strconv.Itoa(season.Season),
-			"episode", strconv.Itoa(episode.Episode),
+		item.Path = UrlForXBMC("/show/%s/season/%d/episode/%d/play",
+			show.TVDBId,
+			season.Season,
+			episode.Episode,
 		)
+		item.ContextMenu = [][]string{
+			[]string{"Choose stream", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/show/%s/season/%d/episode/%d/links",
+				show.TVDBId,
+				season.Season,
+				episode.Episode,
+			))},
+		}
 		item.IsPlayable = true
 		items = append(items, item)
 	}
 
-	json.NewEncoder(w).Encode(xbmc.NewView("episodes", items))
+	ctx.JSON(200, xbmc.NewView("episodes", items))
 }
 
-func ShowEpisodeLinks(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	log.Println("Searching links for TVDB Id:", vars["showId"])
+func showEpisodeLinks(showId string, seasonNumber, episodeNumber int) []*bittorrent.Torrent {
+	log.Println("Searching links for TVDB Id:", showId)
 
-	show := trakt.NewShow(vars["showId"])
-	seasonNumber, _ := strconv.Atoi(vars["season"])
-	episodeNumber, _ := strconv.Atoi(vars["episode"])
-
+	show := trakt.NewShow(showId)
 	episode := show.Season(seasonNumber).Episode(episodeNumber)
 
-	log.Printf("Resolved %s to %s\n", vars["showId"], show.Title)
+	log.Printf("Resolved %s to %s\n", showId, show.Title)
 
-	searchers := []providers.EpisodeSearcher{
-		cli.NewCLISearcher([]string{"python", "kat.py"}),
-		cli.NewCLISearcher([]string{"python", "tpb.py"}),
-		cli.NewCLISearcher([]string{"python", "torrentlookup.py"}),
+	searchers := make([]providers.EpisodeSearcher, 0)
+	for _, addon := range xbmc.GetAddons("xbmc.python.script").Addons {
+		if strings.HasPrefix(addon.ID, "script.pulsar.") {
+			searchers = append(searchers, providers.NewAddonSearcher(addon.ID))
+		}
 	}
+	// searchers = append(searchers, providers.NewAddonSearcher("script.pulsar.tpb"))
 
-	torrents := providers.SearchEpisode(searchers, episode)
+	return providers.SearchEpisode(searchers, episode)
+}
+
+func ShowEpisodeLinks(ctx *gin.Context) {
+	seasonNumber, _ := strconv.Atoi(ctx.Params.ByName("season"))
+	episodeNumber, _ := strconv.Atoi(ctx.Params.ByName("episode"))
+	torrents := showEpisodeLinks(ctx.Params.ByName("showId"), seasonNumber, episodeNumber)
 
 	choices := make([]string, 0, len(torrents))
 	for _, torrent := range torrents {
@@ -107,9 +114,19 @@ func ShowEpisodeLinks(w http.ResponseWriter, r *http.Request) {
 		choices = append(choices, label)
 	}
 
-	choice := xbmc.ListDialog("Choose your stream", choices...)
+	choice := xbmc.ListDialog("Choose stream", choices...)
 	if choice >= 0 {
-		rUrl := fmt.Sprintf("plugin://plugin.video.xbmctorrent/play/%s", url.QueryEscape(torrents[choice].URI))
-		http.Redirect(w, r, rUrl, http.StatusFound)
+		rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[choice].URI)
+		ctx.Writer.Header().Set("Location", rUrl)
+		ctx.Abort(302)
 	}
+}
+
+func ShowEpisodePlay(ctx *gin.Context) {
+	seasonNumber, _ := strconv.Atoi(ctx.Params.ByName("season"))
+	episodeNumber, _ := strconv.Atoi(ctx.Params.ByName("episode"))
+	torrents := showEpisodeLinks(ctx.Params.ByName("showId"), seasonNumber, episodeNumber)
+	rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[0].URI)
+	ctx.Writer.Header().Set("Location", rUrl)
+	ctx.Abort(302)
 }

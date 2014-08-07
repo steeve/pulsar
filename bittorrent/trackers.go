@@ -17,6 +17,7 @@ const (
 	ConnectionRequestInitialId int64 = 0x041727101980
 	DefaultTimeout                   = 2 * time.Second
 	DefaultBufferSize                = 2048 // must be bigger than MTU, which is 1500 most of the time
+	MaxScrapeHashes                  = 70
 )
 
 const (
@@ -155,20 +156,34 @@ func (tracker *Tracker) Connect() error {
 	return binary.Read(tracker.reader, binary.BigEndian, &tracker.connectionId)
 }
 
-func (tracker *Tracker) Scrape(torrents []*Torrent) []ScrapeResponseEntry {
-	infoHashes := make([][]byte, len(torrents))
-	for i, torrent := range torrents {
-		bhash, _ := hex.DecodeString(torrent.InfoHash)
-		infoHashes[i] = bhash
-	}
-
-	payload := bytes.Join(infoHashes, nil)
-	if err := tracker.sendRequest(ActionScrape, payload); err != nil {
+func (tracker *Tracker) doScrape(infoHashes [][]byte) []ScrapeResponseEntry {
+	if err := tracker.sendRequest(ActionScrape, bytes.Join(infoHashes, nil)); err != nil {
 		return nil
 	}
 
-	entries := make([]ScrapeResponseEntry, len(torrents))
+	entries := make([]ScrapeResponseEntry, len(infoHashes))
 	binary.Read(tracker.reader, binary.BigEndian, &entries)
+	return entries
+}
+
+func (tracker *Tracker) Scrape(torrents []*Torrent) []ScrapeResponseEntry {
+	entries := make([]ScrapeResponseEntry, 0, len(torrents))
+
+	infoHashes := make([][]byte, 0, len(torrents))
+	for _, torrent := range torrents {
+		bhash, _ := hex.DecodeString(torrent.InfoHash)
+		infoHashes = append(infoHashes, bhash)
+	}
+
+	for i := 0; i <= len(infoHashes)/MaxScrapeHashes; i++ {
+		idx := i * MaxScrapeHashes
+		max := idx + MaxScrapeHashes
+		if max > len(infoHashes) {
+			max = len(infoHashes)
+		}
+		entries = append(entries, tracker.doScrape(infoHashes[idx:max])...)
+	}
+
 	return entries
 }
 

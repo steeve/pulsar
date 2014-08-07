@@ -23,10 +23,6 @@ func main() {
 	})
 	btService.Start()
 
-	// uri := `magnet:?xt=urn:btih:e256280cf0dcb27ee1a3dc49b7fdd33ebf0c0f6c&dn=The+Hunger+Games%3A+Catching+Fire+%282013%29+720p+BrRip+x264+-+YIFY&tr=udp%3A%2F%2Ftracker.openbittorrent.com%3A80&tr=udp%3A%2F%2Ftracker.publicbt.com%3A80&tr=udp%3A%2F%2Ftracker.istole.it%3A6969&tr=udp%3A%2F%2Fopen.demonii.com%3A1337`
-	// player := bittorrent.NewBTPlayer(btstreamer, uri)
-	// player.Buffer()
-
 	http.Handle("/", api.Routes(btService))
 	http.Handle("/files/", http.StripPrefix("/files/", http.FileServer(bittorrent.NewTorrentFS(btService, "/Users/steeve/projects/go/src/github.com/steeve/pulsar"))))
 

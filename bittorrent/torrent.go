@@ -1,7 +1,10 @@
 package bittorrent
 
 import (
+	"encoding/base32"
+	"encoding/hex"
 	"encoding/json"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -71,39 +74,50 @@ const (
 
 var Codecs = []string{"", "Xvid", "h264", "MP3", "AAC", "AC3", "DTS", "DTS HD", "DTS HD Master Audio"}
 
+// Used to avoid infinite recursion in UnmarshalJSON
+type torrent Torrent
+
 func (t *Torrent) UnmarshalJSON(b []byte) error {
-	if err := json.Unmarshal(b, &t); err != nil {
+	tmp := torrent{}
+	if err := json.Unmarshal(b, &tmp); err != nil {
 		return err
 	}
+	*t = Torrent(tmp)
 	t.initialize()
 	return nil
 }
 
 func (t *Torrent) initialize() {
 	if strings.HasPrefix(t.URI, "magnet:") {
-		m, _ := NewMagnet(t.URI)
-		if t.InfoHash == "" {
-			t.InfoHash = m.InfoHash
+		magnetURI, _ := url.Parse(t.URI)
+		vals := magnetURI.Query()
+		hash := strings.ToUpper(strings.TrimPrefix(vals.Get("xt"), "urn:btih:"))
+
+		// for backward compatibility
+		if unBase32Hash, err := base32.StdEncoding.DecodeString(hash); err == nil {
+			hash = hex.EncodeToString(unBase32Hash)
 		}
-		if t.Name == "" {
-			t.Name = m.DisplayName
-		}
-		if t.Trackers == nil {
-			t.Trackers = m.Trackers
+
+		t.InfoHash = strings.ToLower(hash)
+		t.Name = vals.Get("dn")
+
+		t.Trackers = make([]string, 0, len(vals.Get("tr")))
+		for _, tracker := range vals.Get("tr") {
+			t.Trackers = append(t.Trackers, strings.Replace(string(tracker), "\\", "", -1))
 		}
 	}
 
 	if t.Resolution == ResolutionUnkown {
 		t.Resolution = matchTags(t, map[string]int{
 			`(480p|xvid|dvd)`: Resolution480p,
-			`720p`:            Resolution720p,
+			`(720p|hdrip)`:    Resolution720p,
 			`1080p`:           Resolution1080p,
 		})
 	}
 	if t.VideoCodec == CodecUnknown {
 		t.VideoCodec = matchTags(t, map[string]int{
-			`([hx]264|1080p)`: CodecH264,
-			`xvid`:            CodecXVid,
+			`([hx]264|1080p|hdrip)`: CodecH264,
+			`xvid`:                  CodecXVid,
 		})
 	}
 	if t.AudioCodec == CodecUnknown {
@@ -118,15 +132,15 @@ func (t *Torrent) initialize() {
 	}
 	if t.RipType == RipUnknown {
 		t.RipType = matchTags(t, map[string]int{
-			`(cam|camrip|hdcam)`:   RipCam,
-			`(ts|telesync)`:        RipTS,
-			`(tc|telecine)`:        RipTC,
-			`(scr|screener)`:       RipScr,
-			`dvd\W*scr`:            RipDVDScr,
-			`dvd\W*rip`:            RipDVD,
-			`hdtv`:                 RipHDTV,
-			`(web\W*dl|web\W*rip)`: RipWeb,
-			`(bluray|b[rd]rip)`:    RipBluRay,
+			`(cam|camrip|hdcam)`:      RipCam,
+			`(ts|telesync)`:           RipTS,
+			`(tc|telecine)`:           RipTC,
+			`(scr|screener)`:          RipScr,
+			`dvd\W*scr`:               RipDVDScr,
+			`dvd\W*rip`:               RipDVD,
+			`hdtv`:                    RipHDTV,
+			`(web\W*dl|web\W*rip)`:    RipWeb,
+			`(bluray|b[rd]rip|hdrip)`: RipBluRay,
 		})
 	}
 	if t.SceneRating == RatingOk {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/jmcvetta/napping"
@@ -18,13 +19,13 @@ const (
 type Movie struct {
 	Entity
 
-	IMDBId               string      `json:"imdb_id"`
-	Overview             string      `json:"overview"`
-	ProductionCompagnies []*IdName   `json:"production_compagnies"`
-	Runtime              int         `json:"runtime"`
-	TagLine              string      `json:"tagline"`
-	RawPopularity        interface{} `json:"popularity"`
-	Popularity           float64     `json:"-"`
+	IMDBId              string      `json:"imdb_id"`
+	Overview            string      `json:"overview"`
+	ProductionCompanies []*IdName   `json:"production_companies"`
+	Runtime             int         `json:"runtime"`
+	TagLine             string      `json:"tagline"`
+	RawPopularity       interface{} `json:"popularity"`
+	Popularity          float64     `json:"-"`
 
 	Credits *Credits `json:"credits,omitempty"`
 	Images  *Images  `json:"images,omitempty"`
@@ -193,23 +194,53 @@ func PopularMoviesComplete(genre string) Movies {
 
 func (movie *Movie) ToListItem() *xbmc.ListItem {
 	item := &xbmc.ListItem{
-		Label: movie.Title,
+		Label: movie.OriginalTitle,
 		Info: &xbmc.ListItemInfo{
-			Count:       movie.IMDBId,
-			Title:       movie.Title,
-			Plot:        movie.Overview,
-			PlotOutline: movie.Overview,
-			TagLine:     movie.TagLine,
-			Duration:    movie.Runtime,
-			Code:        movie.IMDBId,
+			Count:         movie.IMDBId,
+			Title:         movie.OriginalTitle,
+			OriginalTitle: movie.Title,
+			Plot:          movie.Overview,
+			PlotOutline:   movie.Overview,
+			TagLine:       movie.TagLine,
+			Duration:      movie.Runtime,
+			Code:          movie.IMDBId,
 		},
 		Art: &xbmc.ListItemArt{},
 	}
-	if len(movie.Images.Posters) > 0 {
-		item.Art.Poster = imageURL(movie.Images.Posters[0].FilePath, "w500")
+	genres := make([]string, 0, len(movie.Genres))
+	for _, genre := range movie.Genres {
+		genres = append(genres, genre.Name)
 	}
-	if len(movie.Images.Backdrops) > 0 {
-		item.Art.FanArt = imageURL(movie.Images.Backdrops[0].FilePath, "original")
+	item.Info.Genre = strings.Join(genres, " / ")
+
+	if len(movie.ProductionCompanies) > 0 {
+		item.Info.Studio = movie.ProductionCompanies[0].Name
+	}
+	if movie.Credits != nil {
+		item.Info.CastAndRole = make([]string, 0, len(movie.Credits.Cast))
+		for _, cast := range movie.Credits.Cast {
+			item.Info.CastAndRole = append(item.Info.CastAndRole, cast.Name+"|"+cast.Character)
+		}
+		directors := make([]string, 0)
+		writers := make([]string, 0)
+		for _, crew := range movie.Credits.Crew {
+			switch crew.Job {
+			case "Director":
+				directors = append(directors, crew.Name)
+			case "Writer":
+				writers = append(writers, crew.Name)
+			}
+		}
+		item.Info.Director = strings.Join(directors, " / ")
+		item.Info.Writer = strings.Join(writers, " / ")
+	}
+	if movie.Images != nil {
+		if len(movie.Images.Posters) > 0 {
+			item.Art.Poster = imageURL(movie.Images.Posters[0].FilePath, "w500")
+		}
+		if len(movie.Images.Backdrops) > 0 {
+			item.Art.FanArt = imageURL(movie.Images.Backdrops[0].FilePath, "original")
+		}
 	}
 	return item
 }

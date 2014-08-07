@@ -1,60 +1,60 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 	"github.com/steeve/pulsar/bittorrent"
 	"github.com/steeve/pulsar/providers"
-	"github.com/steeve/pulsar/providers/cli"
 	"github.com/steeve/pulsar/tmdb"
 	"github.com/steeve/pulsar/xbmc"
 )
 
-func renderMovies(movies tmdb.Movies, w http.ResponseWriter, r *http.Request) {
+func renderMovies(movies tmdb.Movies, ctx *gin.Context) {
 	items := make(xbmc.ListItems, 0, len(movies))
 	for _, movie := range movies {
 		item := movie.ToListItem()
-		item.Path = UrlFor("movie_play", "imdbId", movie.IMDBId)
+		item.Path = UrlForXBMC("/movie/%s/play", movie.IMDBId)
 		item.IsPlayable = true
+		item.ContextMenu = [][]string{
+			[]string{"Choose stream", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/movie/%s/links", movie.IMDBId))},
+		}
 		items = append(items, item)
 	}
 
-	json.NewEncoder(w).Encode(xbmc.NewView("movies", items))
+	ctx.JSON(200, xbmc.NewView("movies", items))
 }
 
-func PopularMovies(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	genre := vars["genre"]
+func PopularMovies(ctx *gin.Context) {
+	genre := ctx.Params.ByName("genre")
 	if genre == "0" {
 		genre = ""
 	}
-	renderMovies(tmdb.PopularMoviesComplete(genre), w, r)
+	renderMovies(tmdb.PopularMoviesComplete(genre), ctx)
 }
 
-func SearchMovies(w http.ResponseWriter, r *http.Request) {
+func SearchMovies(ctx *gin.Context) {
 	query := xbmc.Keyboard("", "Search Movies")
 	if query != "" {
-		renderMovies(tmdb.SearchMovies(query), w, r)
+		renderMovies(tmdb.SearchMovies(query), ctx)
 	}
 }
 
-func MovieGenres(w http.ResponseWriter, r *http.Request) {
+func MovieGenres(ctx *gin.Context) {
 	genres := tmdb.GetMovieGenres()
 	items := make(xbmc.ListItems, 0, len(genres))
 	for _, genre := range genres {
 		items = append(items, &xbmc.ListItem{
 			Label: genre.Name,
-			Path:  UrlFor("popular_movies_by_genre", "genre", strconv.Itoa(genre.Id)),
+			Path:  UrlForXBMC("/movies/popular/%s", strconv.Itoa(genre.Id)),
 		})
 	}
 
-	json.NewEncoder(w).Encode(xbmc.NewView("", items))
+	ctx.JSON(200, xbmc.NewView("", items))
 }
 
 func movieLinks(imdbId string) []*bittorrent.Torrent {
@@ -64,18 +64,18 @@ func movieLinks(imdbId string) []*bittorrent.Torrent {
 
 	log.Printf("Resolved %s to %s\n", imdbId, movie.Title)
 
-	searchers := []providers.MovieSearcher{
-		cli.NewCLISearcher([]string{"python", "kat.py"}),
-		cli.NewCLISearcher([]string{"python", "tpb.py"}),
-		cli.NewCLISearcher([]string{"python", "yts.py"}),
+	searchers := make([]providers.MovieSearcher, 0)
+	for _, addon := range xbmc.GetAddons("xbmc.python.script").Addons {
+		if strings.HasPrefix(addon.ID, "script.pulsar.") {
+			searchers = append(searchers, providers.NewAddonSearcher(addon.ID))
+		}
 	}
 
 	return providers.SearchMovie(searchers, movie)
 }
 
-func MovieLinks(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	torrents := movieLinks(vars["imdbId"])
+func MovieLinks(ctx *gin.Context) {
+	torrents := movieLinks(ctx.Params.ByName("imdbId"))
 	choices := make([]string, 0, len(torrents))
 	for _, torrent := range torrents {
 		info := make([]string, 0, 4)
@@ -101,18 +101,18 @@ func MovieLinks(w http.ResponseWriter, r *http.Request) {
 		choices = append(choices, label)
 	}
 
-	choice := xbmc.ListDialog("Choose your stream", choices...)
+	choice := xbmc.ListDialog("Choose stream", choices...)
 	if choice >= 0 {
-		rUrl := UrlFor("play", torrents[choice].URI)
-		// rUrl := fmt.Sprintf("plugin://plugin.video.pulsar/play/%s", url.QueryEscape(torrents[choice].URI))
-		http.Redirect(w, r, rUrl, http.StatusFound)
+		rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[choice].URI)
+		ctx.Writer.Header().Set("Location", rUrl)
+		ctx.Abort(302)
 	}
 }
 
-func MoviePlay(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	torrents := movieLinks(vars["imdbId"])
-	// rUrl := fmt.Sprintf("plugin://plugin.video.xbmctorrent/play/%s", url.QueryEscape(torrents[0].URI))
-	rUrl := UrlFor("play", "uri", torrents[0].URI)
-	http.Redirect(w, r, rUrl, http.StatusFound)
+func MoviePlay(ctx *gin.Context) {
+	torrents := movieLinks(ctx.Params.ByName("imdbId"))
+	sort.Sort(sort.Reverse(providers.ByQuality(torrents)))
+	rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[0].URI)
+	ctx.Writer.Header().Set("Location", rUrl)
+	ctx.Abort(302)
 }

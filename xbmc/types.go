@@ -21,16 +21,16 @@ const (
 type ListItems []*ListItem
 
 type ListItem struct {
-	Label       string             `json:"label"`
-	Icon        string             `json:"icon"`
-	Thumbnail   string             `json:"thumbnail"`
-	IsPlayable  bool               `json:"is_playable"`
-	Path        string             `json:"path"`
-	Info        *ListItemInfo      `json:"info,omitempty"`
-	Properties  map[string]string  `json:"properties,omitempty"`
-	Art         *ListItemArt       `json:"art,omitempty"`
-	StreamInfo  *StreamInfo        `json:"stream_info,omitempty"`
-	ContextMenu []*ContextMenuItem `json:"context_menu,omitempty"`
+	Label       string            `json:"label"`
+	Icon        string            `json:"icon"`
+	Thumbnail   string            `json:"thumbnail"`
+	IsPlayable  bool              `json:"is_playable"`
+	Path        string            `json:"path"`
+	Info        *ListItemInfo     `json:"info,omitempty"`
+	Properties  map[string]string `json:"properties,omitempty"`
+	Art         *ListItemArt      `json:"art,omitempty"`
+	StreamInfo  *StreamInfo       `json:"stream_info,omitempty"`
+	ContextMenu [][]string        `json:"context_menu,omitempty"`
 }
 
 type ListItemInfo struct {
@@ -94,8 +94,8 @@ type ListItemArt struct {
 }
 
 type ContextMenuItem struct {
-	Label  string
-	Action string
+	Label  string `json:"label"`
+	Action string `json:"action"`
 }
 
 type StreamInfo struct {

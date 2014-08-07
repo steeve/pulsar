@@ -53,15 +53,16 @@ type Credits struct {
 }
 
 type Entity struct {
-	IsAdult       bool    `json:"adult"`
-	BackdropPath  string  `json:"backdrop_path"`
-	Id            int     `json:"id"`
-	OriginalTitle string  `json:"original_title"`
-	ReleaseDate   string  `json:"release_date"`
-	PosterPath    string  `json:"poster_path"`
-	Title         string  `json:"title"`
-	VoteAverage   float64 `json:"vote_average"`
-	VoteCount     float64 `json:"vote_count"`
+	IsAdult       bool      `json:"adult"`
+	BackdropPath  string    `json:"backdrop_path"`
+	Id            int       `json:"id"`
+	Genres        []*IdName `json:"genres"`
+	OriginalTitle string    `json:"original_title"`
+	ReleaseDate   string    `json:"release_date"`
+	PosterPath    string    `json:"poster_path"`
+	Title         string    `json:"title"`
+	VoteAverage   float64   `json:"vote_average"`
+	VoteCount     float64   `json:"vote_count"`
 }
 
 type EntityList struct {

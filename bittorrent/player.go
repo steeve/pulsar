@@ -7,12 +7,13 @@ import (
 
 	"github.com/op/go-logging"
 	"github.com/steeve/libtorrent-go"
+	"github.com/steeve/pulsar/ga"
 	"github.com/steeve/pulsar/xbmc"
 )
 
 const (
-	startPiecesBuffer = 0.005
-	endPiecesBuffer   = 0.005
+	startPiecesBuffer = 0.01
+	endPiecesBuffer   = 0.01
 )
 
 var statusStrings = []string{
@@ -35,17 +36,16 @@ type BTPlayer struct {
 	log            *logging.Logger
 	waitBuffer     chan error
 	dialogProgress *xbmc.DialogProgress
-	eventPlayer    *xbmc.EventPlayer
 	isBuffering    bool
+	torrentName    string
 }
 
 func NewBTPlayer(bts *BTService, uri string) *BTPlayer {
 	return &BTPlayer{
-		bts:         bts,
-		uri:         uri,
-		log:         logging.MustGetLogger("BTPlayer"),
-		waitBuffer:  make(chan error, 10),
-		eventPlayer: xbmc.NewEventPlayer(),
+		bts:        bts,
+		uri:        uri,
+		log:        logging.MustGetLogger("BTPlayer"),
+		waitBuffer: make(chan error, 10),
 	}
 }
 
@@ -61,6 +61,8 @@ func (btp *BTPlayer) addTorrent() error {
 
 	btp.torrentHandle = btp.bts.Session.Add_torrent(torrentParams)
 	btp.bts.AlertsBind(btp.onAlert)
+
+	btp.torrentName = btp.torrentHandle.Status().GetName()
 
 	if btp.torrentHandle == nil {
 		return fmt.Errorf("unable to add torrent with uri %s", btp.uri)
@@ -98,6 +100,9 @@ func (btp *BTPlayer) PlayURL() string {
 
 func (btp *BTPlayer) onMetadataReceived() {
 	btp.log.Info("Metadata received.")
+	btp.torrentName = btp.torrentHandle.Status().GetName()
+	go ga.TrackEvent("player", "metadata_received", btp.torrentName, -1)
+
 	btp.torrentInfo = btp.torrentHandle.Torrent_file()
 	biggestFileIdx := btp.findBiggestFile()
 	btp.biggestFile = btp.torrentInfo.File_at(biggestFileIdx)
@@ -166,9 +171,10 @@ func (btp *BTPlayer) onStateChanged(stateAlert libtorrent.State_changed_alert) {
 
 func (btp *BTPlayer) Close() {
 	btp.log.Info("Removing the torrent.")
-	btp.eventPlayer.Close()
 	btp.bts.Session.Remove_torrent(btp.torrentHandle, int(libtorrent.SessionDelete_files))
-	libtorrent.DeleteTorrent_info(btp.torrentInfo)
+	if btp.torrentInfo != nil && btp.torrentInfo.Swigcptr() != 0 {
+		libtorrent.DeleteTorrent_info(btp.torrentInfo)
+	}
 }
 
 func (btp *BTPlayer) onAlert(alert libtorrent.Alert) {
@@ -189,36 +195,43 @@ func (btp *BTPlayer) onAlert(alert libtorrent.Alert) {
 }
 
 func (btp *BTPlayer) playerLoop() {
-loop:
-	for {
-		if btp.isBuffering {
-			if btp.dialogProgress.IsCanceled() {
-				btp.log.Info("User cancelled the buffering.")
-				btp.waitBuffer <- fmt.Errorf("user canceled the buffering")
-				break loop
-			}
-			status := btp.torrentHandle.Status()
-			line1, line2, line3 := btp.statusStrings(status)
-			btp.dialogProgress.Update(int(status.GetProgress()*100.0), line1, line2, line3)
-			time.Sleep(1000 * time.Millisecond)
-		} else {
-			switch btp.eventPlayer.PopEvent() {
-			case "playback_started":
-				btp.log.Info("playback_started")
-				break
-			case "playback_resumed":
-				btp.log.Info("playback_resumed")
-				break
-			case "playback_paused":
-				btp.log.Info("playback_paused")
-				break
-			case "playback_stopped":
-				btp.log.Info("playback_stopped")
-				break loop
-			default:
-				time.Sleep(1000 * time.Millisecond)
-			}
+	defer btp.Close()
+
+	start := time.Now()
+
+	btp.log.Info("Buffer loop")
+	for btp.isBuffering == true {
+		ga.TrackEvent("player", "buffering", btp.torrentName, -1)
+		if btp.dialogProgress.IsCanceled() {
+			btp.log.Info("User cancelled the buffering.")
+			go ga.TrackEvent("player", "buffer_canceled", btp.torrentName, -1)
+			btp.waitBuffer <- fmt.Errorf("user canceled the buffering")
+			return
 		}
+		status := btp.torrentHandle.Status()
+		line1, line2, line3 := btp.statusStrings(status)
+		btp.dialogProgress.Update(int(status.GetProgress()*100.0), line1, line2, line3)
+		time.Sleep(1000 * time.Millisecond)
 	}
-	btp.Close()
+
+	ga.TrackTiming("player", "buffer_time_real", int(time.Now().Sub(start).Seconds()*1000), "")
+
+	btp.log.Info("Waiting for playback...")
+	for xbmc.PlayerIsPlaying() == false {
+		ga.TrackEvent("player", "waiting_playback", btp.torrentName, -1)
+		time.Sleep(1000 * time.Millisecond)
+	}
+
+	ga.TrackTiming("player", "buffer_time_perceived", int(time.Now().Sub(start).Seconds()*1000), "")
+
+	btp.log.Info("Playback loop")
+	for i := 0; xbmc.PlayerIsPlaying(); i++ {
+		if i%60 == 0 { // send keep alive every 60 seconds
+			ga.TrackEvent("player", "playing", btp.torrentName, -1)
+		}
+		time.Sleep(1000 * time.Millisecond)
+	}
+
+	ga.TrackEvent("player", "stop", btp.torrentName, -1)
+	ga.TrackTiming("player", "watched_time", int(time.Now().Sub(start).Seconds()*1000), "")
 }

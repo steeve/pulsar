@@ -1,10 +1,22 @@
-package util
+package providers
 
 import (
 	"math"
 
 	"github.com/steeve/pulsar/bittorrent"
 )
+
+type ByResolution []*bittorrent.Torrent
+
+func (a ByResolution) Len() int           { return len(a) }
+func (a ByResolution) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByResolution) Less(i, j int) bool { return a[i].Resolution < a[j].Resolution }
+
+type BySeeds []*bittorrent.Torrent
+
+func (a BySeeds) Len() int           { return len(a) }
+func (a BySeeds) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a BySeeds) Less(i, j int) bool { return a[i].Seeds < a[j].Seeds }
 
 const (
 	CoefRipType = 10.0

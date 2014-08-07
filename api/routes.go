@@ -2,49 +2,79 @@ package api
 
 import (
 	"fmt"
+	"net/url"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 	"github.com/steeve/pulsar/bittorrent"
+	"github.com/steeve/pulsar/ga"
+	"github.com/steeve/pulsar/providers"
+	"github.com/steeve/pulsar/util"
 )
-
-var routes *mux.Router
 
 const (
 	PREFIX = "plugin://plugin.video.pulsar"
 )
 
-func Routes(btService *bittorrent.BTService) *mux.Router {
-	if routes == nil {
-		router := mux.NewRouter()
+func Routes(btService *bittorrent.BTService) *gin.Engine {
+	r := gin.Default()
 
-		router.HandleFunc("/", Index)
+	r.Use(ga.GATracker())
 
-		router.HandleFunc("/movies/search", SearchMovies).Name("search_movies")
-		router.HandleFunc("/movies/popular", PopularMovies).Name("popular_movies")
-		router.HandleFunc("/movies/popular/{genre}", PopularMovies).Name("popular_movies_by_genre")
-		router.HandleFunc("/movies/genres", MovieGenres).Name("movie_genres")
-		router.HandleFunc("/movies/{imdbId}/links", MovieLinks).Name("movie_links")
-		router.HandleFunc("/movies/{imdbId}/play", MoviePlay).Name("movie_play")
+	r.GET("/", Index)
+	r.GET("/search", Search)
 
-		router.HandleFunc("/shows/shows", SearchShows).Name("search_shows")
-		router.HandleFunc("/shows/popular", PopularShows).Name("popular_shows")
-		router.HandleFunc("/shows/{showId}/seasons", ShowSeasons).Name("show_seasons")
-		router.HandleFunc("/shows/{showId}/seasons/{season}/episodes", ShowEpisodes).Name("show_season_episodes")
-		router.HandleFunc("/shows/{showId}/seasons/{season}/episodes/{episode}/links", ShowEpisodeLinks).Name("show_episode_links")
+	r.GET("/movies/search", SearchMovies)
+	r.GET("/movies/popular", PopularMovies)
+	r.GET("/movies/popular/:genre", PopularMovies)
+	r.GET("/movies/genres", MovieGenres)
+	r.GET("/movie/:imdbId/links", MovieLinks)
+	r.GET("/movie/:imdbId/play", MoviePlay)
 
-		router.HandleFunc("/play/{uri}", Play(btService)).Name("play")
+	r.GET("/shows/search", SearchShows)
+	r.GET("/shows/popular", PopularShows)
+	r.GET("/show/:showId/seasons", ShowSeasons)
+	r.GET("/show/:showId/season/:season/episodes", ShowEpisodes)
+	r.GET("/show/:showId/season/:season/episode/:episode/links", ShowEpisodeLinks)
+	r.GET("/show/:showId/season/:season/episode/:episode/play", ShowEpisodePlay)
 
-		routes = router
-	}
+	r.GET("/play", Play(btService))
 
-	return routes
+	r.POST("/callbacks/:cid", providers.CallbackHandler)
+
+	return r
 }
 
-func UrlFor(name string, args ...string) string {
-	url, err := routes.Get(name).URLPath(args...)
-	if err != nil {
-		fmt.Println(err)
-		return ""
-	}
-	return PREFIX + url.String()
+func UrlForHTTP(pattern string, args ...interface{}) string {
+	u, _ := url.Parse(fmt.Sprintf(pattern, args...))
+	return util.GetHTTPHost() + u.String()
 }
+
+func UrlForXBMC(pattern string, args ...interface{}) string {
+	u, _ := url.Parse(fmt.Sprintf(pattern, args...))
+	return PREFIX + u.String()
+}
+
+func UrlQuery(route string, query ...string) string {
+	v := url.Values{}
+	for i := 0; i < len(query); i += 2 {
+		v.Add(query[i], query[i+1])
+	}
+	return route + "?" + v.Encode()
+}
+
+// func UrlFor(name string, args ...string) string {
+// 	url, err := routes.Get(name).URLPath(args...)
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return ""
+// 	}
+// 	return url.String()
+// }
+
+// func UrlForHTTP(name string, args ...string) string {
+// 	return util.GetHTTPHost() + UrlFor(name, args...)
+// }
+
+// func UrlForXBMC(name string, args ...string) string {
+// 	return PREFIX + UrlFor(name, args...)
+// }
