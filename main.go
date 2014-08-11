@@ -24,7 +24,7 @@ func main() {
 	btService.Start()
 
 	http.Handle("/", api.Routes(btService))
-	http.Handle("/files/", http.StripPrefix("/files/", http.FileServer(bittorrent.NewTorrentFS(btService, "/Users/steeve/projects/go/src/github.com/steeve/pulsar"))))
+	http.Handle("/files/", http.StripPrefix("/files/", http.FileServer(bittorrent.NewTorrentFS(btService, "."))))
 
 	http.ListenAndServe(":8000", nil)
 }
