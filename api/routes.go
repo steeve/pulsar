@@ -62,6 +62,11 @@ func UrlQuery(route string, query ...string) string {
 	return route + "?" + v.Encode()
 }
 
+func Redirect(ctx *gin.Context, url string) {
+	ctx.Writer.Header().Set("Location", url)
+	ctx.Abort(302)
+}
+
 // func UrlFor(name string, args ...string) string {
 // 	url, err := routes.Get(name).URLPath(args...)
 // 	if err != nil {
