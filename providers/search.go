@@ -78,19 +78,20 @@ func processLinks(torrentsChan chan *bittorrent.Torrent) []*bittorrent.Torrent {
 
 	for torrent := range torrentsChan {
 		if existingTorrent, exists := torrentsMap[torrent.InfoHash]; exists {
-			if existingTorrent.Resolution < torrent.Resolution {
+			existingTorrent.Trackers = append(existingTorrent.Trackers, torrent.Trackers...)
+			if torrent.Resolution > existingTorrent.Resolution {
 				existingTorrent.Resolution = torrent.Resolution
 			}
-			if existingTorrent.VideoCodec < torrent.VideoCodec {
+			if torrent.VideoCodec > existingTorrent.VideoCodec {
 				existingTorrent.VideoCodec = torrent.VideoCodec
 			}
-			if existingTorrent.AudioCodec < torrent.AudioCodec {
+			if torrent.AudioCodec > existingTorrent.AudioCodec {
 				existingTorrent.AudioCodec = torrent.AudioCodec
 			}
-			if existingTorrent.RipType < torrent.RipType {
+			if torrent.RipType > existingTorrent.RipType {
 				existingTorrent.RipType = torrent.RipType
 			}
-			if existingTorrent.SceneRating < torrent.SceneRating {
+			if torrent.SceneRating > existingTorrent.SceneRating {
 				existingTorrent.SceneRating = torrent.SceneRating
 			}
 		} else {
