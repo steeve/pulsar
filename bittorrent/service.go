@@ -95,6 +95,20 @@ func (s *BTService) configureSession() {
 	settings.SetTorrent_connect_boost(100)
 	settings.SetRate_limit_ip_overhead(true)
 
+	// Prioritize people starting downloads
+	// settings.SetSeed_choking_algorithm(int(libtorrent.Session_settingsAnti_leech))
+
+	// copied from qBitorrent at
+	// https://github.com/qbittorrent/qBittorrent/blob/master/src/qtlibtorrent/qbtsession.cpp
+	settings.SetUpnp_ignore_nonrouters(true)
+	settings.SetLazy_bitfields(true)
+	settings.SetStop_tracker_timeout(1)
+	settings.SetAuto_scrape_interval(1200)    // 20 minutes
+	settings.SetAuto_scrape_min_interval(900) // 15 minutes
+	settings.SetIgnore_limits_on_local_network(true)
+	settings.SetRate_limit_utp(false)
+	settings.SetMixed_mode_algorithm(int(libtorrent.Session_settingsPeer_proportional))
+
 	s.Session.Set_settings(settings)
 
 	s.log.Info("Setting Encryption settings...")
