@@ -38,8 +38,11 @@ func PopularMovies(ctx *gin.Context) {
 }
 
 func SearchMovies(ctx *gin.Context) {
-	query := xbmc.Keyboard("", "Search Movies")
-	if query != "" {
+	query := ctx.Params.ByName("q")
+	if query == "" {
+		query = xbmc.Keyboard("", "Search Movies")
+		Redirect(ctx, UrlQuery(UrlForXBMC(ctx.Request.URL.Path), "q", query))
+	} else {
 		renderMovies(tmdb.SearchMovies(query), ctx)
 	}
 }
