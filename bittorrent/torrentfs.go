@@ -43,6 +43,9 @@ func (tfs *TorrentFS) Open(name string) (http.File, error) {
 	torrentsVector := tfs.service.Session.Get_torrents()
 	for i := 0; i < int(torrentsVector.Size()); i++ {
 		torrentHandle := torrentsVector.Get(i)
+		if torrentHandle.Is_valid() == false {
+			continue
+		}
 		torrentInfo := torrentHandle.Torrent_file()
 		for j := 0; j < torrentInfo.Num_files(); j++ {
 			fe := torrentInfo.File_at(j)
