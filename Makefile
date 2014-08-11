@@ -40,6 +40,7 @@ endif
 NAME = pulsar
 GO = go
 GIT = git
+DOCKER = docker
 GIT_VERSION = $(shell $(GIT) describe --always)
 VERSION = $(patsubst v%,%,$(GIT_VERSION))
 ZIP_FILE = $(ADDON_NAME)-$(VERSION).zip
@@ -49,26 +50,11 @@ BUILD_PATH = build/$(TARGET_OS)_$(TARGET_ARCH)
 LIBTORRENT_GO = github.com/steeve/libtorrent-go
 LIBTORRENT_GO_HOME = $(shell go env GOPATH)/src/$(LIBTORRENT_GO)
 
-
-all: clean libtorrent-go dist
-
 force:
 	true
 
-test:
-	@echo $(CC) $(CROSS_TRIPLE)
-
 libtorrent-go: force
 	$(MAKE) -C $(LIBTORRENT_GO_HOME) clean all
-
-run: build
-ifeq ($(OS),Linux)
-	LD_LIBRARY_PATH=$(BUILD_PATH):$$LD_LIBRARY_PATH $(BUILD_PATH)/$(OUTPUT_NAME)
-endif
-ifeq ($(OS),Darwin)
-	DYLD_LIBRARY_PATH=$(BUILD_PATH):$$DYLD_LIBRARY_PATH $(BUILD_PATH)/$(OUTPUT_NAME)
-endif
-
 
 $(BUILD_PATH):
 	mkdir -p $(BUILD_PATH)
@@ -77,19 +63,13 @@ $(BUILD_PATH)/$(OUTPUT_NAME): $(BUILD_PATH)
 ifeq ($(TARGET_OS), windows)
 	CC=$(CC) GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) CGO_ENABLED=$(CGO_ENABLED) $(GO) build -v -o $(BUILD_PATH)/$(OUTPUT_NAME) -ldflags="-extld=$(CC)"
 else
-	CC=$(CC) GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) CGO_ENABLED=$(CGO_ENABLED) $(GO) build -v -o $(BUILD_PATH)/$(OUTPUT_NAME) -ldflags="-linkmode=external -extld=$(CC)"
+	CC=$(CC) GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) CGO_ENABLED=$(CGO_ENABLED) $(GO) build -v  -tags netgo -o $(BUILD_PATH)/$(OUTPUT_NAME) -ldflags="-linkmode=external -extld=$(CC)"
 endif
-
-vendor_libs_darwin:
-
-vendor_libs_android:
-
-vendor_libs_linux:
 
 vendor_libs_windows:
 	cp -f $(shell go env GOPATH)/src/github.com/steeve/libtorrent-go/$(BUILD_PATH)/* $(BUILD_PATH)
 
-dist: $(BUILD_PATH)/$(OUTPUT_NAME) vendor_libs_$(TARGET_OS)
+dist: $(BUILD_PATH)/$(OUTPUT_NAME)
 
 clean:
 	rm -rf $(BUILD_PATH)
@@ -97,21 +77,22 @@ clean:
 distclean:
 	rm -rf build
 
+darwin-64:
+	$(DOCKER) run -i --rm -v $(HOME):$(HOME) -t -e GOPATH=$(shell go env GOPATH) -w $(shell pwd) pulsar-osx make clean libtorrent-go dist TARGET_OS=darwin TARGET_ARCH=x64
 
-darwin: force
-	$(MAKE) clean all
+windows-32:
+	$(DOCKER) run -i --rm -v $(HOME):$(HOME) -t -e GOPATH=$(shell go env GOPATH) -w $(shell pwd) pulsar-windows-32 make clean dist TARGET_OS=windows TARGET_ARCH=x86
 
-linux32: force
-	$(MAKE) clean all TARGET_OS=linux CROSS_TRIPLE=i586-pc-linux CROSS_ROOT=/usr/local/gcc-4.8.1-for-linux32
+android-arm:
+	$(DOCKER) run -i --rm -v $(HOME):$(HOME) -t -e GOPATH=$(shell go env GOPATH) -w $(shell pwd) pulsar-android make clean dist TARGET_OS=android TARGET_ARCH=arm
 
-linux64: force
-	$(MAKE) clean all TARGET_OS=linux CROSS_TRIPLE=x86_64-pc-linux CROSS_ROOT=/usr/local/gcc-4.8.0-linux64
+linux-32:
+	$(DOCKER) run -i --rm -v $(HOME):$(HOME) -t -e GOPATH=$(shell go env GOPATH) -w $(shell pwd) pulsar-linux-32 make clean dist TARGET_OS=linux TARGET_ARCH=x86
 
-linux-rpi: force
-	$(MAKE) clean all TARGET_OS=linux ARCH=arm CROSS_TRIPLE=arm-linux-gnueabihf CROSS_ROOT=/usr/local/gcc-linaro-arm-linux-gnueabihf-raspbian
+linux-64:
+	$(DOCKER) run -i --rm -v $(HOME):$(HOME) -t -e GOPATH=$(shell go env GOPATH) -w $(shell pwd) pulsar-linux-64 make clean dist TARGET_OS=linux TARGET_ARCH=x64
 
-android: force
-	$(MAKE) clean all TARGET_OS=android ARCH=arm CROSS_TRIPLE=arm-linux-androideabi CROSS_ROOT=/usr/local/gcc-4.8.0-arm-linux-androideabi
+linux-arm:
+	$(DOCKER) run -i --rm -v $(HOME):$(HOME) -t -e GOPATH=$(shell go env GOPATH) -w $(shell pwd) pulsar-linux-arm make clean dist TARGET_OS=linux TARGET_ARCH=arm
 
-windows: force
-	$(MAKE) clean all TARGET_OS=windows CROSS_TRIPLE=i586-mingw32 CROSS_ROOT=/usr/local/gcc-4.8.0-mingw32
+all: darwin-64 windows-32 android-arm linux-32 linux-64 linux-arm
