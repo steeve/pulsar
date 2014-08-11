@@ -12,10 +12,8 @@ type Object map[string]interface{}
 var Results map[string]chan interface{}
 
 const (
-	// XBMCDefaultJSONRPCHost = "localhost:9090"
-	// XBMCExJSONRPCHost      = "localhost:9091"
-	XBMCDefaultJSONRPCHost = "192.168.0.197:9090"
-	XBMCExJSONRPCHost      = "192.168.0.197:9091"
+	XBMCDefaultJSONRPCHost = "localhost:9090"
+	XBMCExJSONRPCHost      = "localhost:9091"
 )
 
 func executeJSONRPC(method string, retVal interface{}, args []interface{}) error {
