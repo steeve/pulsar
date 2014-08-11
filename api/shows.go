@@ -67,7 +67,7 @@ func ShowEpisodes(ctx *gin.Context) {
 			episode.Episode,
 		)
 		item.ContextMenu = [][]string{
-			[]string{"Choose stream", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/show/%s/season/%d/episode/%d/links",
+			[]string{"Choose stream...", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/show/%s/season/%d/episode/%d/links",
 				show.TVDBId,
 				season.Season,
 				episode.Episode,

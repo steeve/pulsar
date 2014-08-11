@@ -21,7 +21,7 @@ func renderMovies(movies tmdb.Movies, ctx *gin.Context) {
 		item.Path = UrlForXBMC("/movie/%s/play", movie.IMDBId)
 		item.IsPlayable = true
 		item.ContextMenu = [][]string{
-			[]string{"Choose stream", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/movie/%s/links", movie.IMDBId))},
+			[]string{"Choose stream...", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/movie/%s/links", movie.IMDBId))},
 		}
 		items = append(items, item)
 	}
