@@ -12,7 +12,7 @@ include platform_target.mk
 
 ifeq ($(TARGET_ARCH),x86)
 	GOARCH = 386
-else ifeq ($(TARGET_ARCH),x86_64)
+else ifeq ($(TARGET_ARCH),x64)
 	GOARCH = amd64
 else ifeq ($(TARGET_ARCH),arm)
 	GOARCH = arm
