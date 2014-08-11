@@ -1,4 +1,4 @@
-CC = cc
+CC = gcc
 CXX = c++
 
 include platform_host.mk
