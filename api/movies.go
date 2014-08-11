@@ -38,7 +38,7 @@ func PopularMovies(ctx *gin.Context) {
 }
 
 func SearchMovies(ctx *gin.Context) {
-	query := ctx.Params.ByName("q")
+	query := ctx.Request.URL.Query().Get("q")
 	if query == "" {
 		query = xbmc.Keyboard("", "Search Movies")
 		Redirect(ctx, UrlQuery(UrlForXBMC(ctx.Request.URL.Path), "q", query))
