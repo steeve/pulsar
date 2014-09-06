@@ -112,16 +112,17 @@ func (as *AddonSearcher) SearchMovieLinks(movie *tmdb.Movie) []*bittorrent.Torre
 }
 
 func (as *AddonSearcher) SearchEpisodeLinks(episode *trakt.ShowEpisode) []*bittorrent.Torrent {
-	normalized_title := episode.Show.Title
-	normalized_title = strings.ToLower(normalized_title)
-	normalized_title = regexp.MustCompile(`\(\d+\)`).ReplaceAllString(normalized_title, " ")
-	normalized_title = regexp.MustCompile(`(\W+|\s+)`).ReplaceAllString(normalized_title, " ")
-	normalized_title = strings.TrimSpace(normalized_title)
+	normalizedTitle := episode.Show.Title
+	normalizedTitle = strings.ToLower(normalizedTitle)
+	normalizedTitle = regexp.MustCompile(`'`).ReplaceAllString(normalizedTitle, "")
+	normalizedTitle = regexp.MustCompile(`\(\d+\)`).ReplaceAllString(normalizedTitle, " ")
+	normalizedTitle = regexp.MustCompile(`(\W+|\s+)`).ReplaceAllString(normalizedTitle, " ")
+	normalizedTitle = strings.TrimSpace(normalizedTitle)
 
 	return as.call("search_episode",
 		episode.Show.IMDBId,
 		episode.Show.TVDBId,
-		normalized_title,
+		normalizedTitle,
 		episode.Season.Season,
 		episode.Episode)
 }
