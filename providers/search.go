@@ -10,6 +10,15 @@ import (
 	"github.com/steeve/pulsar/trakt"
 )
 
+var DefaultTrackers = []string{
+	"udp://open.demonii.com:1337/announce",
+	"udp://tracker.publicbt.com:80",
+	"udp://tracker.openbittorrent.com:80",
+	"udp://pow7.com:80/announce",
+}
+
+var log = logging.MustGetLogger("linkssearch")
+
 func Search(searchers []Searcher, query string) []*bittorrent.Torrent {
 	torrentsChan := make(chan *bittorrent.Torrent)
 	go func() {
@@ -106,13 +115,7 @@ func processLinks(torrentsChan chan *bittorrent.Torrent) []*bittorrent.Torrent {
 		}
 	}
 
-	defaultTrackers := []string{
-		"udp://open.demonii.com:1337/announce",
-		"udp://tracker.publicbt.com:80",
-		"udp://tracker.openbittorrent.com:80",
-		"udp://pow7.com:80/announce",
-	}
-	for _, trackerUrl := range defaultTrackers {
+	for _, trackerUrl := range DefaultTrackers {
 		tracker, _ := bittorrent.NewTracker(trackerUrl)
 		trackers[tracker.URL.Host] = tracker
 	}

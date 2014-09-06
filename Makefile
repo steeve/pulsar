@@ -22,22 +22,27 @@ endif
 ifeq ($(TARGET_OS), windows)
 	EXT = .exe
 	GOOS = windows
+	LDFLAGS = -extld=$(CC)
 else ifeq ($(TARGET_OS), darwin)
 	EXT =
 	GOOS = darwin
 	# Needs this or cgo will try to link with libgcc, which will fail
 	CC := $(CROSS_ROOT)/bin/$(CROSS_TRIPLE)-clang
 	CXX := $(CROSS_ROOT)/bin/$(CROSS_TRIPLE)-clang++
+	LDFLAGS = -linkmode=external -extld=$(CC)
 else ifeq ($(TARGET_OS), linux)
 	EXT =
 	GOOS = linux
+	LDFLAGS = -linkmode=external -extld=$(CC)
 else ifeq ($(TARGET_OS), android)
 	EXT =
 	GOOS = linux
 	GOARM = 7
+	LDFLAGS = -linkmode=external -extld=$(CC)
 endif
 
 NAME = pulsar
+GO_PKG = github.com/steeve/pulsar
 GO = go
 GIT = git
 DOCKER = docker
@@ -49,6 +54,8 @@ OUTPUT_NAME = $(NAME)$(EXT)
 BUILD_PATH = build/$(TARGET_OS)_$(TARGET_ARCH)
 LIBTORRENT_GO = github.com/steeve/libtorrent-go
 LIBTORRENT_GO_HOME = $(shell go env GOPATH)/src/$(LIBTORRENT_GO)
+GO_BUILD_TAGS = netgo
+LDFLAGS += -w -X $(GO_PKG)/util.Version "$(VERSION)" -X $(GO_PKG)/util.GitCommit "$(GIT_VERSION)"
 
 force:
 	true
@@ -60,11 +67,7 @@ $(BUILD_PATH):
 	mkdir -p $(BUILD_PATH)
 
 $(BUILD_PATH)/$(OUTPUT_NAME): $(BUILD_PATH)
-ifeq ($(TARGET_OS), windows)
-	CC=$(CC) GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) CGO_ENABLED=$(CGO_ENABLED) $(GO) build -v -o $(BUILD_PATH)/$(OUTPUT_NAME) -ldflags="-extld=$(CC)"
-else
-	CC=$(CC) GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) CGO_ENABLED=$(CGO_ENABLED) $(GO) build -v  -tags netgo -o $(BUILD_PATH)/$(OUTPUT_NAME) -ldflags="-linkmode=external -extld=$(CC)"
-endif
+	CC=$(CC) GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) CGO_ENABLED=$(CGO_ENABLED) $(GO) build -v -tags $(GO_BUILD_TAGS) -o $(BUILD_PATH)/$(OUTPUT_NAME) -ldflags="$(LDFLAGS)"
 
 vendor_libs_windows:
 	cp -f $(shell go env GOPATH)/src/github.com/steeve/libtorrent-go/$(BUILD_PATH)/* $(BUILD_PATH)
@@ -78,7 +81,7 @@ distclean:
 	rm -rf build
 
 darwin-64:
-	$(DOCKER) run -i --rm -v $(HOME):$(HOME) -t -e GOPATH=$(shell go env GOPATH) -w $(shell pwd) pulsar-osx make clean libtorrent-go dist TARGET_OS=darwin TARGET_ARCH=x64
+	$(DOCKER) run -i --rm -v $(HOME):$(HOME) -t -e GOPATH=$(shell go env GOPATH) -w $(shell pwd) pulsar-osx make clean dist TARGET_OS=darwin TARGET_ARCH=x64 GIT_VERSION=$(GIT_VERSION)
 
 windows-32:
 	$(DOCKER) run -i --rm -v $(HOME):$(HOME) -t -e GOPATH=$(shell go env GOPATH) -w $(shell pwd) pulsar-windows-32 make clean dist TARGET_OS=windows TARGET_ARCH=x86
