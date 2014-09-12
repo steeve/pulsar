@@ -3,7 +3,7 @@ package bittorrent
 import (
 	"fmt"
 	"math"
-	"path/filepath"
+	"os"
 	"strings"
 	"time"
 
@@ -97,7 +97,7 @@ func (btp *BTPlayer) Buffer() error {
 }
 
 func (btp *BTPlayer) PlayURL() string {
-	return strings.Join(filepath.SplitList(btp.biggestFile.GetPath()), "/")
+	return strings.Join(strings.Split(btp.biggestFile.GetPath(), string(os.PathSeparator)), "/")
 }
 
 func (btp *BTPlayer) onMetadataReceived() {
