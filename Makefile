@@ -5,9 +5,9 @@ STRIP = strip
 include platform_host.mk
 
 ifneq ($(CROSS_TRIPLE),)
-	CC := $(CROSS_ROOT)/bin/$(CROSS_TRIPLE)-$(CC)
-	CXX := $(CROSS_ROOT)/bin/$(CROSS_TRIPLE)-$(CXX)
-	STRIP := $(CROSS_ROOT)/bin/$(CROSS_TRIPLE)-strip
+	CC := $(CROSS_TRIPLE)-$(CC)
+	CXX := $(CROSS_TRIPLE)-$(CXX)
+	STRIP := $(CROSS_TRIPLE)-strip
 endif
 
 include platform_target.mk
@@ -24,7 +24,6 @@ endif
 ifeq ($(TARGET_OS), windows)
 	EXT = .exe
 	GOOS = windows
-	GO_LDFLAGS = -extld=$(CC)
 else ifeq ($(TARGET_OS), darwin)
 	EXT =
 	GOOS = darwin
@@ -70,8 +69,8 @@ libtorrent-go: force
 $(BUILD_PATH):
 	mkdir -p $(BUILD_PATH)
 
-$(BUILD_PATH)/$(OUTPUT_NAME): $(BUILD_PATH)
-	CC=$(CC) GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) CGO_ENABLED=$(CGO_ENABLED) $(GO) build -v -tags $(GO_BUILD_TAGS) -o $(BUILD_PATH)/$(OUTPUT_NAME) -ldflags="$(GO_LDFLAGS)"
+$(BUILD_PATH)/$(OUTPUT_NAME): $(BUILD_PATH) force
+	LDFLAGS=$(LDFLAGS) CC=$(CC) GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) CGO_ENABLED=$(CGO_ENABLED) $(GO) build -v -gcflags "$(GO_GCFLAGS)" -tags $(GO_BUILD_TAGS) -o $(BUILD_PATH)/$(OUTPUT_NAME) -ldflags="$(GO_LDFLAGS)"
 
 vendor_libs_windows:
 	cp -f $(shell go env GOPATH)/src/github.com/steeve/libtorrent-go/$(BUILD_PATH)/* $(BUILD_PATH)
@@ -84,14 +83,21 @@ clean:
 distclean:
 	rm -rf build
 
+build-env:
+	cat Dockerfile | sed -e s/TARGET_OS/$(TARGET_OS)/ -e s/TARGET_ARCH/$(TARGET_ARCH)/ | $(DOCKER) build -t steeve/pulsar:$(TARGET_OS)-$(TARGET_ARCH) -
+
 build: force
-	$(DOCKER) run -i --rm -v $(HOME):$(HOME) -t -e GOPATH=$(shell go env GOPATH) -w $(shell pwd) steeve/pulsar-$(TARGET_OS)-$(TARGET_ARCH) make $(MARGS) GIT_VERSION=$(GIT_VERSION)
+	$(DOCKER) run -i --rm -v $(HOME):$(HOME) -t -e GOPATH=$(shell go env GOPATH) -w $(shell pwd) steeve/pulsar:$(TARGET_OS)-$(TARGET_ARCH) make $(MARGS) GIT_VERSION=$(GIT_VERSION)
+
+docker: force
+	$(DOCKER) run -i --rm -v $(HOME):$(HOME) -t -e GOPATH=$(shell go env GOPATH) -w $(shell pwd) steeve/pulsar:$(TARGET_OS)-$(TARGET_ARCH)
+
 
 strip: force
 	$(STRIP) $(BUILD_PATH)/$(OUTPUT_NAME)
 
 upx: force
-	@find build/ -type f -exec $(UPX) {} \;
+	@find $(BUILD_PATH) -type f -exec $(UPX) --lzma {} \;
 
 dist: pulsar strip upx
 
