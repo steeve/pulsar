@@ -3,6 +3,8 @@ package bittorrent
 import (
 	"fmt"
 	"math"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/op/go-logging"
@@ -95,7 +97,7 @@ func (btp *BTPlayer) Buffer() error {
 }
 
 func (btp *BTPlayer) PlayURL() string {
-	return btp.biggestFile.GetPath()
+	return strings.Join(filepath.SplitList(btp.biggestFile.GetPath()), "/")
 }
 
 func (btp *BTPlayer) onMetadataReceived() {
