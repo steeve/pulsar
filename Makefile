@@ -72,7 +72,7 @@ $(BUILD_PATH):
 $(BUILD_PATH)/$(OUTPUT_NAME): $(BUILD_PATH) force
 	LDFLAGS=$(LDFLAGS) CC=$(CC) GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) CGO_ENABLED=$(CGO_ENABLED) $(GO) build -v -gcflags "$(GO_GCFLAGS)" -tags $(GO_BUILD_TAGS) -o $(BUILD_PATH)/$(OUTPUT_NAME) -ldflags="$(GO_LDFLAGS)"
 
-vendor_libs_windows:
+vendor_libs:
 	cp -f $(shell go env GOPATH)/src/github.com/steeve/libtorrent-go/$(BUILD_PATH)/* $(BUILD_PATH)
 
 pulsar: $(BUILD_PATH)/$(OUTPUT_NAME)
@@ -94,12 +94,16 @@ docker: force
 
 
 strip: force
-	$(STRIP) $(BUILD_PATH)/$(OUTPUT_NAME)
+	@find $(BUILD_PATH) -type f ! -name "*.exe" -exec $(STRIP) {} \;
 
 upx: force
-	@find $(BUILD_PATH) -type f -exec $(UPX) --lzma {} \;
+# Do not .exe files, as upx doesn't really work with 8l/6l linked files.
+# It's fine for other platforms, because we link with an external linker, namely
+# GCC or Clang. However, on Windows this feature is not yet supported.
+	@find $(BUILD_PATH) -type f ! -name "*.exe" -exec $(UPX) --lzma {} \;
 
-dist: pulsar strip upx
+dist: pulsar strip
 
 alldist: force
-	$(MAKE) build TARGET_OS=darwin TARGET_ARCH=x64 MARGS=pulsar
+	$(MAKE) build TARGET_OS=darwin TARGET_ARCH=x64 MARGS="libtorrent-go pulsar strip upx"
+	$(MAKE) build TARGET_OS=windows TARGET_ARCH=x86 MARGS="libtorrent-go pulsar vendor_libs strip upx"
