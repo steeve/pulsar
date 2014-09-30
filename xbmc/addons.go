@@ -17,14 +17,3 @@ func ExecuteAddon(addonId string, args ...interface{}) {
 	var retVal string
 	executeJSONRPC("Addons.ExecuteAddon", &retVal, Args{addonId, args})
 }
-
-type AddonSettings struct {
-	Settings []*struct {
-		ID    string `xml:"id"`
-		Value string `xml:"value"`
-	}
-}
-
-func GetSettings(addonId string) map[string]string {
-	return nil
-}
