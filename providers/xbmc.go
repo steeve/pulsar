@@ -29,7 +29,7 @@ type AddonSearcher struct {
 }
 
 const (
-	DefaultTimeout = 2 * time.Second
+	DefaultTimeout = 4 * time.Second
 )
 
 var cbLock = sync.RWMutex{}
