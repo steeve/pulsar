@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/steeve/pulsar/bittorrent"
+	"github.com/steeve/pulsar/config"
 	"github.com/steeve/pulsar/ga"
 	"github.com/steeve/pulsar/providers"
 	"github.com/steeve/pulsar/util"
@@ -51,7 +52,7 @@ func UrlForHTTP(pattern string, args ...interface{}) string {
 
 func UrlForXBMC(pattern string, args ...interface{}) string {
 	u, _ := url.Parse(fmt.Sprintf(pattern, args...))
-	return PREFIX + u.String()
+	return "plugin://" + config.Get().Info.Id + u.String()
 }
 
 func UrlQuery(route string, query ...string) string {
@@ -61,25 +62,3 @@ func UrlQuery(route string, query ...string) string {
 	}
 	return route + "?" + v.Encode()
 }
-
-func Redirect(ctx *gin.Context, url string) {
-	ctx.Writer.Header().Set("Location", url)
-	ctx.Abort(302)
-}
-
-// func UrlFor(name string, args ...string) string {
-// 	url, err := routes.Get(name).URLPath(args...)
-// 	if err != nil {
-// 		fmt.Println(err)
-// 		return ""
-// 	}
-// 	return url.String()
-// }
-
-// func UrlForHTTP(name string, args ...string) string {
-// 	return util.GetHTTPHost() + UrlFor(name, args...)
-// }
-
-// func UrlForXBMC(name string, args ...string) string {
-// 	return PREFIX + UrlFor(name, args...)
-// }
