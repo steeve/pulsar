@@ -22,11 +22,11 @@ const (
 
 var statusStrings = []string{
 	"Queued",
-	"Checking",
-	"Downloading metadata",
-	"Downloading",
+	"Checking...",
+	"Finding torrent...", //"Downloading metadata...",
+	"Buffering...",       // "Downloading",
 	"Finished",
-	"Seeding",
+	"Seeding...",
 	"Allocating",
 	"Allocating file & Checking resume",
 }
