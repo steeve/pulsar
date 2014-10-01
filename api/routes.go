@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/steeve/pulsar/api/repository"
 	"github.com/steeve/pulsar/bittorrent"
 	"github.com/steeve/pulsar/cache"
 	"github.com/steeve/pulsar/config"
@@ -16,8 +17,9 @@ import (
 )
 
 const (
-	DefaultCacheTime  = 6 * time.Hour
-	EpisodesCacheTime = 15 * time.Minute
+	DefaultCacheTime    = 6 * time.Hour
+	RepositoryCacheTime = 20 * time.Minute
+	EpisodesCacheTime   = 15 * time.Minute
 )
 
 func Routes(btService *bittorrent.BTService) *gin.Engine {
@@ -56,7 +58,12 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 		show.GET("/:showId/season/:season/episode/:episode/play", ShowEpisodePlay)
 	}
 
-	r.GET("/play", Play(btService))
+	repo := r.Group("/repository")
+	{
+		repo.GET("/:user/:repository/addons.xml", cache.Cache(store, RepositoryCacheTime), repository.GetAddonsXML)
+		repo.GET("/:user/:repository/addons.xml.md5", cache.Cache(store, RepositoryCacheTime), repository.GetAddonsXMLChecksum)
+		repo.GET("/:user/:repository/files/*filepath", repository.GetAddonFiles)
+	}
 
 	r.GET("/play", Play(btService))
 	r.POST("/callbacks/:cid", providers.CallbackHandler)
