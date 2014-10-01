@@ -29,10 +29,11 @@ func PopularShows(ctx *gin.Context) {
 }
 
 func SearchShows(ctx *gin.Context) {
-	query := xbmc.Keyboard("", "Search Shows")
-	if query != "" {
-		renderShows(trakt.SearchShows(query), ctx)
+	query := ctx.Request.URL.Query().Get("q")
+	if query == "" {
+		query = xbmc.Keyboard("", "Search Movies")
 	}
+	renderShows(trakt.SearchShows(query), ctx)
 }
 
 func ShowSeasons(ctx *gin.Context) {
