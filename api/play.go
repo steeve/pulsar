@@ -25,8 +25,6 @@ func Play(btService *bittorrent.BTService) gin.HandlerFunc {
 		if localIP, err := util.LocalIP(); err == nil {
 			hostname = localIP.String()
 		}
-		rUrl, _ := url.Parse(fmt.Sprintf("http://%s:8000/files/%s", hostname, player.PlayURL()))
-		log.Println(rUrl)
 		rUrl, _ := url.Parse(fmt.Sprintf("http://%s:%d/files/%s", hostname, config.ListenPort, player.PlayURL()))
 		ctx.Redirect(302, rUrl.String())
 	}
