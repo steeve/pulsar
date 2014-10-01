@@ -4,27 +4,94 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/op/go-logging"
 	"github.com/steeve/pulsar/api"
 	"github.com/steeve/pulsar/bittorrent"
+	"github.com/steeve/pulsar/config"
+	"github.com/steeve/pulsar/util"
+	"github.com/steeve/pulsar/xbmc"
+)
+
+var log = logging.MustGetLogger("main")
+
+const (
+	PulsarLogo = `
+             .__
+______  __ __|  |   ___________ _______
+\____ \|  |  \  |  /  ___/\__  \\_  __ \
+|  |_> >  |  /  |__\___ \  / __ \|  | \/
+|   __/|____/|____/____  >(____  /__|
+|__|                   \/      \/
+`
 )
 
 func main() {
 	// Make sure we are properly multithreaded.
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	logging.SetFormatter(logging.MustStringFormatter("[%{time:2006-01-02 15:04:05}] [%{module}] %{level} %{message}"))
-	logging.SetBackend(logging.NewLogBackend(os.Stderr, "", 0))
+	logging.SetFormatter(logging.MustStringFormatter("%{time:2006-01-02 15:04:05}  %{level:.4s}  %{module:-15s}  %{message}"))
+	logging.SetBackend(logging.NewLogBackend(os.Stdout, "", 0))
 
-	btService := bittorrent.NewBTService(bittorrent.BTConfiguration{
-		LowerListenPort: 6889,
-		UpperListenPort: 7000,
-	})
-	btService.Start()
+	for _, line := range strings.Split(PulsarLogo, "\n") {
+		log.Info(line)
+	}
+	log.Info("Version: %s Git: %s", util.Version, util.GitCommit)
+
+	config.Reload()
+
+	log.Info("Addon: %s v%s", config.Get().Info.Id, config.Get().Info.Version)
+
+	btService := bittorrent.NewBTService()
+
+	var startBtService = func() {
+		btService.Configure(&bittorrent.BTConfiguration{
+			LowerListenPort: config.Get().BTListenPortMin,
+			UpperListenPort: config.Get().BTListenPortMax,
+			DownloadPath:    config.Get().DownloadPath,
+		})
+		btService.Start()
+	}
+	startBtService()
+
+	var shutdown = func() {
+		log.Info("Shutting down...")
+		btService.Stop()
+		log.Info("Bye bye")
+		os.Exit(0)
+	}
+
+	var watchParentProcess = func() {
+		for {
+			// did the parent die? shutdown!
+			if os.Getppid() == 1 {
+				log.Warning("Parent shut down. Me too.")
+				go shutdown()
+				break
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}
+	go watchParentProcess()
 
 	http.Handle("/", api.Routes(btService))
-	http.Handle("/files/", http.StripPrefix("/files/", http.FileServer(bittorrent.NewTorrentFS(btService, "."))))
+	http.Handle("/files/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handler := http.StripPrefix("/files/", http.FileServer(bittorrent.NewTorrentFS(btService, config.Get().DownloadPath)))
+		handler.ServeHTTP(w, r)
+	}))
+	http.Handle("/reload", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		btService.Stop()
+		config.Reload()
+		startBtService()
+	}))
+	http.Handle("/shutdown", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		go shutdown()
+	}))
 
-	http.ListenAndServe(":8000", nil)
+	xbmc.Notify("Pulsar", "Pulsar daemon has started.")
+
+	http.ListenAndServe(":"+strconv.Itoa(config.ListenPort), nil)
 }
