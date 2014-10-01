@@ -28,7 +28,7 @@ type TorrentFile struct {
 func NewTorrentFS(service *BTService, path string) *TorrentFS {
 	return &TorrentFS{
 		service: service,
-		log:     logging.MustGetLogger("TorrentFS"),
+		log:     logging.MustGetLogger("torrentfs"),
 		Dir:     http.Dir(path),
 	}
 }
