@@ -121,8 +121,10 @@ func (tf *TorrentFile) Seek(offset int64, whence int) (int64, error) {
 }
 
 func (tf *TorrentFile) waitForPiece(piece int) {
-	for tf.torrentHandle.Piece_priority(piece).(int) > 0 && tf.torrentHandle.Have_piece(piece) == false {
-		time.Sleep(100 * time.Millisecond)
+	if tf.torrentHandle.Piece_priority(piece).(int) > 0 {
+		for tf.torrentHandle.Have_piece(piece) == false {
+			time.Sleep(100 * time.Millisecond)
+		}
 	}
 }
 
