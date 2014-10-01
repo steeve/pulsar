@@ -117,16 +117,34 @@ func (btp *BTPlayer) onMetadataReceived() {
 	btp.log.Info("Setting piece priorities")
 	startPiece, endPiece, _ := btp.getFilePiecesAndOffset(btp.biggestFile)
 	startBufferPieces := int(math.Ceil(float64(endPiece-startPiece) * startPiecesBuffer))
-	for i := 0; i < btp.torrentInfo.Num_pieces(); i++ {
-		if i < startPiece || i > endPiece || i > (startPiece+startBufferPieces) {
-			btp.torrentHandle.Piece_priority(i, 0)
-		}
-	}
-
 	endBufferPieces := int(math.Ceil(float64(endPiece-startPiece) * endPiecesBuffer))
-	for i := endPiece - endBufferPieces; i <= endPiece; i++ {
-		btp.torrentHandle.Piece_priority(i, 7)
+
+	piecesPriorities := libtorrent.NewStd_vector_int()
+	defer libtorrent.DeleteStd_vector_int(piecesPriorities)
+
+	// Properly set the pieces priority vector
+	curPiece := 0
+	for curPiece < startPiece {
+		piecesPriorities.Add(0)
+		curPiece++
 	}
+	for curPiece < startPiece+startBufferPieces { // get this part
+		piecesPriorities.Add(1)
+		curPiece++
+	}
+	for curPiece < endPiece-endBufferPieces {
+		piecesPriorities.Add(0)
+		curPiece++
+	}
+	for curPiece < endPiece { // get this part
+		piecesPriorities.Add(1)
+		curPiece++
+	}
+	for curPiece < btp.torrentInfo.Num_pieces() {
+		piecesPriorities.Add(0)
+		curPiece++
+	}
+	btp.torrentHandle.Prioritize_pieces(piecesPriorities)
 }
 
 func (btp *BTPlayer) statusStrings(status libtorrent.Torrent_status) (string, string, string) {

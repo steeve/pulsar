@@ -101,14 +101,20 @@ func (tf *TorrentFile) Seek(offset int64, whence int) (int64, error) {
 	}
 
 	piece, _ := tf.pieceFromOffset(seekingOffset)
-	if tf.torrentHandle.Have_piece(piece) == false {
-		for i := 0; i < piece; i++ {
-			tf.torrentHandle.Piece_priority(i, 0)
-		}
+
+	piecesPriorities := libtorrent.NewStd_vector_int()
+	defer libtorrent.DeleteStd_vector_int(piecesPriorities)
+	curPiece := 0
+	for curPiece < piece {
+		piecesPriorities.Add(0)
+		curPiece++
 	}
-	for i := piece; i < tf.torrentInfo.Num_pieces(); i++ {
-		tf.torrentHandle.Piece_priority(i, 1)
+	for curPiece < tf.torrentInfo.Num_pieces() {
+		piecesPriorities.Add(1)
+		curPiece++
 	}
+	tf.torrentHandle.Prioritize_pieces(piecesPriorities)
+
 	tf.waitForPiece(piece)
 
 	return tf.File.Seek(offset, whence)
