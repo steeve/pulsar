@@ -41,14 +41,16 @@ type BTPlayer struct {
 	dialogProgress *xbmc.DialogProgress
 	isBuffering    bool
 	torrentName    string
+	deleteAfter    bool
 }
 
-func NewBTPlayer(bts *BTService, uri string) *BTPlayer {
+func NewBTPlayer(bts *BTService, uri string, deleteAfter bool) *BTPlayer {
 	return &BTPlayer{
-		bts:        bts,
-		uri:        uri,
-		log:        logging.MustGetLogger("BTPlayer"),
-		waitBuffer: make(chan error, 10),
+		bts:         bts,
+		uri:         uri,
+		log:         logging.MustGetLogger("btplayer"),
+		waitBuffer:  make(chan error, 10),
+		deleteAfter: deleteAfter,
 	}
 }
 
@@ -59,8 +61,8 @@ func (btp *BTPlayer) addTorrent() error {
 
 	torrentParams.SetUrl(btp.uri)
 
-	btp.log.Info("Setting save path to %s\n", btp.bts.Config.DownloadPath)
-	torrentParams.SetSave_path(btp.bts.Config.DownloadPath)
+	btp.log.Info("Setting save path to %s\n", btp.bts.config.DownloadPath)
+	torrentParams.SetSave_path(btp.bts.config.DownloadPath)
 
 	btp.torrentHandle = btp.bts.Session.Add_torrent(torrentParams)
 	btp.bts.AlertsBind(btp.onAlert)
@@ -177,7 +179,11 @@ func (btp *BTPlayer) onStateChanged(stateAlert libtorrent.State_changed_alert) {
 
 func (btp *BTPlayer) Close() {
 	btp.log.Info("Removing the torrent.")
-	btp.bts.Session.Remove_torrent(btp.torrentHandle, int(libtorrent.SessionDelete_files))
+	if btp.deleteAfter {
+		btp.bts.Session.Remove_torrent(btp.torrentHandle, int(libtorrent.SessionDelete_files))
+	} else {
+		btp.bts.Session.Remove_torrent(btp.torrentHandle, 0)
+	}
 	if btp.torrentInfo != nil && btp.torrentInfo.Swigcptr() != 0 {
 		libtorrent.DeleteTorrent_info(btp.torrentInfo)
 	}

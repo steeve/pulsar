@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/steeve/pulsar/bittorrent"
+	"github.com/steeve/pulsar/config"
 	"github.com/steeve/pulsar/util"
 )
 
@@ -17,7 +18,7 @@ func Play(btService *bittorrent.BTService) gin.HandlerFunc {
 		if uri == "" {
 			return
 		}
-		player := bittorrent.NewBTPlayer(btService, uri)
+		player := bittorrent.NewBTPlayer(btService, uri, config.Get().KeepFilesAfterStop == false)
 		if player.Buffer() != nil {
 			return
 		}
