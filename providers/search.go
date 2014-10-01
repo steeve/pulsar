@@ -80,12 +80,24 @@ func SearchEpisode(searchers []EpisodeSearcher, episode *trakt.ShowEpisode) []*b
 }
 
 func processLinks(torrentsChan chan *bittorrent.Torrent) []*bittorrent.Torrent {
-	log := logging.MustGetLogger("LinksSearch")
-
 	trackers := map[string]*bittorrent.Tracker{}
 	torrentsMap := map[string]*bittorrent.Torrent{}
 
+	torrents := make([]*bittorrent.Torrent, 0)
+
+	log.Info("Resolving torrent files...")
+	wg := sync.WaitGroup{}
 	for torrent := range torrentsChan {
+		torrents = append(torrents, torrent)
+		wg.Add(1)
+		go func(torrent *bittorrent.Torrent) {
+			defer wg.Done()
+			torrent.Resolve()
+		}(torrent)
+	}
+	wg.Wait()
+
+	for _, torrent := range torrents {
 		if existingTorrent, exists := torrentsMap[torrent.InfoHash]; exists {
 			existingTorrent.Trackers = append(existingTorrent.Trackers, torrent.Trackers...)
 			if torrent.Resolution > existingTorrent.Resolution {
@@ -120,12 +132,16 @@ func processLinks(torrentsChan chan *bittorrent.Torrent) []*bittorrent.Torrent {
 		trackers[tracker.URL.Host] = tracker
 	}
 
-	torrents := make([]*bittorrent.Torrent, 0, len(torrentsMap))
+	torrents = make([]*bittorrent.Torrent, 0, len(torrentsMap))
 	for _, torrent := range torrentsMap {
 		torrents = append(torrents, torrent)
 	}
 
 	log.Info("Received %d links.\n", len(torrents))
+
+	if len(torrents) == 0 {
+		return torrents
+	}
 
 	log.Info("Scraping torrent metrics from %d trackers...\n", len(trackers))
 	scrapeResults := make(chan []bittorrent.ScrapeResponseEntry)
