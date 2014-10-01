@@ -1,13 +1,15 @@
 package tmdb
 
 import (
-	"fmt"
+	"path"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/jmcvetta/napping"
+	"github.com/steeve/pulsar/cache"
+	"github.com/steeve/pulsar/config"
 	"github.com/steeve/pulsar/xbmc"
 )
 
@@ -43,14 +45,19 @@ func GetMovie(tmdbId int) *Movie {
 
 func getMovieById(movieId string) *Movie {
 	movie := Movie{}
-	rateLimiter.Call(func() {
-		napping.Get(
-			endpoint+"movie/"+movieId,
-			&napping.Params{"api_key": apiKey, "append_to_response": "credits,images"},
-			&movie,
-			nil,
-		)
-	})
+	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
+	key := "com.tmdb.movie." + movieId
+	if err := cacheStore.Get(key, &movie); err != nil {
+		rateLimiter.Call(func() {
+			napping.Get(
+				endpoint+"movie/"+movieId,
+				&napping.Params{"api_key": apiKey, "append_to_response": "credits,images"},
+				&movie,
+				nil,
+			)
+			cacheStore.Set(key, movie, cacheTime)
+		})
+	}
 	switch t := movie.RawPopularity.(type) {
 	case string:
 		popularity, _ := strconv.ParseFloat(t, 64)
@@ -91,7 +98,7 @@ func GetMovieGenres() []*Genre {
 func SearchMovies(query string) Movies {
 	var results EntityList
 	rateLimiter.Call(func() {
-		_, err := napping.Get(
+		napping.Get(
 			endpoint+"search/movie",
 			&napping.Params{
 				"api_key": apiKey,
@@ -100,9 +107,7 @@ func SearchMovies(query string) Movies {
 			&results,
 			nil,
 		)
-		fmt.Println(err)
 	})
-	fmt.Println(results)
 	tmdbIds := make([]int, 0, len(results.Results))
 	for _, movie := range results.Results {
 		tmdbIds = append(tmdbIds, movie.Id)

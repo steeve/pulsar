@@ -87,6 +87,7 @@ const (
 	burstRate               = 30
 	burstTime               = 1 * time.Second
 	simultaneousConnections = 20
+	cacheTime               = 60 * 24 * time.Hour
 )
 
 var rateLimiter = util.NewRateLimiter(burstRate, burstTime, simultaneousConnections)

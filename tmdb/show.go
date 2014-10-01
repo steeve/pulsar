@@ -1,10 +1,13 @@
 package tmdb
 
 import (
+	"path"
 	"strconv"
 	"sync"
 
 	"github.com/jmcvetta/napping"
+	"github.com/steeve/pulsar/cache"
+	"github.com/steeve/pulsar/config"
 )
 
 type Show struct {
@@ -34,14 +37,19 @@ type Shows []*Show
 
 func GetShow(showId int) *Show {
 	var show Show
-	rateLimiter.Call(func() {
-		napping.Get(
-			endpoint+"tv/"+strconv.Itoa(showId),
-			&napping.Params{"api_key": apiKey, "append_to_response": "credits,images"},
-			&show,
-			nil,
-		)
-	})
+	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
+	key := "com.tmdb.movie." + strconv.Itoa(showId)
+	if err := cacheStore.Get(key, &show); err != nil {
+		rateLimiter.Call(func() {
+			napping.Get(
+				endpoint+"tv/"+strconv.Itoa(showId),
+				&napping.Params{"api_key": apiKey, "append_to_response": "credits,images"},
+				&show,
+				nil,
+			)
+		})
+		cacheStore.Set(key, show, cacheTime)
+	}
 	switch t := show.RawPopularity.(type) {
 	case string:
 		if popularity, err := strconv.ParseFloat(t, 64); err == nil {
