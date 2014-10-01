@@ -3,9 +3,12 @@ package api
 import (
 	"fmt"
 	"net/url"
+	"path"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/steeve/pulsar/bittorrent"
+	"github.com/steeve/pulsar/cache"
 	"github.com/steeve/pulsar/config"
 	"github.com/steeve/pulsar/ga"
 	"github.com/steeve/pulsar/providers"
@@ -13,33 +16,39 @@ import (
 )
 
 const (
-	PREFIX = "plugin://plugin.video.pulsar"
+	DefaultCacheTime  = 6 * time.Hour
+	EpisodesCacheTime = 15 * time.Minute
 )
 
 func Routes(btService *bittorrent.BTService) *gin.Engine {
 	r := gin.Default()
 
-	r.Use(ga.GATracker())
+	store := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
 
-	r.GET("/", Index)
-	r.GET("/search", Search)
+	tracked := r.Group("/")
+	tracked.Use(ga.GATracker())
+	{
+		tracked.GET("/", Index)
+		tracked.GET("/search", Search)
 
-	r.GET("/movies/search", SearchMovies)
-	r.GET("/movies/popular", PopularMovies)
-	r.GET("/movies/popular/:genre", PopularMovies)
-	r.GET("/movies/genres", MovieGenres)
-	r.GET("/movie/:imdbId/links", MovieLinks)
-	r.GET("/movie/:imdbId/play", MoviePlay)
+		tracked.GET("/movies/search", SearchMovies)
+		tracked.GET("/movies/popular", cache.Cache(store, DefaultCacheTime), PopularMovies)
+		tracked.GET("/movies/popular/:genre", cache.Cache(store, DefaultCacheTime), PopularMovies)
+		tracked.GET("/movies/genres", MovieGenres)
+		tracked.GET("/movie/:imdbId/links", MovieLinks)
+		tracked.GET("/movie/:imdbId/play", MoviePlay)
 
-	r.GET("/shows/search", SearchShows)
-	r.GET("/shows/popular", PopularShows)
-	r.GET("/show/:showId/seasons", ShowSeasons)
-	r.GET("/show/:showId/season/:season/episodes", ShowEpisodes)
-	r.GET("/show/:showId/season/:season/episode/:episode/links", ShowEpisodeLinks)
-	r.GET("/show/:showId/season/:season/episode/:episode/play", ShowEpisodePlay)
+		tracked.GET("/shows/search", SearchShows)
+		tracked.GET("/shows/popular", cache.Cache(store, DefaultCacheTime), PopularShows)
+		tracked.GET("/show/:showId/seasons", cache.Cache(store, DefaultCacheTime), ShowSeasons)
+		tracked.GET("/show/:showId/season/:season/episodes", cache.Cache(store, EpisodesCacheTime), ShowEpisodes)
+		tracked.GET("/show/:showId/season/:season/episode/:episode/links", ShowEpisodeLinks)
+		tracked.GET("/show/:showId/season/:season/episode/:episode/play", ShowEpisodePlay)
+	}
 
 	r.GET("/play", Play(btService))
 
+	r.GET("/play", Play(btService))
 	r.POST("/callbacks/:cid", providers.CallbackHandler)
 
 	return r
