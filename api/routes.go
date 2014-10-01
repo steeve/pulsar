@@ -23,27 +23,37 @@ const (
 func Routes(btService *bittorrent.BTService) *gin.Engine {
 	r := gin.Default()
 
+	r.Use(ga.GATracker())
+
 	store := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
 
-	tracked := r.Group("/")
-	tracked.Use(ga.GATracker())
+	r.GET("/", Index)
+	r.GET("/search", Search)
+
+	movies := r.Group("/movies")
 	{
-		tracked.GET("/", Index)
-		tracked.GET("/search", Search)
+		movies.GET("/search", SearchMovies)
+		movies.GET("/popular", cache.Cache(store, DefaultCacheTime), PopularMovies)
+		movies.GET("/popular/:genre", cache.Cache(store, DefaultCacheTime), PopularMovies)
+		movies.GET("/genres", MovieGenres)
+	}
+	movie := r.Group("/movie")
+	{
+		movie.GET("/:imdbId/links", MovieLinks)
+		movie.GET("/:imdbId/play", MoviePlay)
+	}
 
-		tracked.GET("/movies/search", SearchMovies)
-		tracked.GET("/movies/popular", cache.Cache(store, DefaultCacheTime), PopularMovies)
-		tracked.GET("/movies/popular/:genre", cache.Cache(store, DefaultCacheTime), PopularMovies)
-		tracked.GET("/movies/genres", MovieGenres)
-		tracked.GET("/movie/:imdbId/links", MovieLinks)
-		tracked.GET("/movie/:imdbId/play", MoviePlay)
-
-		tracked.GET("/shows/search", SearchShows)
-		tracked.GET("/shows/popular", cache.Cache(store, DefaultCacheTime), PopularShows)
-		tracked.GET("/show/:showId/seasons", cache.Cache(store, DefaultCacheTime), ShowSeasons)
-		tracked.GET("/show/:showId/season/:season/episodes", cache.Cache(store, EpisodesCacheTime), ShowEpisodes)
-		tracked.GET("/show/:showId/season/:season/episode/:episode/links", ShowEpisodeLinks)
-		tracked.GET("/show/:showId/season/:season/episode/:episode/play", ShowEpisodePlay)
+	shows := r.Group("/shows")
+	{
+		shows.GET("/search", SearchShows)
+		shows.GET("/popular", cache.Cache(store, DefaultCacheTime), PopularShows)
+	}
+	show := r.Group("/show")
+	{
+		show.GET("/:showId/seasons", cache.Cache(store, DefaultCacheTime), ShowSeasons)
+		show.GET("/:showId/season/:season/episodes", cache.Cache(store, EpisodesCacheTime), ShowEpisodes)
+		show.GET("/:showId/season/:season/episode/:episode/links", ShowEpisodeLinks)
+		show.GET("/:showId/season/:season/episode/:episode/play", ShowEpisodePlay)
 	}
 
 	r.GET("/play", Play(btService))
