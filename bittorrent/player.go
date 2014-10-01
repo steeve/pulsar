@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/op/go-logging"
 	"github.com/steeve/libtorrent-go"
 	"github.com/steeve/pulsar/ga"
@@ -129,6 +130,9 @@ func (btp *BTPlayer) statusStrings(status libtorrent.Torrent_status) (string, st
 	line1 := fmt.Sprintf("D:%.2fkb/s U:%.2fkb/s", float64(status.GetDownload_rate())/1024, float64(status.GetUpload_rate())/1024)
 	line2 := fmt.Sprintf("%.2f%% %s", status.GetProgress()*100, statusStrings[int(status.GetState())])
 	line3 := status.GetName()
+	if btp.torrentInfo != nil && btp.torrentInfo.Swigcptr() != 0 {
+		line3 += fmt.Sprintf(" (%s)", humanize.Bytes(uint64(btp.torrentInfo.Total_size())))
+	}
 	return line1, line2, line3
 }
 
