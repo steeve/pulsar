@@ -184,12 +184,15 @@ func (s *BTService) consumeAlerts() {
 		if alert.Swigcptr() == 0 {
 			continue
 		}
-		switch libtorrent.LibtorrentAlertCategory_t(alert.Category()) {
-		case libtorrent.AlertError_notification:
-			s.libtorrentLog.Error("%s: %s", alert.What(), alert.Message())
-			break
-		default:
-			s.libtorrentLog.Info("%s: %s", alert.What(), alert.Message())
+		alertCategory := alert.Category()
+		if alertCategory&int(libtorrent.AlertError_notification) != 0 {
+			// s.libtorrentLog.Error("%s: %s", alert.What(), alert.Message())
+		} else if alertCategory&int(libtorrent.AlertDebug_notification) != 0 {
+			s.libtorrentLog.Debug("%s: %s", alert.What(), alert.Message())
+		} else if alertCategory&int(libtorrent.AlertPerformance_warning) != 0 {
+			s.libtorrentLog.Warning("%s: %s", alert.What(), alert.Message())
+		} else {
+			s.libtorrentLog.Notice("%s: %s", alert.What(), alert.Message())
 		}
 		for _, handler := range s.alertHandlers {
 			if handler != nil {
