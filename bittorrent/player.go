@@ -17,6 +17,7 @@ import (
 const (
 	startPiecesBuffer = 0.01
 	endPiecesBuffer   = 0.01
+	playbackMaxWait   = 20
 )
 
 var statusStrings = []string{
@@ -229,9 +230,15 @@ func (btp *BTPlayer) playerLoop() {
 	ga.TrackTiming("player", "buffer_time_real", int(time.Now().Sub(start).Seconds()*1000), "")
 
 	btp.log.Info("Waiting for playback...")
+	playbackWaited := 0
 	for xbmc.PlayerIsPlaying() == false {
+		if playbackWaited >= playbackMaxWait {
+			btp.log.Info("Playback was unable to start after %d seconds. Aborting.", playbackMaxWait)
+			return
+		}
 		ga.TrackEvent("player", "waiting_playback", btp.torrentName, -1)
 		time.Sleep(1000 * time.Millisecond)
+		playbackWaited++
 	}
 
 	ga.TrackTiming("player", "buffer_time_perceived", int(time.Now().Sub(start).Seconds()*1000), "")
