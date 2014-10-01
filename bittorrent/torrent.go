@@ -12,13 +12,14 @@ import (
 )
 
 type Torrent struct {
-	URI      string   `json:"uri"`
-	InfoHash string   `json:"info_hash"`
-	Name     string   `json:"name"`
-	Trackers []string `json:"trackers"`
-	Size     int      `json:"size"`
-	Seeds    int      `json:"seeds"`
-	Peers    int      `json:"peers"`
+	URI       string   `json:"uri"`
+	InfoHash  string   `json:"info_hash"`
+	Name      string   `json:"name"`
+	Trackers  []string `json:"trackers"`
+	Size      int      `json:"size"`
+	Seeds     int      `json:"seeds"`
+	Peers     int      `json:"peers"`
+	IsPrivate bool     `json:"is_private"`
 
 	Resolution  int    `json:"resolution"`
 	VideoCodec  int    `json:"video_codec"`
