@@ -36,7 +36,7 @@ type BTConfiguration struct {
 
 type BTService struct {
 	Session       libtorrent.Session
-	Config        BTConfiguration
+	config        *BTConfiguration
 	log           *logging.Logger
 	libtorrentLog *logging.Logger
 	alertsMutex   sync.RWMutex
@@ -45,11 +45,10 @@ type BTService struct {
 
 type AlertHandler func(alert libtorrent.Alert)
 
-func NewBTService(config BTConfiguration) *BTService {
+func NewBTService() *BTService {
 	s := &BTService{
 		Session:       libtorrent.NewSession(),
-		Config:        config,
-		log:           logging.MustGetLogger("BTService"),
+		log:           logging.MustGetLogger("btservice"),
 		libtorrentLog: logging.MustGetLogger("libtorrent"),
 		alertHandlers: make([]AlertHandler, 0),
 	}
@@ -58,7 +57,6 @@ func NewBTService(config BTConfiguration) *BTService {
 		libtorrent.DeleteSession(s.Session)
 	})
 	go s.consumeAlerts()
-	s.configureSession()
 
 	return s
 }
@@ -73,7 +71,8 @@ func (s *BTService) Stop() {
 	s.stopServices()
 }
 
-func (s *BTService) configureSession() {
+func (s *BTService) Configure(c *BTConfiguration) {
+	s.config = c
 	settings := s.Session.Settings()
 
 	s.log.Info("Setting Session settings...")
@@ -85,11 +84,11 @@ func (s *BTService) configureSession() {
 	settings.SetAnnounce_to_all_trackers(true)
 	settings.SetAnnounce_to_all_tiers(true)
 	settings.SetConnection_speed(100)
-	if s.Config.MaxDownloadRate > 0 {
-		settings.SetDownload_rate_limit(s.Config.MaxDownloadRate * 1024)
+	if s.config.MaxDownloadRate > 0 {
+		settings.SetDownload_rate_limit(s.config.MaxDownloadRate * 1024)
 	}
-	if s.Config.MaxUploadRate > 0 {
-		settings.SetUpload_rate_limit(s.Config.MaxUploadRate * 1024)
+	if s.config.MaxUploadRate > 0 {
+		settings.SetUpload_rate_limit(s.config.MaxUploadRate * 1024)
 	}
 
 	settings.SetTorrent_connect_boost(100)
@@ -120,15 +119,15 @@ func (s *BTService) configureSession() {
 	encryptionSettings.SetPrefer_rc4(true)
 	s.Session.Set_pe_settings(encryptionSettings)
 
-	if s.Config.Proxy != nil {
+	if s.config.Proxy != nil {
 		s.log.Info("Setting Proxy settings...")
 		proxy := libtorrent.NewProxy_settings()
 		defer libtorrent.DeleteProxy_settings(proxy)
-		proxy.SetHostname(s.Config.Proxy.Hostname)
-		proxy.SetPort(uint16(s.Config.Proxy.Port))
-		proxy.SetUsername(s.Config.Proxy.Username)
-		proxy.SetPassword(s.Config.Proxy.Password)
-		proxy.SetXtype(byte(s.Config.Proxy.Type))
+		proxy.SetHostname(s.config.Proxy.Hostname)
+		proxy.SetPort(uint16(s.config.Proxy.Port))
+		proxy.SetUsername(s.config.Proxy.Username)
+		proxy.SetPassword(s.config.Proxy.Password)
+		proxy.SetXtype(byte(s.config.Proxy.Type))
 		proxy.SetProxy_hostnames(true)
 		proxy.SetProxy_peer_connections(true)
 		s.Session.Set_proxy(proxy)
@@ -138,7 +137,7 @@ func (s *BTService) configureSession() {
 func (s *BTService) startServices() {
 	errCode := libtorrent.NewError_code()
 	defer libtorrent.DeleteError_code(errCode)
-	ports := libtorrent.NewStd_pair_int_int(s.Config.LowerListenPort, s.Config.UpperListenPort)
+	ports := libtorrent.NewStd_pair_int_int(s.config.LowerListenPort, s.config.UpperListenPort)
 	defer libtorrent.DeleteStd_pair_int_int(ports)
 	s.Session.Listen_on(ports, errCode)
 
