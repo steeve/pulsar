@@ -228,6 +228,18 @@ func matchTags(t *Torrent, tokens map[string]int) int {
 	return codec
 }
 
+func (t *Torrent) Magnet() string {
+	if strings.HasPrefix(t.URI, "magnet:") {
+		return t.URI
+	}
+	params := url.Values{}
+	params.Set("dn", t.Name)
+	for _, tracker := range t.Trackers {
+		params.Add("tr", tracker)
+	}
+	return fmt.Sprintf("magnet:?xt=urn:btih:%s&%s", t.InfoHash, params.Encode())
+}
+
 func (t *Torrent) StreamInfo() *xbmc.StreamInfo {
 	sie := &xbmc.StreamInfo{
 		Video: &xbmc.StreamInfoEntry{
