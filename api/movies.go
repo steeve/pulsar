@@ -85,7 +85,7 @@ func MovieLinks(ctx *gin.Context) {
 
 	choices := make([]string, 0, len(torrents))
 	for _, torrent := range torrents {
-		info := make([]string, 0, 4)
+		info := make([]string, 0)
 		if torrent.RipType > 0 {
 			info = append(info, bittorrent.Rips[torrent.RipType])
 		}
