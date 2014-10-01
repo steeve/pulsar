@@ -184,7 +184,6 @@ func (season *ShowSeason) ToListItem() *xbmc.ListItem {
 }
 
 func (episode *ShowEpisode) ToListItem() *xbmc.ListItem {
-	fmt.Println(episode)
 	return &xbmc.ListItem{
 		Label:     fmt.Sprintf("%dx%02d. %s", episode.Season.Season, episode.Episode, episode.Title),
 		Thumbnail: episode.Images.Screen,
