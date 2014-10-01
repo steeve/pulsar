@@ -1,14 +1,18 @@
 package bittorrent
 
 import (
+	"crypto/sha1"
 	"encoding/base32"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
 
 	"github.com/steeve/pulsar/xbmc"
+	"github.com/zeebo/bencode"
 )
 
 type Torrent struct {
@@ -88,24 +92,76 @@ func (t *Torrent) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-func (t *Torrent) initialize() {
-	if strings.HasPrefix(t.URI, "magnet:") {
-		magnetURI, _ := url.Parse(t.URI)
-		vals := magnetURI.Query()
-		hash := strings.ToUpper(strings.TrimPrefix(vals.Get("xt"), "urn:btih:"))
+func (t *Torrent) initializeFromMagnet() {
+	magnetURI, _ := url.Parse(t.URI)
+	vals := magnetURI.Query()
+	hash := strings.ToUpper(strings.TrimPrefix(vals.Get("xt"), "urn:btih:"))
 
-		// for backward compatibility
-		if unBase32Hash, err := base32.StdEncoding.DecodeString(hash); err == nil {
-			hash = hex.EncodeToString(unBase32Hash)
-		}
+	// for backward compatibility
+	if unBase32Hash, err := base32.StdEncoding.DecodeString(hash); err == nil {
+		hash = hex.EncodeToString(unBase32Hash)
+	}
 
+	if t.InfoHash == "" {
 		t.InfoHash = strings.ToLower(hash)
+	}
+	if t.Name == "" {
 		t.Name = vals.Get("dn")
+	}
 
+	if len(t.Trackers) == 0 {
 		t.Trackers = make([]string, 0, len(vals.Get("tr")))
 		for _, tracker := range vals.Get("tr") {
 			t.Trackers = append(t.Trackers, strings.Replace(string(tracker), "\\", "", -1))
 		}
+	}
+}
+
+func (t *Torrent) Resolve() {
+	if strings.HasPrefix(t.URI, "magnet:") {
+		return
+	}
+
+	var torrentFile struct {
+		Announce     string                 `bencode:"announce"`
+		AnnounceList [][]string             `bencode:"announce-list"`
+		Info         map[string]interface{} `bencode:"info"`
+	}
+	// if we have an InfoHash, no need!
+	if t.InfoHash != "" && t.Name != "" && len(t.Trackers) > 0 {
+		return
+	}
+	resp, err := http.Get(t.URI)
+	if err != nil {
+		return
+	}
+	dec := bencode.NewDecoder(resp.Body)
+	if err = dec.Decode(&torrentFile); err != nil {
+		panic(err)
+	}
+	if t.InfoHash == "" {
+		hasher := sha1.New()
+		bencode.NewEncoder(hasher).Encode(torrentFile.Info)
+		t.InfoHash = hex.EncodeToString(hasher.Sum(nil))
+	}
+	if t.Name == "" {
+		t.Name = torrentFile.Info["name"].(string)
+	}
+	if len(t.Trackers) == 0 {
+		t.Trackers = append(t.Trackers, torrentFile.Announce)
+		for _, trackers := range torrentFile.AnnounceList {
+			for _, tracker := range trackers {
+				t.Trackers = append(t.Trackers, tracker)
+			}
+		}
+	}
+
+	t.initialize()
+}
+
+func (t *Torrent) initialize() {
+	if strings.HasPrefix(t.URI, "magnet:") {
+		t.initializeFromMagnet()
 	}
 
 	if t.Resolution == ResolutionUnkown {
