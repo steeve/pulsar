@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"net"
+
+	"github.com/steeve/pulsar/config"
 )
 
 func LocalIP() (net.IP, error) {
@@ -36,5 +38,5 @@ func GetHTTPHost() string {
 	if localIP, err := LocalIP(); err == nil {
 		hostname = localIP.String()
 	}
-	return fmt.Sprintf("http://%s:8000", hostname)
+	return fmt.Sprintf("http://%s:%d", hostname, config.ListenPort)
 }
