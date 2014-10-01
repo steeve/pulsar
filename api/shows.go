@@ -105,6 +105,11 @@ func ShowEpisodeLinks(ctx *gin.Context) {
 	episodeNumber, _ := strconv.Atoi(ctx.Params.ByName("episode"))
 	torrents := showEpisodeLinks(ctx.Params.ByName("showId"), seasonNumber, episodeNumber)
 
+	if len(torrents) == 0 {
+		xbmc.Notify("Pulsar", "No links were found.")
+		return
+	}
+
 	choices := make([]string, 0, len(torrents))
 	for _, torrent := range torrents {
 		label := fmt.Sprintf("S:%d P:%d - %s",
@@ -127,6 +132,12 @@ func ShowEpisodePlay(ctx *gin.Context) {
 	seasonNumber, _ := strconv.Atoi(ctx.Params.ByName("season"))
 	episodeNumber, _ := strconv.Atoi(ctx.Params.ByName("episode"))
 	torrents := showEpisodeLinks(ctx.Params.ByName("showId"), seasonNumber, episodeNumber)
+
+	if len(torrents) == 0 {
+		xbmc.Notify("Pulsar", "No links were found.")
+		return
+	}
+
 	rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[0].URI)
 	ctx.Writer.Header().Set("Location", rUrl)
 	ctx.Abort(302)

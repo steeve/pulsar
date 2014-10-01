@@ -77,6 +77,12 @@ func movieLinks(imdbId string) []*bittorrent.Torrent {
 
 func MovieLinks(ctx *gin.Context) {
 	torrents := movieLinks(ctx.Params.ByName("imdbId"))
+
+	if len(torrents) == 0 {
+		xbmc.Notify("Pulsar", "No links were found.")
+		return
+	}
+
 	choices := make([]string, 0, len(torrents))
 	for _, torrent := range torrents {
 		info := make([]string, 0, 4)
@@ -112,6 +118,10 @@ func MovieLinks(ctx *gin.Context) {
 
 func MoviePlay(ctx *gin.Context) {
 	torrents := movieLinks(ctx.Params.ByName("imdbId"))
+	if len(torrents) == 0 {
+		xbmc.Notify("Pulsar", "No links were found.")
+		return
+	}
 	sort.Sort(sort.Reverse(providers.ByQuality(torrents)))
 	rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[0].URI)
 	ctx.Writer.Header().Set("Location", rUrl)
