@@ -27,7 +27,7 @@ func Play(btService *bittorrent.BTService) gin.HandlerFunc {
 		}
 		rUrl, _ := url.Parse(fmt.Sprintf("http://%s:8000/files/%s", hostname, player.PlayURL()))
 		log.Println(rUrl)
-		ctx.Writer.Header().Set("Location", rUrl.String())
-		ctx.Abort(302)
+		rUrl, _ := url.Parse(fmt.Sprintf("http://%s:%d/files/%s", hostname, config.ListenPort, player.PlayURL()))
+		ctx.Redirect(302, rUrl.String())
 	}
 }

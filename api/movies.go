@@ -110,9 +110,8 @@ func MovieLinks(ctx *gin.Context) {
 
 	choice := xbmc.ListDialog("Choose stream", choices...)
 	if choice >= 0 {
-		rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[choice].URI)
-		ctx.Writer.Header().Set("Location", rUrl)
-		ctx.Abort(302)
+		rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[choice].Magnet())
+		ctx.Redirect(302, rUrl)
 	}
 }
 
@@ -123,7 +122,6 @@ func MoviePlay(ctx *gin.Context) {
 		return
 	}
 	sort.Sort(sort.Reverse(providers.ByQuality(torrents)))
-	rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[0].URI)
-	ctx.Writer.Header().Set("Location", rUrl)
-	ctx.Abort(302)
+	rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[0].Magnet())
+	ctx.Redirect(302, rUrl)
 }
