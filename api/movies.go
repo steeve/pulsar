@@ -66,7 +66,7 @@ func movieLinks(imdbId string) []*bittorrent.Torrent {
 	log.Printf("Resolved %s to %s\n", imdbId, movie.Title)
 
 	searchers := make([]providers.MovieSearcher, 0)
-	for _, addon := range xbmc.GetAddons("xbmc.python.script").Addons {
+	for _, addon := range xbmc.GetAddons("xbmc.python.script", "executable", true).Addons {
 		if strings.HasPrefix(addon.ID, "script.pulsar.") {
 			searchers = append(searchers, providers.NewAddonSearcher(addon.ID))
 		}

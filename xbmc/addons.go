@@ -9,9 +9,9 @@ type AddonsList struct {
 	} `json:"addons"`
 }
 
-func GetAddons(addonType string) *AddonsList {
+func GetAddons(args ...interface{}) *AddonsList {
 	addons := AddonsList{}
-	executeJSONRPC("Addons.GetAddons", &addons, Args{addonType})
+	executeJSONRPC("Addons.GetAddons", &addons, args)
 	return &addons
 }
 
