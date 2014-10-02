@@ -8,6 +8,10 @@ import (
 	"github.com/steeve/libtorrent-go"
 )
 
+const (
+	libtorrentAlertWaitTime = 1
+)
+
 var dhtBootstrapNodes = []string{
 	"router.bittorrent.com",
 	"router.utorrent.com",
@@ -179,7 +183,7 @@ func (s *BTService) consumeAlerts() {
 		libtorrent.AlertStatus_notification |
 		libtorrent.AlertStorage_notification))
 	for {
-		s.Session.Wait_for_alert(libtorrent.Seconds(30))
+		s.Session.Wait_for_alert(libtorrent.Seconds(libtorrentAlertWaitTime))
 		alert := s.Session.Pop_alert()
 		if alert.Swigcptr() == 0 {
 			continue
