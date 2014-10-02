@@ -80,6 +80,11 @@ type ExternalIDs struct {
 	TVRageID    string `json:"tvrage_id"`
 }
 
+type AlternativeTitle struct {
+	ISO_3166_1 string `json:"iso_3166_1"`
+	Title      string `json:"string"`
+}
+
 const (
 	endpoint                = "http://api.themoviedb.org/3/"
 	imageEndpoint           = "http://image.tmdb.org/t/p/"

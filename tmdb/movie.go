@@ -28,6 +28,9 @@ type Movie struct {
 	TagLine             string      `json:"tagline"`
 	RawPopularity       interface{} `json:"popularity"`
 	Popularity          float64     `json:"-"`
+	AlternativeTitles   *struct {
+		Titles []*AlternativeTitle `json:"titles"`
+	} `json:"alternative_titles"`
 
 	Credits *Credits `json:"credits,omitempty"`
 	Images  *Images  `json:"images,omitempty"`
@@ -51,7 +54,7 @@ func getMovieById(movieId string) *Movie {
 		rateLimiter.Call(func() {
 			napping.Get(
 				endpoint+"movie/"+movieId,
-				&napping.Params{"api_key": apiKey, "append_to_response": "credits,images"},
+				&napping.Params{"api_key": apiKey, "append_to_response": "credits,images,alternative_titles"},
 				&movie,
 				nil,
 			)
