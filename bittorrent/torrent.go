@@ -110,8 +110,8 @@ func (t *Torrent) initializeFromMagnet() {
 	}
 
 	if len(t.Trackers) == 0 {
-		t.Trackers = make([]string, 0, len(vals.Get("tr")))
-		for _, tracker := range vals.Get("tr") {
+		t.Trackers = make([]string, 0)
+		for _, tracker := range vals["tr"] {
 			t.Trackers = append(t.Trackers, strings.Replace(string(tracker), "\\", "", -1))
 		}
 	}
