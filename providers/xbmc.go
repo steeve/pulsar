@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -74,15 +73,15 @@ func NewAddonSearcher(addonId string) *AddonSearcher {
 	}
 }
 
-func (as *AddonSearcher) call(method string, args ...interface{}) []*bittorrent.Torrent {
+func (as *AddonSearcher) call(method string, searchObject interface{}) []*bittorrent.Torrent {
 	torrents := []*bittorrent.Torrent{}
 	cid, c := GetCallback()
 	cbUrl := fmt.Sprintf("%s/callbacks/%s", util.GetHTTPHost(), cid)
 
 	payload := &SearchPayload{
-		Method:      method,
-		CallbackURL: cbUrl,
-		Args:        args,
+		Method:       method,
+		CallbackURL:  cbUrl,
+		SearchObject: searchObject,
 	}
 
 	xbmc.ExecuteAddon(as.addonId, payload.String())
@@ -99,30 +98,36 @@ func (as *AddonSearcher) call(method string, args ...interface{}) []*bittorrent.
 }
 
 func (as *AddonSearcher) SearchLinks(query string) []*bittorrent.Torrent {
-	return as.call("search", query)
+	return as.call("search", QuerySearchObject{
+		Query: query,
+	})
 }
 
 func (as *AddonSearcher) SearchMovieLinks(movie *tmdb.Movie) []*bittorrent.Torrent {
-	year := strings.Split(movie.ReleaseDate, "-")[0]
+	year, _ := strconv.Atoi(strings.Split(movie.ReleaseDate, "-")[0])
 	title := movie.OriginalTitle
 	if title == "" {
 		title = movie.Title
 	}
-	return as.call("search_movie", movie.IMDBId, title, year)
+	sObject := MovieSearchObject{
+		IMDBId: movie.IMDBId,
+		Title:  title,
+		Year:   year,
+		Titles: make(map[string]string),
+	}
+	for _, title := range movie.AlternativeTitles.Titles {
+		sObject.Titles[strings.ToLower(title.ISO_3166_1)] = title.Title
+	}
+	return as.call("search_movie", sObject)
 }
 
 func (as *AddonSearcher) SearchEpisodeLinks(episode *trakt.ShowEpisode) []*bittorrent.Torrent {
-	normalizedTitle := episode.Show.Title
-	normalizedTitle = strings.ToLower(normalizedTitle)
-	normalizedTitle = regexp.MustCompile(`'`).ReplaceAllString(normalizedTitle, "")
-	normalizedTitle = regexp.MustCompile(`\(\d+\)`).ReplaceAllString(normalizedTitle, " ")
-	normalizedTitle = regexp.MustCompile(`(\W+|\s+)`).ReplaceAllString(normalizedTitle, " ")
-	normalizedTitle = strings.TrimSpace(normalizedTitle)
-
-	return as.call("search_episode",
-		episode.Show.IMDBId,
-		episode.Show.TVDBId,
-		normalizedTitle,
-		episode.Season.Season,
-		episode.Episode)
+	sObject := EpisodeSearchObject{
+		IMDBId:  episode.Show.IMDBId,
+		TVDBId:  episode.Show.TVDBId,
+		Title:   episode.Show.Title,
+		Season:  episode.Season.Season,
+		Episode: episode.Episode,
+	}
+	return as.call("search_episode", sObject)
 }
