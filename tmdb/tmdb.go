@@ -82,7 +82,7 @@ type ExternalIDs struct {
 
 type AlternativeTitle struct {
 	ISO_3166_1 string `json:"iso_3166_1"`
-	Title      string `json:"string"`
+	Title      string `json:"title"`
 }
 
 const (
