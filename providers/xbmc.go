@@ -111,12 +111,12 @@ func (as *AddonSearcher) SearchMovieLinks(movie *tmdb.Movie) []*bittorrent.Torre
 	}
 	sObject := MovieSearchObject{
 		IMDBId: movie.IMDBId,
-		Title:  title,
+		Title:  NormalizeTitle(title),
 		Year:   year,
 		Titles: make(map[string]string),
 	}
 	for _, title := range movie.AlternativeTitles.Titles {
-		sObject.Titles[strings.ToLower(title.ISO_3166_1)] = title.Title
+		sObject.Titles[strings.ToLower(title.ISO_3166_1)] = NormalizeTitle(title.Title)
 	}
 	return as.call("search_movie", sObject)
 }
@@ -125,7 +125,7 @@ func (as *AddonSearcher) SearchEpisodeLinks(episode *trakt.ShowEpisode) []*bitto
 	sObject := EpisodeSearchObject{
 		IMDBId:  episode.Show.IMDBId,
 		TVDBId:  episode.Show.TVDBId,
-		Title:   episode.Show.Title,
+		Title:   NormalizeTitle(episode.Show.Title),
 		Season:  episode.Season.Season,
 		Episode: episode.Episode,
 	}
