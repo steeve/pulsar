@@ -16,7 +16,7 @@ import (
 
 const (
 	startPiecesBuffer = 0.01
-	endPiecesBuffer   = 0.01
+	endPiecesSize     = 10 * 1024 * 1024 // 10m
 	playbackMaxWait   = 20
 )
 
@@ -117,7 +117,10 @@ func (btp *BTPlayer) onMetadataReceived() {
 	btp.log.Info("Setting piece priorities")
 	startPiece, endPiece, _ := btp.getFilePiecesAndOffset(btp.biggestFile)
 	startBufferPieces := int(math.Ceil(float64(endPiece-startPiece) * startPiecesBuffer))
-	endBufferPieces := int(math.Ceil(float64(endPiece-startPiece) * endPiecesBuffer))
+
+	// Prefer a fixed size, since metadata are very rarely over endPiecesSize=10MB
+	// anyway.
+	endBufferPieces := int(math.Ceil(float64(endPiecesSize) / float64(btp.torrentInfo.Piece_length())))
 
 	piecesPriorities := libtorrent.NewStd_vector_int()
 	defer libtorrent.DeleteStd_vector_int(piecesPriorities)
