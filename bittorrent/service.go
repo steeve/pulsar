@@ -114,6 +114,9 @@ func (s *BTService) Configure(c *BTConfiguration) {
 
 	s.Session.Set_settings(settings)
 
+	// Add all the libtorrent extensions
+	s.Session.Add_extensions()
+
 	s.log.Info("Setting Encryption settings...")
 	encryptionSettings := libtorrent.NewPe_settings()
 	defer libtorrent.DeletePe_settings(encryptionSettings)
