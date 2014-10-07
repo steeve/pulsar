@@ -164,11 +164,11 @@ func processLinks(torrentsChan chan *bittorrent.Torrent) []*bittorrent.Torrent {
 
 	for results := range scrapeResults {
 		for i, result := range results {
-			if int(result.Seeders) > torrents[i].Seeds {
-				torrents[i].Seeds = int(result.Seeders)
+			if int64(result.Seeders) > torrents[i].Seeds {
+				torrents[i].Seeds = int64(result.Seeders)
 			}
-			if int(result.Leechers) > torrents[i].Peers {
-				torrents[i].Peers = int(result.Leechers)
+			if int64(result.Leechers) > torrents[i].Peers {
+				torrents[i].Peers = int64(result.Leechers)
 			}
 		}
 	}
