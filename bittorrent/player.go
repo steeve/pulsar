@@ -139,7 +139,7 @@ func (btp *BTPlayer) onMetadataReceived() {
 		piecesPriorities.Add(0)
 		curPiece++
 	}
-	for curPiece < endPiece { // get this part
+	for curPiece <= endPiece { // get this part
 		piecesPriorities.Add(1)
 		curPiece++
 	}
