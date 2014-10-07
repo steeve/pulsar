@@ -184,13 +184,14 @@ func (season *ShowSeason) ToListItem() *xbmc.ListItem {
 }
 
 func (episode *ShowEpisode) ToListItem() *xbmc.ListItem {
+	title := fmt.Sprintf("%dx%02d %s", episode.Season.Season, episode.Episode, episode.Title)
 	return &xbmc.ListItem{
-		Label:     fmt.Sprintf("%dx%02d. %s", episode.Season.Season, episode.Episode, episode.Title),
+		Label:     title,
 		Thumbnail: episode.Images.Screen,
 		Info: &xbmc.ListItemInfo{
 			Count:       strconv.Itoa(episode.Number),
 			Code:        strconv.Itoa(episode.Number),
-			Title:       episode.Title,
+			Title:       title,
 			Plot:        episode.Overview,
 			PlotOutline: episode.Overview,
 			Rating:      float32(episode.Ratings.Percentage) / 10,
