@@ -76,11 +76,13 @@ func NewTorrentFile(file http.File, tfs *TorrentFS, torrentHandle libtorrent.Tor
 
 func (tf *TorrentFile) Read(data []byte) (int, error) {
 	currentOffset, err := tf.File.Seek(0, os.SEEK_CUR)
+	// tf.tfs.log.Info("About to read from file at %d for %d\n", currentOffset, len(data))
 	if err != nil {
 		return -1, err
 	}
 	piece, _ := tf.pieceFromOffset(currentOffset + int64(len(data)))
 	tf.waitForPiece(piece)
+
 	return tf.File.Read(data)
 }
 
@@ -100,6 +102,7 @@ func (tf *TorrentFile) Seek(offset int64, whence int) (int64, error) {
 		break
 	}
 
+	// tf.tfs.log.Info("About to seek from file at %d...\n", seekingOffset)
 	piece, _ := tf.pieceFromOffset(seekingOffset)
 
 	piecesPriorities := libtorrent.NewStd_vector_int()
@@ -115,13 +118,14 @@ func (tf *TorrentFile) Seek(offset int64, whence int) (int64, error) {
 	}
 	tf.torrentHandle.Prioritize_pieces(piecesPriorities)
 
-	tf.waitForPiece(piece)
-
 	return tf.File.Seek(offset, whence)
 }
 
 func (tf *TorrentFile) waitForPiece(piece int) {
 	if tf.torrentHandle.Piece_priority(piece).(int) > 0 {
+		if tf.torrentHandle.Have_piece(piece) == false {
+			tf.tfs.log.Info("Waiting for piece %d\n", piece)
+		}
 		for tf.torrentHandle.Have_piece(piece) == false {
 			time.Sleep(100 * time.Millisecond)
 		}
