@@ -98,6 +98,10 @@ func processLinks(torrentsChan chan *bittorrent.Torrent) []*bittorrent.Torrent {
 	wg.Wait()
 
 	for _, torrent := range torrents {
+		if torrent.InfoHash == "" { // ignore torrents whose infohash is empty
+			log.Error("Infohash is empty for %s\n", torrent.URI)
+			continue
+		}
 		if existingTorrent, exists := torrentsMap[torrent.InfoHash]; exists {
 			existingTorrent.Trackers = append(existingTorrent.Trackers, torrent.Trackers...)
 			if torrent.Resolution > existingTorrent.Resolution {
