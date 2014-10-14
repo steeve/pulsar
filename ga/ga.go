@@ -27,7 +27,7 @@ var (
 func getClientId() string {
 	clientId := ""
 	key := "io.steeve.pulsar.ga"
-	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
+	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath))
 	if err := cacheStore.Get(key, &clientId); err != nil {
 		clientUUID, _ := uuid.NewV4()
 		clientId := clientUUID.String()
