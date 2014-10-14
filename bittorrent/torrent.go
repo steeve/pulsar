@@ -130,10 +130,10 @@ func (t *Torrent) initializeFromMagnet() {
 	}
 }
 
-func (t *Torrent) Resolve() {
+func (t *Torrent) Resolve() error {
 	if t.IsMagnet() {
 		t.hasResolved = true
-		return
+		return nil
 	}
 
 	var torrentFile struct {
@@ -145,14 +145,14 @@ func (t *Torrent) Resolve() {
 	// We don't need trackers for public torrents since we'll find them on the
 	// DHT or public trackers
 	if (t.InfoHash != "" && t.Name != "" && t.Peers > 0 && t.Seeds > 0) && (t.IsPrivate == false || len(t.Trackers) > 0) {
-		return
+		return nil
 	}
 
 	parts := strings.Split(t.URI, "|")
 	uri := parts[0]
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
-		return
+		return err
 	}
 	if len(parts) > 1 {
 		for _, part := range parts[1:] {
@@ -163,12 +163,13 @@ func (t *Torrent) Resolve() {
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err
 	}
 	dec := bencode.NewDecoder(resp.Body)
-	if err = dec.Decode(&torrentFile); err != nil {
-		panic(err)
+
+	// FIXME!!!!
+	if err := dec.Decode(&torrentFile); err != nil {
+		return err
 	}
 	if t.InfoHash == "" {
 		hasher := sha1.New()
@@ -190,6 +191,8 @@ func (t *Torrent) Resolve() {
 	t.hasResolved = true
 
 	t.initialize()
+
+	return nil
 }
 
 func (t *Torrent) initialize() {
