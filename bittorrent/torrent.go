@@ -141,8 +141,9 @@ func (t *Torrent) Resolve() {
 		AnnounceList [][]string             `bencode:"announce-list"`
 		Info         map[string]interface{} `bencode:"info"`
 	}
+
 	// if we have an InfoHash, no need!
-	if t.InfoHash != "" && t.Name != "" && len(t.Trackers) > 0 {
+	if t.InfoHash != "" && t.Name != "" && t.Peers > 0 && t.Seeds > 0 {
 		return
 	}
 
