@@ -194,9 +194,12 @@ func (btp *BTPlayer) onStateChanged(stateAlert libtorrent.State_changed_alert) {
 	switch stateAlert.GetState() {
 	case libtorrent.Torrent_statusFinished:
 		btp.log.Info("Buffer is finished, resetting piece priorities.")
+		piecesPriorities := libtorrent.NewStd_vector_int()
+		defer libtorrent.DeleteStd_vector_int(piecesPriorities)
 		for i := 0; i < btp.torrentInfo.Num_pieces(); i++ {
-			btp.torrentHandle.Piece_priority(i, 1)
+			piecesPriorities.Add(1)
 		}
+		btp.torrentHandle.Prioritize_pieces(piecesPriorities)
 		btp.isBuffering = false
 		btp.waitBuffer <- nil
 		break
