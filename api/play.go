@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"log"
 	"net/url"
 
 	"github.com/gin-gonic/gin"
@@ -14,11 +13,11 @@ import (
 func Play(btService *bittorrent.BTService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		uri := ctx.Request.URL.Query().Get("uri")
-		log.Println(ctx.Params)
 		if uri == "" {
 			return
 		}
-		player := bittorrent.NewBTPlayer(btService, uri, config.Get().KeepFilesAfterStop == false)
+		torrent := bittorrent.NewTorrent(uri)
+		player := bittorrent.NewBTPlayer(btService, torrent.Magnet(), config.Get().KeepFilesAfterStop == false)
 		if player.Buffer() != nil {
 			return
 		}
