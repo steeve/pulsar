@@ -41,6 +41,8 @@ const (
 	Resolution480p
 	Resolution720p
 	Resolution1080p
+	Resolution1440p
+	Resolution4k2k
 )
 
 var Resolutions = []string{"", "480p", "720p", "1080p"}
@@ -61,7 +63,7 @@ const (
 var Rips = []string{"", "Cam", "TeleSync", "TeleCine", "Screener", "DVD Screener", "DVDRip", "HDTV", "WebDL", "Blu-Ray"}
 
 const (
-	RatingOk = iota
+	RatingUnkown = iota
 	RatingProper
 	RatingNuked
 )
@@ -229,11 +231,10 @@ func (t *Torrent) initialize() {
 			`(bluray|b[rd]rip|hdrip)`: RipBluRay,
 		})
 	}
-	if t.SceneRating == RatingOk {
+	if t.SceneRating == RatingUnkown {
 		t.SceneRating = matchTags(t, map[string]int{
 			`nuked`:  RatingNuked,
 			`proper`: RatingProper,
-			``:       RatingOk,
 		})
 	}
 }
