@@ -124,7 +124,7 @@ func (a ByPopularity) Len() int           { return len(a) }
 func (a ByPopularity) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByPopularity) Less(i, j int) bool { return a[i].Popularity < a[j].Popularity }
 
-func PopularMovies(genre string) []*Entity {
+func ListMovies(endpoint string, genre string, sortBy string) []*Entity {
 	var wg sync.WaitGroup
 	movies := make([]*Entity, popularMoviesMaxPages*moviesPerPage)
 
@@ -135,10 +135,10 @@ func PopularMovies(genre string) []*Entity {
 			var tmp EntityList
 			rateLimiter.Call(func() {
 				napping.Get(
-					endpoint+"discover/movie",
+					tmdbEndpoint+endpoint,
 					&napping.Params{
 						"api_key":     apiKey,
-						"sort_by":     "popularity.desc",
+						"sort_by":     sortBy,
 						"language":    "en",
 						"page":        strconv.Itoa(popularMoviesStartPage + page),
 						"with_genres": genre,
@@ -157,14 +157,10 @@ func PopularMovies(genre string) []*Entity {
 	return movies
 }
 
-func PopularMoviesComplete(genre string) Movies {
-	moviesChan := make(chan *Movie)
+func ListMoviesComplete(endpoint string, genre string, sortBy string) Movies {
+	movies := make(Movies, popularMoviesMaxPages*moviesPerPage)
 
 	wg := sync.WaitGroup{}
-	go func() {
-		wg.Wait()
-		close(moviesChan)
-	}()
 	for i := 0; i < popularMoviesMaxPages; i++ {
 		wg.Add(1)
 		go func(page int) {
@@ -172,10 +168,10 @@ func PopularMoviesComplete(genre string) Movies {
 			tmp := EntityList{}
 			rateLimiter.Call(func() {
 				napping.Get(
-					endpoint+"discover/movie",
+					tmdbEndpoint+endpoint,
 					&napping.Params{
 						"api_key":     apiKey,
-						"sort_by":     "popularity.desc",
+						"sort_by":     sortBy,
 						"language":    "en",
 						"page":        strconv.Itoa(popularMoviesStartPage + page),
 						"with_genres": genre,
@@ -184,18 +180,19 @@ func PopularMoviesComplete(genre string) Movies {
 					nil,
 				)
 			})
-			for _, movie := range tmp.Results {
-				moviesChan <- GetMovie(movie.Id)
+			for i, movie := range tmp.Results {
+				movies[page*moviesPerPage+i] = GetMovie(movie.Id)
 			}
 		}(i)
 	}
+	wg.Wait()
 
-	popularMovies := make(Movies, 0)
-	for movie := range moviesChan {
-		popularMovies = append(popularMovies, movie)
-	}
+	return movies
+}
 
-	sort.Sort(sort.Reverse(ByPopularity(popularMovies)))
+func PopularMoviesComplete(genre string) Movies {
+	return ListMoviesComplete("movie/popular", genre, "")
+}
 
 	return popularMovies
 }
