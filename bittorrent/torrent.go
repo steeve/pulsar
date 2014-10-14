@@ -131,7 +131,7 @@ func (t *Torrent) initializeFromMagnet() {
 }
 
 func (t *Torrent) Resolve() {
-	if strings.HasPrefix(t.URI, "magnet:") {
+	if t.IsMagnet() {
 		t.hasResolved = true
 		return
 	}
@@ -259,12 +259,16 @@ func matchTags(t *Torrent, tokens map[string]int) int {
 	return codec
 }
 
+func (t *Torrent) IsMagnet() bool {
+	return strings.HasPrefix(t.URI, "magnet:")
+}
+
 func (t *Torrent) Magnet() string {
-	if strings.HasPrefix(t.URI, "magnet:") {
-		return t.URI
-	}
 	if t.hasResolved == false {
 		t.Resolve()
+	}
+	if t.IsMagnet() {
+		return t.URI
 	}
 	params := url.Values{}
 	params.Set("dn", t.Name)
