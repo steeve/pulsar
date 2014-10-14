@@ -102,21 +102,23 @@ func (tf *TorrentFile) Seek(offset int64, whence int) (int64, error) {
 		break
 	}
 
-	// tf.tfs.log.Info("About to seek from file at %d...\n", seekingOffset)
+	tf.tfs.log.Info("Seeking at %d...\n", seekingOffset)
 	piece, _ := tf.pieceFromOffset(seekingOffset)
-
-	piecesPriorities := libtorrent.NewStd_vector_int()
-	defer libtorrent.DeleteStd_vector_int(piecesPriorities)
-	curPiece := 0
-	for curPiece < piece {
-		piecesPriorities.Add(0)
-		curPiece++
+	if tf.torrentHandle.Have_piece(piece) == false {
+		tf.tfs.log.Info("We don't have piece %d, setting piece priorities", piece)
+		piecesPriorities := libtorrent.NewStd_vector_int()
+		defer libtorrent.DeleteStd_vector_int(piecesPriorities)
+		curPiece := 0
+		for curPiece < piece {
+			piecesPriorities.Add(0)
+			curPiece++
+		}
+		for curPiece < tf.torrentInfo.Num_pieces() {
+			piecesPriorities.Add(1)
+			curPiece++
+		}
+		tf.torrentHandle.Prioritize_pieces(piecesPriorities)
 	}
-	for curPiece < tf.torrentInfo.Num_pieces() {
-		piecesPriorities.Add(1)
-		curPiece++
-	}
-	tf.torrentHandle.Prioritize_pieces(piecesPriorities)
 
 	return tf.File.Seek(offset, whence)
 }
