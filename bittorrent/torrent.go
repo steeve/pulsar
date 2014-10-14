@@ -256,7 +256,7 @@ func matchTags(t *Torrent, tokens map[string]int) int {
 	lowName := strings.ToLower(t.Name)
 	codec := 0
 	for key, value := range tokens {
-		if regexp.MustCompile(`\W+` + key + `\W+`).MatchString(lowName) {
+		if regexp.MustCompile(`\W+` + key + `\W*`).MatchString(lowName) {
 			codec = value
 		}
 	}
