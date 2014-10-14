@@ -31,6 +31,8 @@ type Torrent struct {
 	Language    string `json:"language"`
 	RipType     int    `json:"rip_type"`
 	SceneRating int    `json:"scene_rating"`
+
+	hasResolved bool
 }
 
 const (
@@ -119,6 +121,7 @@ func (t *Torrent) initializeFromMagnet() {
 
 func (t *Torrent) Resolve() {
 	if strings.HasPrefix(t.URI, "magnet:") {
+		t.hasResolved = true
 		return
 	}
 
@@ -155,6 +158,8 @@ func (t *Torrent) Resolve() {
 			}
 		}
 	}
+
+	t.hasResolved = true
 
 	t.initialize()
 }
@@ -231,6 +236,9 @@ func matchTags(t *Torrent, tokens map[string]int) int {
 func (t *Torrent) Magnet() string {
 	if strings.HasPrefix(t.URI, "magnet:") {
 		return t.URI
+	}
+	if t.hasResolved == false {
+		t.Resolve()
 	}
 	params := url.Values{}
 	params.Set("dn", t.Name)
