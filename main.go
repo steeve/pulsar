@@ -43,6 +43,8 @@ func main() {
 
 	config.Reload()
 
+	Migrate()
+
 	log.Info("Addon: %s v%s", config.Get().Info.Id, config.Get().Info.Version)
 
 	btService := bittorrent.NewBTService()
