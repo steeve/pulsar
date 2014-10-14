@@ -39,11 +39,13 @@ func Reload() error {
 	log.Info("Reloading configuration...")
 
 	info := xbmc.GetAddonInfo()
+	info.Path = xbmc.TranslatePath(info.Path)
+	info.Profile = xbmc.TranslatePath(info.Profile)
 	newConfig := Configuration{
 		DownloadPath:       filepath.Dir(xbmc.GetSettingString("download_path")),
 		Info:               info,
 		Platform:           xbmc.GetPlatform(),
-		ProfilePath:        xbmc.TranslatePath(info.Profile),
+		ProfilePath:        info.Profile,
 		KeepFilesAfterStop: xbmc.GetSettingBool("keep_files"),
 		BTListenPortMin:    xbmc.GetSettingInt("listen_port_min"),
 		BTListenPortMax:    xbmc.GetSettingInt("listen_port_max"),
