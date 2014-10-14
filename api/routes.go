@@ -58,6 +58,12 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 		show.GET("/:showId/season/:season/episode/:episode/play", ShowEpisodePlay)
 	}
 
+	provider := r.Group("/provider")
+	{
+		provider.GET("/:provider/movie/:imdbId", ProviderGetMovie)
+		provider.GET("/:provider/show/:showId/season/:season/episode/:episode", ProviderGetEpisode)
+	}
+
 	repo := r.Group("/repository")
 	{
 		repo.GET("/:user/:repository/*filepath", repository.GetAddonFiles)
