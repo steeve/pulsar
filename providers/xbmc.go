@@ -83,6 +83,34 @@ func NewAddonSearcher(addonId string) *AddonSearcher {
 	}
 }
 
+func (as *AddonSearcher) GetMovieSearchObject(movie *tmdb.Movie) *MovieSearchObject {
+	year, _ := strconv.Atoi(strings.Split(movie.ReleaseDate, "-")[0])
+	title := movie.OriginalTitle
+	if title == "" {
+		title = movie.Title
+	}
+	sObject := &MovieSearchObject{
+		IMDBId: movie.IMDBId,
+		Title:  NormalizeTitle(title),
+		Year:   year,
+		Titles: make(map[string]string),
+	}
+	for _, title := range movie.AlternativeTitles.Titles {
+		sObject.Titles[strings.ToLower(title.ISO_3166_1)] = NormalizeTitle(title.Title)
+	}
+	return sObject
+}
+
+func (as *AddonSearcher) GetEpisodeSearchObject(episode *trakt.ShowEpisode) *EpisodeSearchObject {
+	return &EpisodeSearchObject{
+		IMDBId:  episode.Show.IMDBId,
+		TVDBId:  episode.Show.TVDBId,
+		Title:   NormalizeTitle(episode.Show.Title),
+		Season:  episode.Season.Season,
+		Episode: episode.Episode,
+	}
+}
+
 func (as *AddonSearcher) call(method string, searchObject interface{}) []*bittorrent.Torrent {
 	torrents := []*bittorrent.Torrent{}
 	cid, c := GetCallback()
@@ -114,30 +142,9 @@ func (as *AddonSearcher) SearchLinks(query string) []*bittorrent.Torrent {
 }
 
 func (as *AddonSearcher) SearchMovieLinks(movie *tmdb.Movie) []*bittorrent.Torrent {
-	year, _ := strconv.Atoi(strings.Split(movie.ReleaseDate, "-")[0])
-	title := movie.OriginalTitle
-	if title == "" {
-		title = movie.Title
-	}
-	sObject := MovieSearchObject{
-		IMDBId: movie.IMDBId,
-		Title:  NormalizeTitle(title),
-		Year:   year,
-		Titles: make(map[string]string),
-	}
-	for _, title := range movie.AlternativeTitles.Titles {
-		sObject.Titles[strings.ToLower(title.ISO_3166_1)] = NormalizeTitle(title.Title)
-	}
-	return as.call("search_movie", sObject)
+	return as.call("search_movie", as.GetMovieSearchObject(movie))
 }
 
 func (as *AddonSearcher) SearchEpisodeLinks(episode *trakt.ShowEpisode) []*bittorrent.Torrent {
-	sObject := EpisodeSearchObject{
-		IMDBId:  episode.Show.IMDBId,
-		TVDBId:  episode.Show.TVDBId,
-		Title:   NormalizeTitle(episode.Show.Title),
-		Season:  episode.Season.Season,
-		Episode: episode.Episode,
-	}
-	return as.call("search_episode", sObject)
+	return as.call("search_episode", as.GetEpisodeSearchObject(episode))
 }
