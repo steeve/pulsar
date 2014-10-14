@@ -142,8 +142,9 @@ func (t *Torrent) Resolve() {
 		Info         map[string]interface{} `bencode:"info"`
 	}
 
-	// if we have an InfoHash, no need!
-	if t.InfoHash != "" && t.Name != "" && t.Peers > 0 && t.Seeds > 0 {
+	// We don't need trackers for public torrents since we'll find them on the
+	// DHT or public trackers
+	if (t.InfoHash != "" && t.Name != "" && t.Peers > 0 && t.Seeds > 0) && (t.IsPrivate == false || len(t.Trackers) > 0) {
 		return
 	}
 
