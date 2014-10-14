@@ -14,8 +14,9 @@ import (
 )
 
 const (
-	moviesPerPage         = 20
-	popularMoviesMaxPages = 10
+	moviesPerPage          = 20
+	popularMoviesMaxPages  = 20
+	popularMoviesStartPage = 1
 )
 
 type Movie struct {
@@ -129,7 +130,7 @@ func PopularMovies(genre string) []*Entity {
 	movies := make([]*Entity, popularMoviesMaxPages*moviesPerPage)
 
 	wg.Add(popularMoviesMaxPages)
-	for i := 1; i < popularMoviesMaxPages; i++ {
+	for i := 0; i < popularMoviesMaxPages; i++ {
 		go func(page int) {
 			defer wg.Done()
 			var tmp EntityList
@@ -140,7 +141,7 @@ func PopularMovies(genre string) []*Entity {
 						"api_key":     apiKey,
 						"sort_by":     "popularity.desc",
 						"language":    "en",
-						"page":        strconv.Itoa(page),
+						"page":        strconv.Itoa(popularMoviesStartPage + page),
 						"with_genres": genre,
 					},
 					&tmp,
@@ -165,7 +166,7 @@ func PopularMoviesComplete(genre string) Movies {
 		wg.Wait()
 		close(moviesChan)
 	}()
-	for i := 1; i < popularMoviesMaxPages; i++ {
+	for i := 0; i < popularMoviesMaxPages; i++ {
 		wg.Add(1)
 		go func(page int) {
 			defer wg.Done()
@@ -177,7 +178,7 @@ func PopularMoviesComplete(genre string) Movies {
 						"api_key":     apiKey,
 						"sort_by":     "popularity.desc",
 						"language":    "en",
-						"page":        strconv.Itoa(page),
+						"page":        strconv.Itoa(popularMoviesStartPage + page),
 						"with_genres": genre,
 					},
 					&tmp,
