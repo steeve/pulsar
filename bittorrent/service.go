@@ -6,6 +6,7 @@ import (
 
 	"github.com/op/go-logging"
 	"github.com/steeve/libtorrent-go"
+	"github.com/steeve/pulsar/util"
 )
 
 const (
@@ -81,7 +82,7 @@ func (s *BTService) Configure(c *BTConfiguration) {
 
 	s.log.Info("Setting Session settings...")
 
-	settings.SetUser_agent("")
+	settings.SetUser_agent(util.UserAgent())
 
 	settings.SetRequest_timeout(5)
 	settings.SetPeer_connect_timeout(2)
@@ -93,10 +94,16 @@ func (s *BTService) Configure(c *BTConfiguration) {
 	}
 	if s.config.MaxUploadRate > 0 {
 		settings.SetUpload_rate_limit(s.config.MaxUploadRate * 1024)
+		// If we have an upload rate, use the nicer bittyrant choker
+		settings.SetChoking_algorithm(int(libtorrent.Session_settingsBittyrant_choker))
 	}
 
 	settings.SetTorrent_connect_boost(100)
 	settings.SetRate_limit_ip_overhead(true)
+	settings.SetNo_atime_storage(true)
+	settings.SetAnnounce_double_nat(true)
+	settings.SetPrioritize_partial_pieces(true)
+	settings.SetIgnore_limits_on_local_network(true)
 
 	// Prioritize people starting downloads
 	// settings.SetSeed_choking_algorithm(int(libtorrent.Session_settingsAnti_leech))
