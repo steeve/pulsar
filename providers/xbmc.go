@@ -66,6 +66,16 @@ func CallbackHandler(ctx *gin.Context) {
 	close(c)
 }
 
+func GetPulsarProviders() []MovieSearcher {
+	searchers := make([]MovieSearcher, 0)
+	for _, addon := range xbmc.GetAddons("xbmc.python.script", "executable", true).Addons {
+		if strings.HasPrefix(addon.ID, "script.pulsar.") {
+			searchers = append(searchers, NewAddonSearcher(addon.ID))
+		}
+	}
+	return searchers
+}
+
 func NewAddonSearcher(addonId string) *AddonSearcher {
 	return &AddonSearcher{
 		addonId: addonId,
