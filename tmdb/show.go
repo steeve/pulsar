@@ -42,7 +42,7 @@ func GetShow(showId int) *Show {
 	if err := cacheStore.Get(key, &show); err != nil {
 		rateLimiter.Call(func() {
 			napping.Get(
-				endpoint+"tv/"+strconv.Itoa(showId),
+				tmdbEndpoint+"tv/"+strconv.Itoa(showId),
 				&napping.Params{"api_key": apiKey, "append_to_response": "credits,images"},
 				&show,
 				nil,

@@ -2,7 +2,6 @@ package tmdb
 
 import (
 	"path"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -54,7 +53,7 @@ func getMovieById(movieId string) *Movie {
 	if err := cacheStore.Get(key, &movie); err != nil {
 		rateLimiter.Call(func() {
 			napping.Get(
-				endpoint+"movie/"+movieId,
+				tmdbEndpoint+"movie/"+movieId,
 				&napping.Params{"api_key": apiKey, "append_to_response": "credits,images,alternative_titles"},
 				&movie,
 				nil,
@@ -90,7 +89,7 @@ func GetMovieGenres() []*Genre {
 	genres := GenreList{}
 	rateLimiter.Call(func() {
 		napping.Get(
-			endpoint+"genre/list",
+			tmdbEndpoint+"genre/list",
 			&napping.Params{"api_key": apiKey},
 			&genres,
 			nil,
@@ -103,7 +102,7 @@ func SearchMovies(query string) Movies {
 	var results EntityList
 	rateLimiter.Call(func() {
 		napping.Get(
-			endpoint+"search/movie",
+			tmdbEndpoint+"search/movie",
 			&napping.Params{
 				"api_key": apiKey,
 				"query":   query,

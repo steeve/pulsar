@@ -86,7 +86,7 @@ type AlternativeTitle struct {
 }
 
 const (
-	endpoint                = "http://api.themoviedb.org/3/"
+	tmdbEndpoint            = "http://api.themoviedb.org/3/"
 	imageEndpoint           = "http://image.tmdb.org/t/p/"
 	apiKey                  = "57983e31fb435df4df77afb854740ea9"
 	burstRate               = 30
