@@ -11,12 +11,17 @@ import (
 	"github.com/nu7hatch/gouuid"
 	"github.com/steeve/pulsar/cache"
 	"github.com/steeve/pulsar/config"
+	"github.com/steeve/pulsar/util"
 )
 
 const (
 	trackingID        = "UA-40799149-7"
 	gaEndpoint        = "https://www.google-analytics.com/collect?%s"
 	clientIdCacheTime = 100 * 365 * 24 * time.Hour // 100 years
+)
+
+var (
+	httpClient = &http.Client{}
 )
 
 func getClientId() string {
@@ -37,7 +42,12 @@ func track(payload url.Values) {
 	payload.Set("cid", getClientId())
 	payload.Set("aip", "1")
 
-	http.Head(fmt.Sprintf(gaEndpoint, payload.Encode()))
+	req, err := http.NewRequest("HEAD", fmt.Sprintf(gaEndpoint, payload.Encode()), nil)
+	if err != nil {
+		return
+	}
+	req.Header.Set("User-Agent", util.UserAgent())
+	httpClient.Do(req)
 }
 
 func TrackPageView(path string) {
