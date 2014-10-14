@@ -60,9 +60,8 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 
 	repo := r.Group("/repository")
 	{
-		repo.GET("/:user/:repository/addons.xml", cache.Cache(store, RepositoryCacheTime), repository.GetAddonsXML)
-		repo.GET("/:user/:repository/addons.xml.md5", cache.Cache(store, RepositoryCacheTime), repository.GetAddonsXMLChecksum)
-		repo.GET("/:user/:repository/files/*filepath", repository.GetAddonFiles)
+		repo.GET("/:user/:repository/*filepath", repository.GetAddonFiles)
+		repo.HEAD("/:user/:repository/*filepath", repository.GetAddonFiles)
 	}
 
 	r.GET("/play", Play(btService))
