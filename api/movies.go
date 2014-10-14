@@ -37,6 +37,14 @@ func PopularMovies(ctx *gin.Context) {
 	renderMovies(tmdb.PopularMoviesComplete(genre), ctx)
 }
 
+func TopRatedMovies(ctx *gin.Context) {
+	genre := ctx.Params.ByName("genre")
+	if genre == "0" {
+		genre = ""
+	}
+	renderMovies(tmdb.TopRatedMoviesComplete(genre), ctx)
+}
+
 func SearchMovies(ctx *gin.Context) {
 	query := ctx.Request.URL.Query().Get("q")
 	if query == "" {

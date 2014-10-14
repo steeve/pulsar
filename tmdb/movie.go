@@ -194,7 +194,8 @@ func PopularMoviesComplete(genre string) Movies {
 	return ListMoviesComplete("movie/popular", genre, "")
 }
 
-	return popularMovies
+func TopRatedMoviesComplete(genre string) Movies {
+	return ListMoviesComplete("movie/top_rated", genre, "")
 }
 
 func (movie *Movie) ToListItem() *xbmc.ListItem {
