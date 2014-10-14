@@ -1,13 +1,18 @@
 package repository
 
 import (
+	"archive/tar"
+	"archive/zip"
+	"compress/gzip"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/go-github/github"
@@ -17,7 +22,7 @@ import (
 
 const (
 	githubUserContentURL = "https://raw.githubusercontent.com/%s/%s/%s"
-	zipballURL           = "https://github.com/%s/%s/archive/%s.zip"
+	tarballURL           = "https://github.com/%s/%s/archive/%s.tar.gz"
 )
 
 var (
@@ -92,6 +97,12 @@ func GetAddonFiles(ctx *gin.Context) {
 	lastTagName, lastTagCommit := getLastTag(user, repository)
 
 	switch filepath {
+	case "addons.xml":
+		GetAddonsXML(ctx)
+		return
+	case "addons.xml.md5":
+		GetAddonsXMLChecksum(ctx)
+		return
 	case "fanart.jpg":
 		fallthrough
 	case "icon.png":
@@ -101,29 +112,56 @@ func GetAddonFiles(ctx *gin.Context) {
 
 	switch {
 	case addonZipRE.MatchString(filepath):
-		addonZipURL(ctx, user, repository, lastTagName, lastTagCommit)
+		addonZip(ctx, user, repository, lastTagName, lastTagCommit)
 	case addonChangelogRE.MatchString(filepath):
 		addonChangelog(ctx, user, repository, lastTagName, lastTagCommit)
 	}
 }
 
-func addonZipURL(ctx *gin.Context, user string, repository string, lastTagName string, lastTagCommit string) {
+func addonZip(ctx *gin.Context, user string, repository string, lastTagName string, lastTagCommit string) {
 	release := getReleaseByTag(user, repository, lastTagName)
-	if release == nil {
-		ctx.Redirect(302, fmt.Sprintf(zipballURL, user, repository, lastTagCommit))
-		return
-	}
-
-	client := github.NewClient(nil)
-	assets, _, _ := client.Repositories.ListReleaseAssets(user, repository, *release.ID, nil)
-	for _, asset := range assets {
-		if addonZipRE.MatchString(*asset.Name) {
-			ctx.Redirect(302, *asset.BrowserDownloadUrl)
-			return
+	// if there a release with an asset that matches a addon zip, use it
+	if release != nil {
+		client := github.NewClient(nil)
+		assets, _, _ := client.Repositories.ListReleaseAssets(user, repository, *release.ID, nil)
+		for _, asset := range assets {
+			if addonZipRE.MatchString(*asset.Name) {
+				ctx.Redirect(302, *asset.BrowserDownloadUrl)
+				return
+			}
 		}
 	}
 
-	ctx.Fail(404, errors.New("Unable to find the specified file."))
+	resp, err := http.Get(fmt.Sprintf(tarballURL, user, repository, lastTagCommit))
+	if err != nil {
+		ctx.Fail(500, err)
+	}
+	gzReader, _ := gzip.NewReader(resp.Body)
+	tarReader := tar.NewReader(gzReader)
+	zipWriter := zip.NewWriter(ctx.Writer)
+	defer zipWriter.Close()
+	for {
+		hdr, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			ctx.Fail(500, err)
+		}
+		// somehow Github packs this file too
+		if hdr.Name == "pax_global_header" {
+			continue
+		}
+		// make sure the top level directory doesn't end with the tag/commit
+		newFileName := strings.Replace(hdr.Name, fmt.Sprintf("%s-%s/", repository, lastTagCommit), fmt.Sprintf("%s/", repository), 1)
+		newFile, err := zipWriter.Create(newFileName)
+		if err != nil {
+			ctx.Fail(500, err)
+		}
+		if _, err := io.Copy(newFile, tarReader); err != nil {
+			ctx.Fail(500, err)
+		}
+	}
 }
 
 func addonChangelog(ctx *gin.Context, user string, repository string, lastTagName string, lastTagCommit string) {
