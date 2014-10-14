@@ -2,6 +2,7 @@ package bittorrent
 
 import (
 	"crypto/sha1"
+	"crypto/tls"
 	"encoding/base32"
 	"encoding/hex"
 	"encoding/json"
@@ -81,6 +82,14 @@ const (
 
 var Codecs = []string{"", "Xvid", "h264", "MP3", "AAC", "AC3", "DTS", "DTS HD", "DTS HD Master Audio"}
 
+var (
+	httpClient = &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+)
+
 // Used to avoid infinite recursion in UnmarshalJSON
 type torrent Torrent
 
@@ -134,8 +143,23 @@ func (t *Torrent) Resolve() {
 	if t.InfoHash != "" && t.Name != "" && len(t.Trackers) > 0 {
 		return
 	}
-	resp, err := http.Get(t.URI)
+
+	parts := strings.Split(t.URI, "|")
+	uri := parts[0]
+	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
+		return
+	}
+	if len(parts) > 1 {
+		for _, part := range parts[1:] {
+			keyVal := strings.SplitN(part, "=", 2)
+			req.Header.Add(keyVal[0], keyVal[1])
+		}
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		fmt.Println(err)
 		return
 	}
 	dec := bencode.NewDecoder(resp.Body)
