@@ -41,7 +41,7 @@ type ListItemInfo struct {
 
 	// Video Values
 	Genre         string         `json:"genre,omitempty"`
-	Year          string         `json:"year,omitempty"`
+	Year          int            `json:"year,omitempty"`
 	Episode       int            `json:"episode,omitempty"`
 	Season        int            `json:"season,omitempty"`
 	Top250        int            `json:"top250,omitempty"`
@@ -50,7 +50,7 @@ type ListItemInfo struct {
 	PlayCount     int            `json:"playcount,omitempty"`
 	Overlay       GUIIconOverlay `json:"overlay,omitempty"`
 	Cast          []string       `json:"cast,omitempty"`
-	CastAndRole   []string       `json:"castandrole,omitempty"`
+	CastAndRole   [][]string     `json:"castandrole,omitempty"`
 	Director      string         `json:"director,omitempty"`
 	MPAA          string         `json:"mpaa,omitempty"`
 	Plot          string         `json:"plot,omitempty"`

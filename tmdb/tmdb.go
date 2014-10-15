@@ -61,8 +61,8 @@ type Entity struct {
 	ReleaseDate   string    `json:"release_date"`
 	PosterPath    string    `json:"poster_path"`
 	Title         string    `json:"title"`
-	VoteAverage   float64   `json:"vote_average"`
-	VoteCount     float64   `json:"vote_count"`
+	VoteAverage   float32   `json:"vote_average"`
+	VoteCount     int       `json:"vote_count"`
 }
 
 type EntityList struct {

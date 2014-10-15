@@ -199,9 +199,12 @@ func TopRatedMoviesComplete(genre string) Movies {
 }
 
 func (movie *Movie) ToListItem() *xbmc.ListItem {
+	year, _ := strconv.Atoi(strings.Split(movie.ReleaseDate, "-")[0])
+
 	item := &xbmc.ListItem{
 		Label: movie.OriginalTitle,
 		Info: &xbmc.ListItemInfo{
+			Year:          year,
 			Count:         movie.IMDBId,
 			Title:         movie.OriginalTitle,
 			OriginalTitle: movie.Title,
@@ -210,6 +213,9 @@ func (movie *Movie) ToListItem() *xbmc.ListItem {
 			TagLine:       movie.TagLine,
 			Duration:      movie.Runtime,
 			Code:          movie.IMDBId,
+			Date:          movie.ReleaseDate,
+			Votes:         strconv.Itoa(movie.VoteCount),
+			Rating:        movie.VoteAverage,
 		},
 		Art: &xbmc.ListItemArt{},
 	}
@@ -223,9 +229,9 @@ func (movie *Movie) ToListItem() *xbmc.ListItem {
 		item.Info.Studio = movie.ProductionCompanies[0].Name
 	}
 	if movie.Credits != nil {
-		item.Info.CastAndRole = make([]string, 0, len(movie.Credits.Cast))
+		item.Info.CastAndRole = make([][]string, 0)
 		for _, cast := range movie.Credits.Cast {
-			item.Info.CastAndRole = append(item.Info.CastAndRole, cast.Name+"|"+cast.Character)
+			item.Info.CastAndRole = append(item.Info.CastAndRole, []string{cast.Name, cast.Character})
 		}
 		directors := make([]string, 0)
 		writers := make([]string, 0)
