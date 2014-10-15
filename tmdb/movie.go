@@ -31,6 +31,10 @@ type Movie struct {
 	AlternativeTitles   *struct {
 		Titles []*AlternativeTitle `json:"titles"`
 	} `json:"alternative_titles"`
+	SpokenLanguages []*struct {
+		ISO_639_1 string `json:"iso_639_1"`
+		Name      string `json:"name"`
+	} `json:"spoken_languages"`
 
 	Credits *Credits `json:"credits,omitempty"`
 	Images  *Images  `json:"images,omitempty"`
@@ -224,6 +228,14 @@ func (movie *Movie) ToListItem() *xbmc.ListItem {
 		genres = append(genres, genre.Name)
 	}
 	item.Info.Genre = strings.Join(genres, " / ")
+
+	if len(movie.SpokenLanguages) > 0 {
+		item.StreamInfo = &xbmc.StreamInfo{
+			Audio: &xbmc.StreamInfoEntry{
+				Language: movie.SpokenLanguages[0].ISO_639_1,
+			},
+		}
+	}
 
 	if len(movie.ProductionCompanies) > 0 {
 		item.Info.Studio = movie.ProductionCompanies[0].Name
