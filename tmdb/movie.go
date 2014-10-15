@@ -263,7 +263,7 @@ func (movie *Movie) ToListItem() *xbmc.ListItem {
 			item.Art.Poster = imageURL(movie.Images.Posters[0].FilePath, "w500")
 		}
 		if len(movie.Images.Backdrops) > 0 {
-			item.Art.FanArt = imageURL(movie.Images.Backdrops[0].FilePath, "original")
+			item.Art.FanArt = imageURL(movie.Images.Backdrops[0].FilePath, "w1280")
 		}
 	}
 	return item
