@@ -87,7 +87,7 @@ build-env:
 	cat Dockerfile | sed -e s/TARGET_OS/$(TARGET_OS)/ -e s/TARGET_ARCH/$(TARGET_ARCH)/ | $(DOCKER) build -t steeve/pulsar:$(TARGET_OS)-$(TARGET_ARCH) -
 
 build: force
-	$(DOCKER) run -i --rm -v $(HOME):$(HOME) -t -e GOPATH=$(shell go env GOPATH) -w $(shell pwd) steeve/pulsar:$(TARGET_OS)-$(TARGET_ARCH) make $(MARGS) GIT_VERSION=$(GIT_VERSION)
+	$(DOCKER) run -i --rm -v $(HOME):$(HOME) -t -e GOPATH=$(shell go env GOPATH) -w $(shell pwd) steeve/pulsar:$(TARGET_OS)-$(TARGET_ARCH) make $(MARGS) TARGET_OS=$(TARGET_OS) TARGET_ARCH=$(TARGET_ARCH) GIT_VERSION=$(GIT_VERSION)
 
 docker: force
 	$(DOCKER) run -i --rm -v $(HOME):$(HOME) -t -e GOPATH=$(shell go env GOPATH) -w $(shell pwd) steeve/pulsar:$(TARGET_OS)-$(TARGET_ARCH)
