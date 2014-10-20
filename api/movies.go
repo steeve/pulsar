@@ -73,7 +73,7 @@ func movieLinks(imdbId string) []*bittorrent.Torrent {
 
 	log.Printf("Resolved %s to %s\n", imdbId, movie.Title)
 
-	searchers := providers.GetPulsarProviders()
+	searchers := providers.GetMovieSearchers()
 
 	return providers.SearchMovie(searchers, movie)
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/steeve/pulsar/bittorrent"
@@ -89,13 +88,7 @@ func showEpisodeLinks(showId string, seasonNumber, episodeNumber int) []*bittorr
 
 	log.Printf("Resolved %s to %s\n", showId, show.Title)
 
-	searchers := make([]providers.EpisodeSearcher, 0)
-	for _, addon := range xbmc.GetAddons("xbmc.python.script", "executable", true).Addons {
-		if strings.HasPrefix(addon.ID, "script.pulsar.") {
-			searchers = append(searchers, providers.NewAddonSearcher(addon.ID))
-		}
-	}
-	// searchers = append(searchers, providers.NewAddonSearcher("script.pulsar.tpb"))
+	searchers := providers.GetEpisodeSearchers()
 
 	return providers.SearchEpisode(searchers, episode)
 }

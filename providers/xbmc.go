@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/op/go-logging"
 	"github.com/steeve/pulsar/bittorrent"
+	"github.com/steeve/pulsar/config"
 	"github.com/steeve/pulsar/tmdb"
 	"github.com/steeve/pulsar/trakt"
 	"github.com/steeve/pulsar/util"
@@ -66,8 +67,28 @@ func CallbackHandler(ctx *gin.Context) {
 	close(c)
 }
 
-func GetPulsarProviders() []MovieSearcher {
+func GetMovieSearchers() []MovieSearcher {
 	searchers := make([]MovieSearcher, 0)
+	for _, addon := range xbmc.GetAddons("xbmc.python.script", "executable", true).Addons {
+		if strings.HasPrefix(addon.ID, "script.pulsar.") {
+			searchers = append(searchers, NewAddonSearcher(addon.ID))
+		}
+	}
+	return searchers
+}
+
+func GetEpisodeSearchers() []EpisodeSearcher {
+	searchers := make([]EpisodeSearcher, 0)
+	for _, addon := range xbmc.GetAddons("xbmc.python.script", "executable", true).Addons {
+		if strings.HasPrefix(addon.ID, "script.pulsar.") {
+			searchers = append(searchers, NewAddonSearcher(addon.ID))
+		}
+	}
+	return searchers
+}
+
+func GetSearchers() []Searcher {
+	searchers := make([]Searcher, 0)
 	for _, addon := range xbmc.GetAddons("xbmc.python.script", "executable", true).Addons {
 		if strings.HasPrefix(addon.ID, "script.pulsar.") {
 			searchers = append(searchers, NewAddonSearcher(addon.ID))

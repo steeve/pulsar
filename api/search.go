@@ -3,7 +3,6 @@ package api
 import (
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/steeve/pulsar/providers"
@@ -18,13 +17,7 @@ func Search(c *gin.Context) {
 
 	log.Println("Searching providers for:", query)
 
-	searchers := make([]providers.Searcher, 0)
-	for _, addon := range xbmc.GetAddons("xbmc.python.script").Addons {
-		if strings.HasPrefix(addon.ID, "script.pulsar.") {
-			searchers = append(searchers, providers.NewAddonSearcher(addon.ID))
-		}
-	}
-
+	searchers := providers.GetSearchers()
 	torrents := providers.Search(searchers, query)
 
 	items := make(xbmc.ListItems, 0, len(torrents))
