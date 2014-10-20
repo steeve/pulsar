@@ -12,7 +12,8 @@ func Migrate() {
 	if _, err := os.Stat(firstRun); err == nil {
 		return
 	}
-	defer os.Create(firstRun)
+	file, _ := os.Create(firstRun)
+	file.Close()
 
 	log.Info("Preparing for first run")
 
