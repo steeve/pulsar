@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"runtime"
@@ -29,6 +30,10 @@ ______  __ __|  |   ___________ _______
 `
 )
 
+func ensureSingleInstance() {
+	http.Head(fmt.Sprintf("http://localhost:%d/shutdown", config.ListenPort))
+}
+
 func main() {
 	// Make sure we are properly multithreaded.
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -43,6 +48,7 @@ func main() {
 
 	config.Reload()
 
+	ensureSingleInstance()
 	Migrate()
 
 	log.Info("Addon: %s v%s", config.Get().Info.Id, config.Get().Info.Version)
@@ -90,7 +96,7 @@ func main() {
 		startBtService()
 	}))
 	http.Handle("/shutdown", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		go shutdown()
+		shutdown()
 	}))
 
 	xbmc.Notify("Pulsar", "Pulsar daemon has started.")
