@@ -145,8 +145,14 @@ func (as *AddonSearcher) call(method string, searchObject interface{}) []*bittor
 
 	xbmc.ExecuteAddon(as.addonId, payload.String())
 
+	timeout := DefaultTimeout
+	// Quick and ugly fix for RPi
+	if config.Get().Platform.OS == "linux" && config.Get().Platform.Arch == "arm" {
+		timeout = 30 * time.Second
+	}
+
 	select {
-	case <-time.After(DefaultTimeout):
+	case <-time.After(timeout):
 		as.log.Info("Provider %s was too slow. Ignored.", as.addonId)
 		RemoveCallback(cid)
 	case result := <-c:
