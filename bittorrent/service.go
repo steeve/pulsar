@@ -46,9 +46,11 @@ type BTService struct {
 	libtorrentLog *logging.Logger
 	alertsMutex   sync.RWMutex
 	alertHandlers []AlertHandler
+
+	closing chan bool
 }
 
-type AlertHandler func(alert libtorrent.Alert)
+type AlertHandler chan libtorrent.Alert
 
 func NewBTService() *BTService {
 	s := &BTService{
@@ -59,11 +61,17 @@ func NewBTService() *BTService {
 	}
 	// Ensure we properly free the session object.
 	runtime.SetFinalizer(s, func(s *BTService) {
-		libtorrent.DeleteSession(s.Session)
+		s.Close()
 	})
-	go s.consumeAlerts()
+	go s.alertsConsumer()
+	go s.logAlerts()
 
 	return s
+}
+
+func (s *BTService) Close() {
+	s.closing <- true
+	libtorrent.DeleteSession(s.Session)
 }
 
 func (s *BTService) Start() {
@@ -187,17 +195,58 @@ func (s *BTService) stopServices() {
 	s.Session.Stop_natpmp()
 }
 
-func (s *BTService) consumeAlerts() {
-	// s.Session.Set_alert_mask(uint(libtorrent.AlertAll_categories))
+func (s *BTService) alertsConsumer() {
 	s.Session.Set_alert_mask(uint(libtorrent.AlertError_notification |
 		libtorrent.AlertStatus_notification |
 		libtorrent.AlertStorage_notification))
+
 	for {
-		s.Session.Wait_for_alert(libtorrent.Seconds(libtorrentAlertWaitTime))
-		alert := s.Session.Pop_alert()
-		if alert.Swigcptr() == 0 {
-			continue
+		select {
+		case <-s.closing:
+			s.log.Info("Closing all alert channels...")
+			for _, handler := range s.alertHandlers {
+				close(handler)
+			}
+			return
+		default:
+			s.Session.Wait_for_alert(libtorrent.Seconds(libtorrentAlertWaitTime))
+			alert := s.Session.Pop_alert()
+			if alert.Swigcptr() == 0 {
+				continue
+			}
+			s.alertsMutex.RLock()
+			for _, handler := range s.alertHandlers {
+				handler <- alert
+			}
+			s.alertsMutex.RUnlock()
 		}
+	}
+}
+
+func (s *BTService) BindAlerts() chan libtorrent.Alert {
+	c := make(chan libtorrent.Alert, 100)
+	s.alertsMutex.Lock()
+	s.alertHandlers = append(s.alertHandlers, c)
+	s.alertsMutex.Unlock()
+	return c
+}
+
+func (s *BTService) UnbindAlerts(handler AlertHandler) {
+	s.alertsMutex.Lock()
+	defer s.alertsMutex.Unlock()
+
+	for i, h := range s.alertHandlers {
+		if h == handler {
+			s.alertHandlers = append(s.alertHandlers[:i], s.alertHandlers[i+1:]...)
+			return
+		}
+	}
+}
+
+func (s *BTService) logAlerts() {
+	alerts := s.BindAlerts()
+	defer s.UnbindAlerts(alerts)
+	for alert := range alerts {
 		alertCategory := alert.Category()
 		if alertCategory&int(libtorrent.AlertError_notification) != 0 {
 			// s.libtorrentLog.Error("%s: %s", alert.What(), alert.Message())
@@ -208,31 +257,5 @@ func (s *BTService) consumeAlerts() {
 		} else {
 			s.libtorrentLog.Notice("%s: %s", alert.What(), alert.Message())
 		}
-		for _, handler := range s.alertHandlers {
-			if handler != nil {
-				go handler(alert)
-			}
-		}
 	}
-}
-
-func (s *BTService) AlertsBind(handler AlertHandler) {
-	s.alertsMutex.Lock()
-	s.alertHandlers = append(s.alertHandlers, handler)
-	s.alertsMutex.Unlock()
-}
-
-func (s *BTService) AlertsUnbind(handler AlertHandler) {
-	s.alertsMutex.Lock()
-	// idx := -1
-	// for i, h := range s.alertHandlers {
-	// 	if h == handler {
-	// 		idx = i
-	// 		break
-	// 	}
-	// }
-	// if idx >= 0 {
-	// 	s.alertHandlers = append(s.alertHandlers[:idx], s.alertHandlers[idx+1]...)
-	// }
-	s.alertsMutex.Unlock()
 }
