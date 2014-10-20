@@ -1,11 +1,11 @@
 package xbmc
 
 type DialogProgress struct {
-	hWnd int
+	hWnd int64
 }
 
 func NewDialogProgress(title, line1, line2, line3 string) *DialogProgress {
-	retVal := -1
+	retVal := int64(-1)
 	executeJSONRPCEx("DialogProgress_Create", &retVal, Args{title, line1, line2, line3})
 	if retVal < 0 {
 		return nil
