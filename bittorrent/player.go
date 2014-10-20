@@ -22,13 +22,13 @@ const (
 
 var statusStrings = []string{
 	"Queued",
-	"Checking...",
-	"Finding torrent...", //"Downloading metadata...",
-	"Buffering...",       // "Downloading",
+	"Checking",
+	"Finding",
+	"Buffering",
 	"Finished",
-	"Seeding...",
+	"Seeding",
 	"Allocating",
-	"Allocating file & Checking resume",
+	"Stalled",
 }
 
 type BTPlayer struct {
