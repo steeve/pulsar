@@ -47,10 +47,10 @@ GO_PKG = github.com/steeve/pulsar
 GO = go
 GIT = git
 DOCKER = docker
+DOCKER_IMAGE = steeve/pulsar
 UPX = upx
 GIT_VERSION = $(shell $(GIT) describe --always)
 VERSION = $(shell cat VERSION)
-#VERSION = $(patsubst v%,%,$(GIT_VERSION))
 ZIP_FILE = $(ADDON_NAME)-$(VERSION).zip
 CGO_ENABLED = 1
 OUTPUT_NAME = $(NAME)$(EXT)
@@ -59,6 +59,7 @@ LIBTORRENT_GO = github.com/steeve/libtorrent-go
 LIBTORRENT_GO_HOME = $(shell go env GOPATH)/src/$(LIBTORRENT_GO)
 GO_BUILD_TAGS = netgo
 GO_LDFLAGS += -w -X $(GO_PKG)/util.Version "$(VERSION)" -X $(GO_PKG)/util.GitCommit "$(GIT_VERSION)"
+PLATFORMS = darwin-x64 windows-x86 linux-x86 linux-x64 linux-arm
 
 force:
 	@true
@@ -83,14 +84,16 @@ clean:
 distclean:
 	rm -rf build
 
-build-env:
-	cat Dockerfile | sed -e s/TARGET_OS/$(TARGET_OS)/ -e s/TARGET_ARCH/$(TARGET_ARCH)/ | $(DOCKER) build -t steeve/pulsar:$(TARGET_OS)-$(TARGET_ARCH) -
+build-envs:
+	for i in $(PLATFORMS); do \
+		cat Dockerfile | sed -e s/TAG/$$i/ | $(DOCKER) build -t $(DOCKER_IMAGE):$$i - ;\
+	done
 
 build: force
-	$(DOCKER) run -i --rm -v $(HOME):$(HOME) -t -e GOPATH=$(shell go env GOPATH) -w $(shell pwd) steeve/pulsar:$(TARGET_OS)-$(TARGET_ARCH) make $(MARGS) TARGET_OS=$(TARGET_OS) TARGET_ARCH=$(TARGET_ARCH) GIT_VERSION=$(GIT_VERSION)
+	$(DOCKER) run -i --rm -v $(HOME):$(HOME) -t -e GOPATH=$(shell go env GOPATH) -w $(shell pwd) $(DOCKER_IMAGE):$(TARGET_OS)-$(TARGET_ARCH) make $(MARGS) TARGET_OS=$(TARGET_OS) TARGET_ARCH=$(TARGET_ARCH) GIT_VERSION=$(GIT_VERSION)
 
 docker: force
-	$(DOCKER) run -i --rm -v $(HOME):$(HOME) -t -e GOPATH=$(shell go env GOPATH) -w $(shell pwd) steeve/pulsar:$(TARGET_OS)-$(TARGET_ARCH)
+	$(DOCKER) run -i --rm -v $(HOME):$(HOME) -t -e GOPATH=$(shell go env GOPATH) -w $(shell pwd) $(DOCKER_IMAGE):$(TARGET_OS)-$(TARGET_ARCH)
 
 
 strip: force
@@ -106,4 +109,7 @@ dist: pulsar strip
 
 alldist: force
 	$(MAKE) build TARGET_OS=darwin TARGET_ARCH=x64 MARGS="libtorrent-go pulsar strip upx"
+	$(MAKE) build TARGET_OS=linux TARGET_ARCH=x86 MARGS="libtorrent-go pulsar strip upx"
+	$(MAKE) build TARGET_OS=linux TARGET_ARCH=x64 MARGS="libtorrent-go pulsar strip upx"
+	$(MAKE) build TARGET_OS=linux TARGET_ARCH=arm MARGS="libtorrent-go pulsar strip upx"
 	$(MAKE) build TARGET_OS=windows TARGET_ARCH=x86 MARGS="libtorrent-go pulsar vendor_libs strip upx"
