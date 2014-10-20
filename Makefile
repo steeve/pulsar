@@ -111,5 +111,5 @@ alldist: force
 	$(MAKE) build TARGET_OS=darwin TARGET_ARCH=x64 MARGS="libtorrent-go pulsar strip upx"
 	$(MAKE) build TARGET_OS=linux TARGET_ARCH=x86 MARGS="libtorrent-go pulsar strip upx"
 	$(MAKE) build TARGET_OS=linux TARGET_ARCH=x64 MARGS="libtorrent-go pulsar strip upx"
-	$(MAKE) build TARGET_OS=linux TARGET_ARCH=arm MARGS="libtorrent-go pulsar strip upx"
+	$(MAKE) build TARGET_OS=linux TARGET_ARCH=arm MARGS="libtorrent-go pulsar strip"
 	$(MAKE) build TARGET_OS=windows TARGET_ARCH=x86 MARGS="libtorrent-go pulsar vendor_libs strip upx"
