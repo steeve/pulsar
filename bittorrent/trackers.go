@@ -15,7 +15,7 @@ import (
 
 const (
 	ConnectionRequestInitialId int64 = 0x041727101980
-	DefaultTimeout                   = 2 * time.Second
+	DefaultTimeout                   = 3 * time.Second
 	DefaultBufferSize                = 2048 // must be bigger than MTU, which is 1500 most of the time
 	MaxScrapeHashes                  = 70
 )
