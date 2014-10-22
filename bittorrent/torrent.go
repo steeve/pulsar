@@ -225,15 +225,15 @@ func (t *Torrent) initialize() {
 	}
 	if t.RipType == RipUnknown {
 		t.RipType = matchTags(t, map[string]int{
-			`(cam|camrip|hdcam)`:      RipCam,
-			`(ts|telesync)`:           RipTS,
-			`(tc|telecine)`:           RipTC,
-			`(scr|screener)`:          RipScr,
-			`dvd\W*scr`:               RipDVDScr,
-			`dvd\W*rip`:               RipDVD,
-			`hdtv`:                    RipHDTV,
-			`(web\W*dl|web\W*rip)`:    RipWeb,
-			`(bluray|b[rd]rip|hdrip)`: RipBluRay,
+			`(cam|camrip|hdcam)`:   RipCam,
+			`(ts|telesync)`:        RipTS,
+			`(tc|telecine)`:        RipTC,
+			`(scr|screener)`:       RipScr,
+			`dvd\W*scr`:            RipDVDScr,
+			`dvd\W*rip`:            RipDVD,
+			`hd(tv|rip)`:           RipHDTV,
+			`(web\W*dl|web\W*rip)`: RipWeb,
+			`(bluray|b[rd]rip)`:    RipBluRay,
 		})
 	}
 	if t.SceneRating == RatingUnkown {
