@@ -10,6 +10,7 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/op/go-logging"
 	"github.com/steeve/libtorrent-go"
+	"github.com/steeve/pulsar/diskusage"
 	"github.com/steeve/pulsar/ga"
 	"github.com/steeve/pulsar/xbmc"
 )
@@ -42,6 +43,7 @@ type BTPlayer struct {
 	dialogProgress *xbmc.DialogProgress
 	isBuffering    bool
 	torrentName    string
+	diskStatus     *diskusage.DiskStatus
 	deleteAfter    bool
 	closing        chan bool
 }
@@ -60,6 +62,13 @@ func NewBTPlayer(bts *BTService, uri string, deleteAfter bool) *BTPlayer {
 
 func (btp *BTPlayer) addTorrent() error {
 	btp.log.Info("Adding torrent")
+
+	if status, err := diskusage.DiskUsage(btp.bts.config.DownloadPath); err != nil {
+		btp.bts.log.Info("Unable to retrieve the free space for %s, continuing anyway...", btp.bts.config.DownloadPath)
+	} else {
+		btp.diskStatus = status
+	}
+
 	torrentParams := libtorrent.NewAdd_torrent_params()
 	defer libtorrent.DeleteAdd_torrent_params(torrentParams)
 
@@ -116,6 +125,17 @@ func (btp *BTPlayer) onMetadataReceived() {
 	go ga.TrackEvent("player", "metadata_received", btp.torrentName, -1)
 
 	btp.torrentInfo = btp.torrentHandle.Torrent_file()
+
+	if btp.diskStatus != nil {
+		btp.log.Info("Checking for sufficient space on %s...", btp.bts.config.DownloadPath)
+		torrentSize := btp.torrentInfo.Total_size()
+		if btp.diskStatus.Free < torrentSize {
+			btp.log.Info("Unsufficient free space on %s. Has %d, needs %d.", btp.bts.config.DownloadPath, btp.diskStatus.Free, torrentSize)
+			xbmc.Notify("Pulsar", "Not enough space available on the download path.")
+			return
+		}
+	}
+
 	biggestFileIdx := btp.findBiggestFile()
 	btp.biggestFile = btp.torrentInfo.File_at(biggestFileIdx)
 	btp.log.Info("Biggest file: %s", btp.biggestFile.GetPath())
