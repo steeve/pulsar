@@ -58,7 +58,7 @@ func getMovieById(movieId string) *Movie {
 		rateLimiter.Call(func() {
 			napping.Get(
 				tmdbEndpoint+"movie/"+movieId,
-				&napping.Params{"api_key": apiKey, "append_to_response": "credits,images,alternative_titles"},
+				&napping.Params{"api_key": apiKey, "append_to_response": "credits,images,alternative_titles,translations"},
 				&movie,
 				nil,
 			)
