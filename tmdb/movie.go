@@ -1,6 +1,7 @@
 package tmdb
 
 import (
+	"fmt"
 	"path"
 	"strconv"
 	"strings"
@@ -43,17 +44,17 @@ type Movie struct {
 type Movies []*Movie
 
 func GetMovieFromIMDB(imdbId string) *Movie {
-	return getMovieById(imdbId)
+	return getMovieById(imdbId, "en")
 }
 
 func GetMovie(tmdbId int) *Movie {
-	return getMovieById(strconv.Itoa(tmdbId))
+	return getMovieById(strconv.Itoa(tmdbId), "en")
 }
 
-func getMovieById(movieId string) *Movie {
+func getMovieById(movieId string, language string) *Movie {
 	movie := Movie{}
 	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
-	key := "com.tmdb.movie." + movieId
+	key := fmt.Sprintf("com.tmdb.movie.%s.%s", movieId, language)
 	if err := cacheStore.Get(key, &movie); err != nil {
 		rateLimiter.Call(func() {
 			napping.Get(
