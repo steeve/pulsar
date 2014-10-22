@@ -230,12 +230,11 @@ func (btp *BTPlayer) Close() {
 }
 
 func (btp *BTPlayer) consumeAlerts() {
-	alerts := btp.bts.BindAlerts()
-	defer btp.bts.UnbindAlerts(alerts)
+	alerts, done := btp.bts.Alerts()
 	for {
 		select {
 		case alert, ok := <-alerts:
-			if !ok {
+			if !ok { // was the alerts channel closed?
 				return
 			}
 			switch alert.Xtype() {
@@ -253,7 +252,7 @@ func (btp *BTPlayer) consumeAlerts() {
 				break
 			}
 		case <-btp.closing:
-			return
+			done <- true
 		}
 	}
 }
