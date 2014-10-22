@@ -223,11 +223,15 @@ func (s *BTService) alertsConsumer() {
 				libtorrent.DeleteAlert(*alert)
 			})
 			s.alertsLock.Lock()
-			for i, consumer := range s.alertConsumers {
+			n := len(s.alertConsumers)
+			for i := 0; i < n; i++ {
+				consumer := s.alertConsumers[i]
 				select {
 				case consumer.alertsSink <- alert:
 				case <-consumer.done:
 					s.alertConsumers = append(s.alertConsumers[:i], s.alertConsumers[i+1:]...)
+					i--
+					n--
 					close(consumer.alertsSink)
 					close(consumer.done)
 				}
