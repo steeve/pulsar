@@ -230,16 +230,18 @@ func (movie *Movie) ToListItem() *xbmc.ListItem {
 	}
 	item.Info.Genre = strings.Join(genres, " / ")
 
-	if len(movie.SpokenLanguages) > 0 {
+	for _, language := range movie.SpokenLanguages {
 		item.StreamInfo = &xbmc.StreamInfo{
 			Audio: &xbmc.StreamInfoEntry{
-				Language: movie.SpokenLanguages[0].ISO_639_1,
+				Language: language.ISO_639_1,
 			},
 		}
+		break
 	}
 
-	if len(movie.ProductionCompanies) > 0 {
-		item.Info.Studio = movie.ProductionCompanies[0].Name
+	for _, company := range movie.ProductionCompanies {
+		item.Info.Studio = company.Name
+		break
 	}
 	if movie.Credits != nil {
 		item.Info.CastAndRole = make([][]string, 0)
@@ -260,11 +262,15 @@ func (movie *Movie) ToListItem() *xbmc.ListItem {
 		item.Info.Writer = strings.Join(writers, " / ")
 	}
 	if movie.Images != nil {
-		if len(movie.Images.Posters) > 0 {
-			item.Art.Poster = imageURL(movie.Images.Posters[0].FilePath, "w500")
+		for _, poster := range movie.Images.Posters {
+			item.Art.Poster = imageURL(poster.FilePath, "w500")
+			item.Art.Thumbnail = item.Art.Poster
+			item.Thumbnail = item.Art.Poster
+			break
 		}
-		if len(movie.Images.Backdrops) > 0 {
-			item.Art.FanArt = imageURL(movie.Images.Backdrops[0].FilePath, "w1280")
+		for _, backdrop := range movie.Images.Backdrops {
+			item.Art.FanArt = imageURL(backdrop.FilePath, "w1280")
+			break
 		}
 	}
 	return item
