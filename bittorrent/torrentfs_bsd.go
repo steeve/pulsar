@@ -2,7 +2,10 @@
 
 package bittorrent
 
-import "syscall"
+import (
+	"os"
+	"syscall"
+)
 
 // from <sys/stat.h>
 const (
@@ -17,6 +20,6 @@ const (
 
 // Ideally we should read them first, but we control the file
 // so it's not that bad anyway.
-func unlockFile(path string) error {
-	return syscall.Chflags(path, 0)
+func unlockFile(file *os.File) error {
+	return syscall.Fchflags(int(file.Fd()), 0)
 }

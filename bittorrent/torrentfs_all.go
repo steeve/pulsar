@@ -2,6 +2,8 @@
 
 package bittorrent
 
-func unlockFile(path string) error {
+import "os"
+
+func unlockFile(file *os.File) error {
 	return nil
 }

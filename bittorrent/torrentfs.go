@@ -19,7 +19,7 @@ type TorrentFS struct {
 }
 
 type TorrentFile struct {
-	http.File
+	*os.File
 	tfs               *TorrentFS
 	torrentHandle     libtorrent.Torrent_handle
 	torrentInfo       libtorrent.Torrent_info
@@ -43,13 +43,15 @@ func NewTorrentFS(service *BTService, path string) *TorrentFS {
 }
 
 func (tfs *TorrentFS) Open(name string) (http.File, error) {
-	file, err := tfs.Dir.Open(name)
+	file, err := os.Open(path.Join(string(tfs.Dir), name))
 	if err != nil {
 		return nil, err
 	}
 	// make sure we don't open a file that's locked, as it can happen
 	// on BSD systems (darwin included)
-	unlockFile(path.Join(string(tfs.Dir), name[1:]))
+	if err := unlockFile(file); err != nil {
+		tfs.log.Error("Unable to unlock file because: %s", err)
+	}
 
 	tfs.log.Info("Opening %s", name)
 	// NB: this does NOT return a pointer to vector, no need to free!
@@ -74,7 +76,7 @@ func (tfs *TorrentFS) Open(name string) (http.File, error) {
 	return file, err
 }
 
-func NewTorrentFile(file http.File, tfs *TorrentFS, torrentHandle libtorrent.Torrent_handle, torrentInfo libtorrent.Torrent_info, fileEntry libtorrent.File_entry, fileEntryIdx int) (*TorrentFile, error) {
+func NewTorrentFile(file *os.File, tfs *TorrentFS, torrentHandle libtorrent.Torrent_handle, torrentInfo libtorrent.Torrent_info, fileEntry libtorrent.File_entry, fileEntryIdx int) (*TorrentFile, error) {
 	tf := &TorrentFile{
 		File:          file,
 		tfs:           tfs,
