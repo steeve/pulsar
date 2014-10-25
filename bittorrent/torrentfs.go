@@ -52,6 +52,7 @@ func (tfs *TorrentFS) Open(name string) (http.File, error) {
 	unlockFile(path.Join(string(tfs.Dir), name[1:]))
 
 	tfs.log.Info("Opening %s", name)
+	// NB: this does NOT return a pointer to vector, no need to free!
 	torrentsVector := tfs.service.Session.Get_torrents()
 	torrentsVectorSize := int(torrentsVector.Size())
 	for i := 0; i < torrentsVectorSize; i++ {
