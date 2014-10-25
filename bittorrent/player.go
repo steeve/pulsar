@@ -273,6 +273,7 @@ func (btp *BTPlayer) consumeAlerts() {
 			}
 		case <-btp.closing:
 			done <- true
+			return
 		}
 	}
 }
