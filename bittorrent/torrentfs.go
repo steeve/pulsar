@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"path"
 	"time"
 	"unsafe"
 
@@ -46,6 +47,9 @@ func (tfs *TorrentFS) Open(name string) (http.File, error) {
 	if err != nil {
 		return nil, err
 	}
+	// make sure we don't open a file that's locked, as it can happen
+	// on BSD systems (darwin included)
+	unlockFile(path.Join(string(tfs.Dir), name[1:]))
 
 	tfs.log.Info("Opening %s", name)
 	torrentsVector := tfs.service.Session.Get_torrents()
