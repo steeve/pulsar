@@ -136,8 +136,7 @@ func (btp *BTPlayer) onMetadataReceived() {
 		}
 	}
 
-	biggestFileIdx := btp.findBiggestFile()
-	btp.biggestFile = btp.torrentInfo.File_at(biggestFileIdx)
+	btp.biggestFile = btp.findBiggestFile()
 	btp.log.Info("Biggest file: %s", btp.biggestFile.GetPath())
 
 	btp.log.Info("Setting piece priorities")
@@ -201,16 +200,17 @@ func (btp *BTPlayer) getFilePiecesAndOffset(fe libtorrent.File_entry) (int, int,
 	return startPiece, endPiece, offset
 }
 
-func (btp *BTPlayer) findBiggestFile() int {
+func (btp *BTPlayer) findBiggestFile() libtorrent.File_entry {
+	var biggestFile libtorrent.File_entry
 	maxSize := int64(0)
-	biggestFile := 0
 	numFiles := btp.torrentInfo.Num_files()
+
 	for i := 0; i < numFiles; i++ {
 		fe := btp.torrentInfo.File_at(i)
 		size := fe.GetSize()
 		if size > maxSize {
 			maxSize = size
-			biggestFile = i
+			biggestFile = fe
 		}
 	}
 	return biggestFile
