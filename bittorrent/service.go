@@ -131,6 +131,8 @@ func (s *BTService) Configure(c *BTConfiguration) {
 	settings.SetRate_limit_utp(false)
 	settings.SetMixed_mode_algorithm(int(libtorrent.Session_settingsPeer_proportional))
 
+	setPlatformSpecificSettings(settings)
+
 	s.Session.Set_settings(settings)
 
 	// Add all the libtorrent extensions
