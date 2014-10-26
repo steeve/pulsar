@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"os"
-	"path"
+	"path/filepath"
 	"time"
 	"unsafe"
 
@@ -43,7 +43,7 @@ func NewTorrentFS(service *BTService, path string) *TorrentFS {
 }
 
 func (tfs *TorrentFS) Open(name string) (http.File, error) {
-	file, err := os.Open(path.Join(string(tfs.Dir), name))
+	file, err := os.Open(filepath.Join(string(tfs.Dir), name))
 	if err != nil {
 		return nil, err
 	}
