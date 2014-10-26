@@ -45,7 +45,14 @@ const (
 	Resolution4k2k
 )
 
-var Resolutions = []string{"", "480p", "720p", "1080p"}
+var (
+	resolutionTags = map[*regexp.Regexp]int{
+		regexp.MustCompile(`\W+(480p|xvid|dvd)\W*`): Resolution480p,
+		regexp.MustCompile(`\W+(720p|hdrip)\W*`):    Resolution720p,
+		regexp.MustCompile(`\W+1080p\W*`):           Resolution1080p,
+	}
+	Resolutions = []string{"", "480p", "720p", "1080p"}
+)
 
 const (
 	RipUnknown = iota
@@ -60,12 +67,32 @@ const (
 	RipBluRay
 )
 
-var Rips = []string{"", "Cam", "TeleSync", "TeleCine", "Screener", "DVD Screener", "DVDRip", "HDTV", "WebDL", "Blu-Ray"}
+var (
+	ripTags = map[*regexp.Regexp]int{
+		regexp.MustCompile(`\W+(cam|camrip|hdcam)\W*`):   RipCam,
+		regexp.MustCompile(`\W+(ts|telesync)\W*`):        RipTS,
+		regexp.MustCompile(`\W+(tc|telecine)\W*`):        RipTC,
+		regexp.MustCompile(`\W+(scr|screener)\W*`):       RipScr,
+		regexp.MustCompile(`\W+dvd\W*scr\W*`):            RipDVDScr,
+		regexp.MustCompile(`\W+dvd\W*rip\W*`):            RipDVD,
+		regexp.MustCompile(`\W+hd(tv|rip)\W*`):           RipHDTV,
+		regexp.MustCompile(`\W+(web\W*dl|web\W*rip)\W*`): RipWeb,
+		regexp.MustCompile(`\W+(bluray|b[rd]rip)\W*`):    RipBluRay,
+	}
+	Rips = []string{"", "Cam", "TeleSync", "TeleCine", "Screener", "DVD Screener", "DVDRip", "HDTV", "WebDL", "Blu-Ray"}
+)
 
 const (
 	RatingUnkown = iota
 	RatingProper
 	RatingNuked
+)
+
+var (
+	sceneTags = map[*regexp.Regexp]int{
+		regexp.MustCompile(`\W+nuked\W*`):  RatingNuked,
+		regexp.MustCompile(`\W+proper\W*`): RatingProper,
+	}
 )
 
 const (
@@ -82,7 +109,21 @@ const (
 	CodecDTSHDMA
 )
 
-var Codecs = []string{"", "Xvid", "h264", "MP3", "AAC", "AC3", "DTS", "DTS HD", "DTS HD Master Audio"}
+var (
+	videoTags = map[*regexp.Regexp]int{
+		regexp.MustCompile(`\W+([hx]264|1080p|hdrip)\W*`): CodecH264,
+		regexp.MustCompile(`\W+xvid\W*`):                  CodecXVid,
+	}
+	audioTags = map[*regexp.Regexp]int{
+		regexp.MustCompile(`\W+mp3\W*`):           CodecMp3,
+		regexp.MustCompile(`\W+aac\W*`):           CodecAAC,
+		regexp.MustCompile(`\W+(ac3|5\W+1)\W*`):   CodecAC3,
+		regexp.MustCompile(`\W+dts\W*`):           CodecDTS,
+		regexp.MustCompile(`\W+dts\W+hd\W*`):      CodecDTSHD,
+		regexp.MustCompile(`\W+dts\W+hd\W+ma\W*`): CodecDTSHDMA,
+	}
+	Codecs = []string{"", "Xvid", "h264", "MP3", "AAC", "AC3", "DTS", "DTS HD", "DTS HD MA"}
+)
 
 var (
 	httpClient = &http.Client{
@@ -201,46 +242,19 @@ func (t *Torrent) initialize() {
 	}
 
 	if t.Resolution == ResolutionUnkown {
-		t.Resolution = matchTags(t, map[string]int{
-			`(480p|xvid|dvd)`: Resolution480p,
-			`(720p|hdrip)`:    Resolution720p,
-			`1080p`:           Resolution1080p,
-		})
+		t.Resolution = matchTags(t, resolutionTags)
 	}
 	if t.VideoCodec == CodecUnknown {
-		t.VideoCodec = matchTags(t, map[string]int{
-			`([hx]264|1080p|hdrip)`: CodecH264,
-			`xvid`:                  CodecXVid,
-		})
+		t.VideoCodec = matchTags(t, videoTags)
 	}
 	if t.AudioCodec == CodecUnknown {
-		t.AudioCodec = matchTags(t, map[string]int{
-			`mp3`:           CodecMp3,
-			`aac`:           CodecAAC,
-			`(ac3|5\W+1)`:   CodecAC3,
-			`dts`:           CodecDTS,
-			`dts\W+hd`:      CodecDTSHD,
-			`dts\W+hd\W+ma`: CodecDTSHDMA,
-		})
+		t.AudioCodec = matchTags(t, audioTags)
 	}
 	if t.RipType == RipUnknown {
-		t.RipType = matchTags(t, map[string]int{
-			`(cam|camrip|hdcam)`:   RipCam,
-			`(ts|telesync)`:        RipTS,
-			`(tc|telecine)`:        RipTC,
-			`(scr|screener)`:       RipScr,
-			`dvd\W*scr`:            RipDVDScr,
-			`dvd\W*rip`:            RipDVD,
-			`hd(tv|rip)`:           RipHDTV,
-			`(web\W*dl|web\W*rip)`: RipWeb,
-			`(bluray|b[rd]rip)`:    RipBluRay,
-		})
+		t.RipType = matchTags(t, ripTags)
 	}
 	if t.SceneRating == RatingUnkown {
-		t.SceneRating = matchTags(t, map[string]int{
-			`nuked`:  RatingNuked,
-			`proper`: RatingProper,
-		})
+		t.SceneRating = matchTags(t, sceneTags)
 	}
 }
 
@@ -252,11 +266,11 @@ func NewTorrent(uri string) *Torrent {
 	return t
 }
 
-func matchTags(t *Torrent, tokens map[string]int) int {
+func matchTags(t *Torrent, tokens map[*regexp.Regexp]int) int {
 	lowName := strings.ToLower(t.Name)
 	codec := 0
-	for key, value := range tokens {
-		if regexp.MustCompile(`\W+` + key + `\W*`).MatchString(lowName) {
+	for re, value := range tokens {
+		if re.MatchString(lowName) {
 			codec = value
 		}
 	}
