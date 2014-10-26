@@ -223,9 +223,7 @@ func (t *Torrent) Resolve() error {
 	if len(t.Trackers) == 0 {
 		t.Trackers = append(t.Trackers, torrentFile.Announce)
 		for _, trackers := range torrentFile.AnnounceList {
-			for _, tracker := range trackers {
-				t.Trackers = append(t.Trackers, tracker)
-			}
+			t.Trackers = append(t.Trackers, trackers...)
 		}
 	}
 
