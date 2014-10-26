@@ -163,9 +163,7 @@ func (as *AddonSearcher) call(method string, searchObject interface{}) []*bittor
 }
 
 func (as *AddonSearcher) SearchLinks(query string) []*bittorrent.Torrent {
-	return as.call("search", QuerySearchObject{
-		Query: query,
-	})
+	return as.call("search", query)
 }
 
 func (as *AddonSearcher) SearchMovieLinks(movie *tmdb.Movie) []*bittorrent.Torrent {

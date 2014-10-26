@@ -11,10 +11,6 @@ type SearchPayload struct {
 	SearchObject interface{} `json:"search_object"`
 }
 
-type QuerySearchObject struct {
-	Query string `json:"query"`
-}
-
 type MovieSearchObject struct {
 	IMDBId string            `json:"imdb_id"`
 	Title  string            `json:"title"`
