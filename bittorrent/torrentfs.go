@@ -14,6 +14,10 @@ import (
 	"github.com/steeve/pulsar/broadcast"
 )
 
+const (
+	piecesRefreshDuration = 500 * time.Millisecond
+)
+
 type TorrentFS struct {
 	http.Dir
 	service *BTService
@@ -116,7 +120,7 @@ func (tf *TorrentFile) updatePieces() error {
 	tf.piecesMx.Lock()
 	defer tf.piecesMx.Unlock()
 
-	if time.Now().After(tf.piecesLastUpdated.Add(1 * time.Second)) {
+	if time.Now().After(tf.piecesLastUpdated.Add(piecesRefreshDuration)) {
 		// need to keep a reference to the status or else the pieces bitfield
 		// is at risk of being collected
 		tf.lastStatus = tf.torrentHandle.Status(uint(libtorrent.Torrent_handleQuery_pieces))
@@ -209,7 +213,7 @@ func (tf *TorrentFile) waitForPiece(piece int) error {
 
 	tf.tfs.log.Info("Waiting for piece %d", piece)
 
-	halfSecond := time.Tick(500 * time.Millisecond)
+	pieceRefreshTicker := time.Tick(piecesRefreshDuration)
 	removed, removedDone := tf.removed.Listen()
 	defer close(removedDone)
 	for tf.hasPiece(piece) == false {
@@ -217,7 +221,7 @@ func (tf *TorrentFile) waitForPiece(piece int) error {
 		case <-removed:
 			tf.tfs.log.Info("Unable to wait for piece %d as file was closed", piece)
 			return errors.New("File was closed.")
-		case <-halfSecond:
+		case <-pieceRefreshTicker:
 			continue
 		}
 	}
