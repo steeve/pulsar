@@ -132,7 +132,7 @@ func (as *AddonSearcher) GetEpisodeSearchObject(episode *trakt.ShowEpisode) *Epi
 }
 
 func (as *AddonSearcher) call(method string, searchObject interface{}) []*bittorrent.Torrent {
-	torrents := []*bittorrent.Torrent{}
+	torrents := make([]*bittorrent.Torrent, 0)
 	cid, c := GetCallback()
 	cbUrl := fmt.Sprintf("%s/callbacks/%s", util.GetHTTPHost(), cid)
 
