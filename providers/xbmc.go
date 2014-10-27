@@ -13,7 +13,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/op/go-logging"
 	"github.com/steeve/pulsar/bittorrent"
-	"github.com/steeve/pulsar/config"
 	"github.com/steeve/pulsar/tmdb"
 	"github.com/steeve/pulsar/trakt"
 	"github.com/steeve/pulsar/util"
@@ -27,10 +26,6 @@ type AddonSearcher struct {
 	addonId string
 	log     *logging.Logger
 }
-
-const (
-	DefaultTimeout = 4 * time.Second
-)
 
 var cbLock = sync.RWMutex{}
 var callbacks = map[string]chan []byte{}
@@ -149,14 +144,8 @@ func (as *AddonSearcher) call(method string, searchObject interface{}) []*bittor
 
 	xbmc.ExecuteAddon(as.addonId, payload.String())
 
-	timeout := DefaultTimeout
-	// Quick and ugly fix for RPi
-	if config.Get().Platform.OS == "linux" && config.Get().Platform.Arch == "arm" {
-		timeout = 30 * time.Second
-	}
-
 	select {
-	case <-time.After(timeout):
+	case <-time.After(providerTimeout()):
 		as.log.Info("Provider %s was too slow. Ignored.", as.addonId)
 		RemoveCallback(cid)
 	case result := <-c:
