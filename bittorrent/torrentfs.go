@@ -5,11 +5,13 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 	"unsafe"
 
 	"github.com/op/go-logging"
 	"github.com/steeve/libtorrent-go"
+	"github.com/steeve/pulsar/broadcast"
 )
 
 type TorrentFS struct {
@@ -28,10 +30,11 @@ type TorrentFile struct {
 	pieceLength       int
 	fileOffset        int64
 	fileSize          int64
+	piecesMx          sync.RWMutex
 	pieces            Bitfield
 	piecesLastUpdated time.Time
 	lastStatus        libtorrent.Torrent_status
-	removed           chan bool
+	removed           *broadcast.Broadcaster
 }
 
 func NewTorrentFS(service *BTService, path string) *TorrentFS {
@@ -87,7 +90,7 @@ func NewTorrentFile(file *os.File, tfs *TorrentFS, torrentHandle libtorrent.Torr
 		pieceLength:   torrentInfo.Piece_length(),
 		fileOffset:    fileEntry.GetOffset(),
 		fileSize:      fileEntry.GetSize(),
-		removed:       make(chan bool),
+		removed:       broadcast.NewBroadcaster(),
 	}
 	go tf.consumeAlerts()
 
@@ -102,7 +105,7 @@ func (tf *TorrentFile) consumeAlerts() {
 		case libtorrent.Torrent_removed_alertAlert_type:
 			removedAlert := libtorrent.SwigcptrTorrent_alert(alert.Swigcptr())
 			if removedAlert.GetHandle().Equal(tf.torrentHandle) {
-				tf.removed <- true
+				tf.removed.Write(nil)
 				return
 			}
 		}
@@ -110,6 +113,9 @@ func (tf *TorrentFile) consumeAlerts() {
 }
 
 func (tf *TorrentFile) updatePieces() error {
+	tf.piecesMx.Lock()
+	defer tf.piecesMx.Unlock()
+
 	if time.Now().After(tf.piecesLastUpdated.Add(1 * time.Second)) {
 		// need to keep a reference to the status or else the pieces bitfield
 		// is at risk of being collected
@@ -135,6 +141,8 @@ func (tf *TorrentFile) hasPiece(idx int) bool {
 	if err := tf.updatePieces(); err != nil {
 		return false
 	}
+	tf.piecesMx.RLock()
+	defer tf.piecesMx.RUnlock()
 	return tf.pieces.GetBit(idx)
 }
 
@@ -195,15 +203,21 @@ func (tf *TorrentFile) Seek(offset int64, whence int) (int64, error) {
 }
 
 func (tf *TorrentFile) waitForPiece(piece int) error {
-	if tf.hasPiece(piece) == false {
-		tf.tfs.log.Info("Waiting for piece %d", piece)
+	if tf.hasPiece(piece) {
+		return nil
 	}
+
+	tf.tfs.log.Info("Waiting for piece %d", piece)
+
+	halfSecond := time.Tick(500 * time.Millisecond)
+	removed, removedDone := tf.removed.Listen()
+	defer close(removedDone)
 	for tf.hasPiece(piece) == false {
 		select {
-		case <-tf.removed:
+		case <-removed:
 			tf.tfs.log.Info("Unable to wait for piece %d as file was closed", piece)
 			return errors.New("File was closed.")
-		case <-time.After(1 * time.Second):
+		case <-halfSecond:
 			continue
 		}
 	}

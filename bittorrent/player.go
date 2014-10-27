@@ -10,6 +10,7 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/op/go-logging"
 	"github.com/steeve/libtorrent-go"
+	"github.com/steeve/pulsar/broadcast"
 	"github.com/steeve/pulsar/diskusage"
 	"github.com/steeve/pulsar/ga"
 	"github.com/steeve/pulsar/xbmc"
@@ -18,7 +19,7 @@ import (
 const (
 	startPiecesBuffer = 0.01
 	endPiecesSize     = 10 * 1024 * 1024 // 10m
-	playbackMaxWait   = 20
+	playbackMaxWait   = 20 * time.Second
 )
 
 var statusStrings = []string{
@@ -39,13 +40,12 @@ type BTPlayer struct {
 	torrentInfo    libtorrent.Torrent_info
 	biggestFile    libtorrent.File_entry
 	log            *logging.Logger
-	waitBuffer     chan error
 	dialogProgress *xbmc.DialogProgress
-	isBuffering    bool
 	torrentName    string
-	diskStatus     *diskusage.DiskStatus
 	deleteAfter    bool
-	closing        chan bool
+	diskStatus     *diskusage.DiskStatus
+	closing        *broadcast.Broadcaster
+	didBuffer      *broadcast.Broadcaster
 }
 
 func NewBTPlayer(bts *BTService, uri string, deleteAfter bool) *BTPlayer {
@@ -53,9 +53,9 @@ func NewBTPlayer(bts *BTService, uri string, deleteAfter bool) *BTPlayer {
 		bts:         bts,
 		uri:         uri,
 		log:         logging.MustGetLogger("btplayer"),
-		waitBuffer:  make(chan error, 10),
 		deleteAfter: deleteAfter,
-		closing:     make(chan bool),
+		closing:     broadcast.NewBroadcaster(),
+		didBuffer:   broadcast.NewBroadcaster(),
 	}
 	return btp
 }
@@ -101,18 +101,22 @@ func (btp *BTPlayer) addTorrent() error {
 }
 
 func (btp *BTPlayer) Buffer() error {
-	btp.isBuffering = true
-
 	if err := btp.addTorrent(); err != nil {
 		return err
 	}
+
+	buffered, done := btp.didBuffer.Listen()
+	defer close(done)
 
 	btp.dialogProgress = xbmc.NewDialogProgress("Pulsar", "", "", "")
 	defer btp.dialogProgress.Close()
 
 	go btp.playerLoop()
 
-	return <-btp.waitBuffer
+	if err := <-buffered; err != nil {
+		return err.(error)
+	}
+	return nil
 }
 
 func (btp *BTPlayer) PlayURL() string {
@@ -227,31 +231,35 @@ func (btp *BTPlayer) onStateChanged(stateAlert libtorrent.State_changed_alert) {
 			piecesPriorities.Add(1)
 		}
 		btp.torrentHandle.Prioritize_pieces(piecesPriorities)
-		if btp.isBuffering {
-			btp.isBuffering = false
-			btp.waitBuffer <- nil
-		}
+
+		btp.didBuffer.Write(nil)
 		break
 	}
 }
 
 func (btp *BTPlayer) Close() {
-	btp.log.Info("Removing the torrent...")
-	btp.closing <- true
+	btp.closing.Write(nil)
 
-	if btp.deleteAfter {
-		btp.bts.Session.Remove_torrent(btp.torrentHandle, int(libtorrent.SessionDelete_files))
-	} else {
-		btp.bts.Session.Remove_torrent(btp.torrentHandle, 0)
-	}
 	if btp.torrentInfo != nil && btp.torrentInfo.Swigcptr() != 0 {
 		libtorrent.DeleteTorrent_info(btp.torrentInfo)
+	}
+
+	if btp.deleteAfter {
+		btp.log.Info("Removing the torrent and deleting files...")
+		btp.bts.Session.Remove_torrent(btp.torrentHandle, int(libtorrent.SessionDelete_files))
+	} else {
+		btp.log.Info("Removing the torrent without deleting files...")
+		btp.bts.Session.Remove_torrent(btp.torrentHandle, 0)
 	}
 }
 
 func (btp *BTPlayer) consumeAlerts() {
-	alerts, done := btp.bts.Alerts()
-	defer close(done)
+	alerts, alertsDone := btp.bts.Alerts()
+	defer close(alertsDone)
+
+	closing, closingDone := btp.closing.Listen()
+	defer close(closingDone)
+
 	for {
 		select {
 		case alert, ok := <-alerts:
@@ -272,7 +280,7 @@ func (btp *BTPlayer) consumeAlerts() {
 				}
 				break
 			}
-		case <-btp.closing:
+		case <-closing:
 			return
 		}
 	}
@@ -283,43 +291,63 @@ func (btp *BTPlayer) playerLoop() {
 
 	start := time.Now()
 
-	btp.log.Info("Buffer loop")
-	for btp.isBuffering == true {
-		ga.TrackEvent("player", "buffering", btp.torrentName, -1)
-		if btp.dialogProgress.IsCanceled() {
-			btp.log.Info("User cancelled the buffering")
-			go ga.TrackEvent("player", "buffer_canceled", btp.torrentName, -1)
-			btp.waitBuffer <- fmt.Errorf("user canceled the buffering")
-			return
-		}
-		status := btp.torrentHandle.Status(uint(libtorrent.Torrent_handleQuery_name))
-		line1, line2, line3 := btp.statusStrings(status)
-		btp.dialogProgress.Update(int(status.GetProgress()*100.0), line1, line2, line3)
-		time.Sleep(1000 * time.Millisecond)
-	}
+	secondTicker := time.Tick(1 * time.Second)
 
+	btp.log.Info("Buffer loop")
+	buffered, done := btp.didBuffer.Listen()
+	defer close(done)
+bufferLoop:
+	for {
+		select {
+		case <-buffered:
+			btp.log.Info("Buffer complete")
+			break bufferLoop
+		case <-secondTicker:
+			ga.TrackEvent("player", "buffering", btp.torrentName, -1)
+			if btp.dialogProgress.IsCanceled() {
+				btp.log.Info("User cancelled the buffering")
+				go ga.TrackEvent("player", "buffer_canceled", btp.torrentName, -1)
+				btp.didBuffer.Write(fmt.Errorf("user canceled the buffering"))
+				return
+			}
+			status := btp.torrentHandle.Status(uint(libtorrent.Torrent_handleQuery_name))
+			line1, line2, line3 := btp.statusStrings(status)
+			btp.dialogProgress.Update(int(status.GetProgress()*100.0), line1, line2, line3)
+		}
+	}
 	ga.TrackTiming("player", "buffer_time_real", int(time.Now().Sub(start).Seconds()*1000), "")
 
 	btp.log.Info("Waiting for playback...")
-	playbackWaited := 0
-	for xbmc.PlayerIsPlaying() == false {
-		if playbackWaited >= playbackMaxWait {
-			btp.log.Info("Playback was unable to start after %d seconds. Aborting...", playbackMaxWait)
-			return
+	playbackTimeout := time.After(playbackMaxWait)
+playbackWaitLoop:
+	for {
+		if xbmc.PlayerIsPlaying() {
+			break playbackWaitLoop
 		}
-		ga.TrackEvent("player", "waiting_playback", btp.torrentName, -1)
-		time.Sleep(1000 * time.Millisecond)
-		playbackWaited++
+		select {
+		case <-playbackTimeout:
+			btp.log.Info("Playback was unable to start after %d seconds. Aborting...", playbackMaxWait)
+			btp.didBuffer.Write(fmt.Errorf("Playback was unable to start before timeout."))
+			return
+		case <-secondTicker:
+			ga.TrackEvent("player", "waiting_playback", btp.torrentName, -1)
+		}
 	}
 
 	ga.TrackTiming("player", "buffer_time_perceived", int(time.Now().Sub(start).Seconds()*1000), "")
 
 	btp.log.Info("Playback loop")
-	for i := 0; xbmc.PlayerIsPlaying(); i++ {
-		if i%60 == 0 { // send keep alive every 60 seconds
-			ga.TrackEvent("player", "playing", btp.torrentName, -1)
+	playingTicker := time.Tick(60 * time.Second)
+playbackLoop:
+	for {
+		if xbmc.PlayerIsPlaying() == false {
+			break playbackLoop
 		}
-		time.Sleep(1000 * time.Millisecond)
+		select {
+		case <-playingTicker:
+			ga.TrackEvent("player", "playing", btp.torrentName, -1)
+		case <-secondTicker:
+		}
 	}
 
 	ga.TrackEvent("player", "stop", btp.torrentName, -1)
