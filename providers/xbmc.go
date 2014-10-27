@@ -67,32 +67,36 @@ func CallbackHandler(ctx *gin.Context) {
 	close(c)
 }
 
-func GetMovieSearchers() []MovieSearcher {
-	searchers := make([]MovieSearcher, 0)
+func getSearchers() []interface{} {
+	list := make([]interface{}, 0)
 	for _, addon := range xbmc.GetAddons("xbmc.python.script", "executable", true).Addons {
 		if strings.HasPrefix(addon.ID, "script.pulsar.") {
-			searchers = append(searchers, NewAddonSearcher(addon.ID))
+			list = append(list, NewAddonSearcher(addon.ID))
 		}
+	}
+	return list
+}
+
+func GetMovieSearchers() []MovieSearcher {
+	searchers := make([]MovieSearcher, 0)
+	for _, searcher := range getSearchers() {
+		searchers = append(searchers, searcher.(MovieSearcher))
 	}
 	return searchers
 }
 
 func GetEpisodeSearchers() []EpisodeSearcher {
 	searchers := make([]EpisodeSearcher, 0)
-	for _, addon := range xbmc.GetAddons("xbmc.python.script", "executable", true).Addons {
-		if strings.HasPrefix(addon.ID, "script.pulsar.") {
-			searchers = append(searchers, NewAddonSearcher(addon.ID))
-		}
+	for _, searcher := range getSearchers() {
+		searchers = append(searchers, searcher.(EpisodeSearcher))
 	}
 	return searchers
 }
 
 func GetSearchers() []Searcher {
 	searchers := make([]Searcher, 0)
-	for _, addon := range xbmc.GetAddons("xbmc.python.script", "executable", true).Addons {
-		if strings.HasPrefix(addon.ID, "script.pulsar.") {
-			searchers = append(searchers, NewAddonSearcher(addon.ID))
-		}
+	for _, searcher := range getSearchers() {
+		searchers = append(searchers, searcher.(Searcher))
 	}
 	return searchers
 }
