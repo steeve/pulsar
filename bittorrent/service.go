@@ -2,10 +2,10 @@ package bittorrent
 
 import (
 	"runtime"
-	"sync"
 
 	"github.com/op/go-logging"
 	"github.com/steeve/libtorrent-go"
+	"github.com/steeve/pulsar/broadcast"
 	"github.com/steeve/pulsar/util"
 )
 
@@ -40,12 +40,11 @@ type BTConfiguration struct {
 }
 
 type BTService struct {
-	Session        libtorrent.Session
-	config         *BTConfiguration
-	log            *logging.Logger
-	libtorrentLog  *logging.Logger
-	alertsLock     sync.Mutex
-	alertConsumers []*alertConsumer
+	Session           libtorrent.Session
+	config            *BTConfiguration
+	log               *logging.Logger
+	libtorrentLog     *logging.Logger
+	alertsBroadcaster *broadcast.Broadcaster
 
 	closing chan bool
 }
@@ -57,11 +56,10 @@ type alertConsumer struct {
 
 func NewBTService() *BTService {
 	s := &BTService{
-		Session:        libtorrent.NewSession(),
-		log:            logging.MustGetLogger("btservice"),
-		libtorrentLog:  logging.MustGetLogger("libtorrent"),
-		alertsLock:     sync.Mutex{},
-		alertConsumers: make([]*alertConsumer, 0),
+		Session:           libtorrent.NewSession(),
+		log:               logging.MustGetLogger("btservice"),
+		libtorrentLog:     logging.MustGetLogger("libtorrent"),
+		alertsBroadcaster: broadcast.NewBroadcaster(),
 	}
 	// Ensure we properly free the session object.
 	runtime.SetFinalizer(s, func(s *BTService) {
@@ -206,14 +204,12 @@ func (s *BTService) alertsConsumer() {
 		libtorrent.AlertStatus_notification |
 		libtorrent.AlertStorage_notification))
 
+	defer s.alertsBroadcaster.Close()
+
 	for {
 		select {
 		case <-s.closing:
 			s.log.Info("Closing all alert channels...")
-			for _, consumer := range s.alertConsumers {
-				close(consumer.alertsSink)
-				close(consumer.done)
-			}
 			return
 		default:
 			s.Session.Wait_for_alert(libtorrent.Seconds(libtorrentAlertWaitTime))
@@ -224,39 +220,25 @@ func (s *BTService) alertsConsumer() {
 			runtime.SetFinalizer(&alert, func(alert *libtorrent.Alert) {
 				libtorrent.DeleteAlert(*alert)
 			})
-			s.alertsLock.Lock()
-			n := len(s.alertConsumers)
-			for i := 0; i < n; i++ {
-				consumer := s.alertConsumers[i]
-				select {
-				case consumer.alertsSink <- alert:
-				case <-consumer.done:
-					s.alertConsumers = append(s.alertConsumers[:i], s.alertConsumers[i+1:]...)
-					i--
-					n--
-					close(consumer.alertsSink)
-					close(consumer.done)
-				}
-			}
-			s.alertsLock.Unlock()
+			s.alertsBroadcaster.Write(alert)
 		}
 	}
 }
 
-func (s *BTService) Alerts() (<-chan libtorrent.Alert, chan<- bool) {
-	consumer := &alertConsumer{
-		alertsSink: make(chan libtorrent.Alert, 100),
-		done:       make(chan bool),
-	}
-
-	s.alertsLock.Lock()
-	s.alertConsumers = append(s.alertConsumers, consumer)
-	s.alertsLock.Unlock()
-	return consumer.alertsSink, consumer.done
+func (s *BTService) Alerts() (<-chan libtorrent.Alert, chan<- interface{}) {
+	c, done := s.alertsBroadcaster.Listen()
+	ac := make(chan libtorrent.Alert)
+	go func() {
+		for v := range c {
+			ac <- v.(libtorrent.Alert)
+		}
+	}()
+	return ac, done
 }
 
 func (s *BTService) logAlerts() {
-	alerts, _ := s.Alerts()
+	alerts, done := s.Alerts()
+	defer close(done)
 	for alert := range alerts {
 		alertCategory := alert.Category()
 		if alertCategory&int(libtorrent.AlertError_notification) != 0 {

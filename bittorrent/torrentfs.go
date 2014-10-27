@@ -96,14 +96,14 @@ func NewTorrentFile(file *os.File, tfs *TorrentFS, torrentHandle libtorrent.Torr
 
 func (tf *TorrentFile) consumeAlerts() {
 	alerts, done := tf.tfs.service.Alerts()
+	defer close(done)
 	for alert := range alerts {
 		switch alert.Xtype() {
 		case libtorrent.Torrent_removed_alertAlert_type:
 			removedAlert := libtorrent.SwigcptrTorrent_alert(alert.Swigcptr())
 			if removedAlert.GetHandle().Equal(tf.torrentHandle) {
 				tf.removed <- true
-				done <- true
-				break
+				return
 			}
 		}
 	}

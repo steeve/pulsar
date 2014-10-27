@@ -251,6 +251,7 @@ func (btp *BTPlayer) Close() {
 
 func (btp *BTPlayer) consumeAlerts() {
 	alerts, done := btp.bts.Alerts()
+	defer close(done)
 	for {
 		select {
 		case alert, ok := <-alerts:
@@ -272,7 +273,6 @@ func (btp *BTPlayer) consumeAlerts() {
 				break
 			}
 		case <-btp.closing:
-			done <- true
 			return
 		}
 	}
