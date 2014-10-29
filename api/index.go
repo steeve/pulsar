@@ -12,8 +12,8 @@ func Index(c *gin.Context) {
 		{Label: "Top Rated Movies", Path: UrlForXBMC("/movies/top")},
 		{Label: "Movies by Genre", Path: UrlForXBMC("/movies/genres")},
 
-		{Label: "Search Shows", Path: UrlForXBMC("/shows/search")},
-		{Label: "Popular Shows", Path: UrlForXBMC("/shows/popular")},
+		{Label: "Search TV Shows", Path: UrlForXBMC("/shows/search")},
+		{Label: "Popular TV Shows", Path: UrlForXBMC("/shows/popular")},
 
 		{Label: "Search", Path: UrlForXBMC("/search")},
 	}))
