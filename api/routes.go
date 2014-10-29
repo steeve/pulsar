@@ -50,6 +50,7 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 	{
 		shows.GET("/search", SearchShows)
 		shows.GET("/popular", cache.Cache(store, DefaultCacheTime), PopularShows)
+		shows.GET("/top", cache.Cache(store, DefaultCacheTime), TopRatedShows)
 	}
 	show := r.Group("/show")
 	{
