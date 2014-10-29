@@ -9,8 +9,17 @@ import (
 	"code.google.com/p/go.text/unicode/norm"
 )
 
+// as per http://en.wikipedia.org/wiki/Hepburn_romanization#Variations
+func RomanizeHepburn(str string) string {
+	str = strings.Replace(str, "ō", "ou", -1)
+	str = strings.Replace(str, "ū", "uu", -1)
+	return str
+}
+
 func NormalizeTitle(title string) string {
 	normalizedTitle := title
+	normalizedTitle = strings.ToLower(normalizedTitle)
+	normalizedTitle = RomanizeHepburn(title)
 	normalizedTitle, _, _ = transform.String(transform.Chain(
 		norm.NFD,
 		transform.RemoveFunc(func(r rune) bool {
