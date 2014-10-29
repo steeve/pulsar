@@ -8,15 +8,16 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/steeve/pulsar/bittorrent"
 	"github.com/steeve/pulsar/providers"
-	"github.com/steeve/pulsar/trakt"
+	"github.com/steeve/pulsar/tmdb"
+	"github.com/steeve/pulsar/tvdb"
 	"github.com/steeve/pulsar/xbmc"
 )
 
-func renderShows(shows trakt.ShowList, ctx *gin.Context) {
+func renderShows(shows tmdb.Shows, ctx *gin.Context) {
 	items := make(xbmc.ListItems, 0, len(shows))
 	for _, show := range shows {
 		item := show.ToListItem()
-		item.Path = UrlForXBMC("/show/%s/seasons", show.TVDBId)
+		item.Path = UrlForXBMC("/show/%d/seasons", show.ExternalIDs.TVDBID)
 		items = append(items, item)
 	}
 
@@ -24,79 +25,95 @@ func renderShows(shows trakt.ShowList, ctx *gin.Context) {
 }
 
 func PopularShows(ctx *gin.Context) {
-	renderShows(trakt.TrendingShows(), ctx)
+	renderShows(tmdb.PopularShowsComplete(""), ctx)
+}
+
+func TopRatedShows(ctx *gin.Context) {
+	renderShows(tmdb.TopRatedShowsComplete(""), ctx)
 }
 
 func SearchShows(ctx *gin.Context) {
 	query := ctx.Request.URL.Query().Get("q")
 	if query == "" {
-		query = xbmc.Keyboard("", "Search Movies")
+		query = xbmc.Keyboard("", "Search TV Shows")
 	}
-	renderShows(trakt.SearchShows(query), ctx)
+	renderShows(tmdb.SearchShows(query, "en"), ctx)
 }
 
 func ShowSeasons(ctx *gin.Context) {
-	show := trakt.NewShow(ctx.Params.ByName("showId"))
-	seasons := show.Seasons()
-
-	items := make(xbmc.ListItems, 0, len(seasons))
-	for _, season := range seasons {
-		if season.Season == 0 {
-			continue
-		}
-		item := season.ToListItem()
-		item.Path = UrlForXBMC("/show/%s/season/%d/episodes", show.TVDBId, season.Season)
-		items = append(items, item)
+	show, err := tvdb.NewShow(ctx.Params.ByName("showId"), "en")
+	if err != nil {
+		ctx.Error(err, nil)
+		return
 	}
 
-	ctx.JSON(200, xbmc.NewView("seasons", items))
+	items := show.Seasons.ToListItems()
+	reversedItems := make(xbmc.ListItems, 0)
+	for i := len(items) - 1; i >= 0; i-- {
+		item := items[i]
+		item.Path = UrlForXBMC("/show/%d/season/%d/episodes", show.Id, item.Info.Season)
+		reversedItems = append(reversedItems, item)
+	}
+	// xbmc.ListItems always returns false to Less() so that order is unchanged
+
+	ctx.JSON(200, xbmc.NewView("seasons", reversedItems))
 }
 
 func ShowEpisodes(ctx *gin.Context) {
-	show := trakt.NewShow(ctx.Params.ByName("showId"))
-	seasonNumber, _ := strconv.Atoi(ctx.Params.ByName("season"))
-	season := show.Season(seasonNumber)
-	episodes := season.Episodes()
+	show, err := tvdb.NewShow(ctx.Params.ByName("showId"), "en")
+	if err != nil {
+		ctx.Error(err, nil)
+		return
+	}
 
-	items := make(xbmc.ListItems, 0, len(episodes))
-	for _, episode := range episodes {
-		item := episode.ToListItem()
-		item.Path = UrlForXBMC("/show/%s/season/%d/episode/%d/play",
-			show.TVDBId,
+	seasonNumber, _ := strconv.Atoi(ctx.Params.ByName("season"))
+
+	season := show.Seasons[seasonNumber]
+	items := season.Episodes.ToListItems()
+	for _, item := range items {
+		item.Path = UrlForXBMC("/show/%d/season/%d/episode/%d/play",
+			show.Id,
 			season.Season,
-			episode.Episode,
+			item.Info.Episode,
 		)
 		item.ContextMenu = [][]string{
-			[]string{"Choose stream...", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/show/%s/season/%d/episode/%d/links",
-				show.TVDBId,
+			[]string{"Choose stream...", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/show/%d/season/%d/episode/%d/links",
+				show.Id,
 				season.Season,
-				episode.Episode,
+				item.Info.Episode,
 			))},
 		}
 		item.IsPlayable = true
-		items = append(items, item)
 	}
 
 	ctx.JSON(200, xbmc.NewView("episodes", items))
 }
 
-func showEpisodeLinks(showId string, seasonNumber, episodeNumber int) []*bittorrent.Torrent {
+func showEpisodeLinks(showId string, seasonNumber, episodeNumber int) ([]*bittorrent.Torrent, error) {
 	log.Println("Searching links for TVDB Id:", showId)
 
-	show := trakt.NewShow(showId)
-	episode := show.Season(seasonNumber).Episode(episodeNumber)
+	show, err := tvdb.NewShow(showId, "en")
+	if err != nil {
+		return nil, err
+	}
 
-	log.Printf("Resolved %s to %s\n", showId, show.Title)
+	episode := show.Seasons[seasonNumber].Episodes[episodeNumber-1]
+
+	log.Printf("Resolved %s to %s\n", showId, show.SeriesName)
 
 	searchers := providers.GetEpisodeSearchers()
 
-	return providers.SearchEpisode(searchers, episode)
+	return providers.SearchEpisode(searchers, episode), nil
 }
 
 func ShowEpisodeLinks(ctx *gin.Context) {
 	seasonNumber, _ := strconv.Atoi(ctx.Params.ByName("season"))
 	episodeNumber, _ := strconv.Atoi(ctx.Params.ByName("episode"))
-	torrents := showEpisodeLinks(ctx.Params.ByName("showId"), seasonNumber, episodeNumber)
+	torrents, err := showEpisodeLinks(ctx.Params.ByName("showId"), seasonNumber, episodeNumber)
+	if err != nil {
+		ctx.Error(err, nil)
+		return
+	}
 
 	if len(torrents) == 0 {
 		xbmc.Notify("Pulsar", "No links were found.")
@@ -123,7 +140,11 @@ func ShowEpisodeLinks(ctx *gin.Context) {
 func ShowEpisodePlay(ctx *gin.Context) {
 	seasonNumber, _ := strconv.Atoi(ctx.Params.ByName("season"))
 	episodeNumber, _ := strconv.Atoi(ctx.Params.ByName("episode"))
-	torrents := showEpisodeLinks(ctx.Params.ByName("showId"), seasonNumber, episodeNumber)
+	torrents, err := showEpisodeLinks(ctx.Params.ByName("showId"), seasonNumber, episodeNumber)
+	if err != nil {
+		ctx.Error(err, nil)
+		return
+	}
 
 	if len(torrents) == 0 {
 		xbmc.Notify("Pulsar", "No links were found.")

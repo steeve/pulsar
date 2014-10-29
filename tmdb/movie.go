@@ -2,6 +2,7 @@ package tmdb
 
 import (
 	"fmt"
+	"math/rand"
 	"path"
 	"strconv"
 	"strings"
@@ -32,10 +33,12 @@ type Movie struct {
 	AlternativeTitles   *struct {
 		Titles []*AlternativeTitle `json:"titles"`
 	} `json:"alternative_titles"`
-	SpokenLanguages []*struct {
-		ISO_639_1 string `json:"iso_639_1"`
-		Name      string `json:"name"`
-	} `json:"spoken_languages"`
+	SpokenLanguages []*Language  `json:"spoken_languages"`
+	ExternalIDs     *ExternalIDs `json:"external_ids"`
+
+	Translations *struct {
+		Translations []*Language `json:"translations"`
+	} `json:"translations"`
 
 	Credits *Credits `json:"credits,omitempty"`
 	Images  *Images  `json:"images,omitempty"`
@@ -59,7 +62,7 @@ func getMovieById(movieId string, language string) *Movie {
 		rateLimiter.Call(func() {
 			napping.Get(
 				tmdbEndpoint+"movie/"+movieId,
-				&napping.Params{"api_key": apiKey, "append_to_response": "credits,images,alternative_titles,translations"},
+				&napping.Params{"api_key": apiKey, "append_to_response": "credits,images,alternative_titles,translations,external_ids"},
 				&movie,
 				nil,
 			)
@@ -129,39 +132,6 @@ func (a ByPopularity) Len() int           { return len(a) }
 func (a ByPopularity) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByPopularity) Less(i, j int) bool { return a[i].Popularity < a[j].Popularity }
 
-func ListMovies(endpoint string, genre string, sortBy string) []*Entity {
-	var wg sync.WaitGroup
-	movies := make([]*Entity, popularMoviesMaxPages*moviesPerPage)
-
-	wg.Add(popularMoviesMaxPages)
-	for i := 0; i < popularMoviesMaxPages; i++ {
-		go func(page int) {
-			defer wg.Done()
-			var tmp EntityList
-			rateLimiter.Call(func() {
-				napping.Get(
-					tmdbEndpoint+endpoint,
-					&napping.Params{
-						"api_key":     apiKey,
-						"sort_by":     sortBy,
-						"language":    "en",
-						"page":        strconv.Itoa(popularMoviesStartPage + page),
-						"with_genres": genre,
-					},
-					&tmp,
-					nil,
-				)
-			})
-			for i, movie := range tmp.Results {
-				movies[page*moviesPerPage+i] = movie
-			}
-		}(i)
-	}
-	wg.Wait()
-
-	return movies
-}
-
 func ListMoviesComplete(endpoint string, genre string, sortBy string) Movies {
 	movies := make(Movies, popularMoviesMaxPages*moviesPerPage)
 
@@ -210,7 +180,7 @@ func (movie *Movie) ToListItem() *xbmc.ListItem {
 		Label: movie.OriginalTitle,
 		Info: &xbmc.ListItemInfo{
 			Year:          year,
-			Count:         movie.IMDBId,
+			Count:         rand.Int(),
 			Title:         movie.OriginalTitle,
 			OriginalTitle: movie.Title,
 			Plot:          movie.Overview,

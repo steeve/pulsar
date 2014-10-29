@@ -2,6 +2,7 @@ package trakt
 
 import (
 	"fmt"
+	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -148,7 +149,7 @@ func (show *Show) ToListItem() *xbmc.ListItem {
 	return &xbmc.ListItem{
 		Label: show.Title,
 		Info: &xbmc.ListItemInfo{
-			Count:       show.TVDBId,
+			Count:       rand.Int(),
 			Title:       show.Title,
 			Genre:       strings.Join(show.Genres, " / "),
 			Plot:        show.Overview,
@@ -170,8 +171,7 @@ func (season *ShowSeason) ToListItem() *xbmc.ListItem {
 	return &xbmc.ListItem{
 		Label: seasonLabel,
 		Info: &xbmc.ListItemInfo{
-			Count:  strconv.Itoa(season.Season),
-			Code:   strconv.Itoa(season.Season),
+			Count:  rand.Int(),
 			Title:  seasonLabel,
 			Season: season.Season,
 		},
@@ -189,8 +189,7 @@ func (episode *ShowEpisode) ToListItem() *xbmc.ListItem {
 		Label:     title,
 		Thumbnail: episode.Images.Screen,
 		Info: &xbmc.ListItemInfo{
-			Count:       strconv.Itoa(episode.Number),
-			Code:        strconv.Itoa(episode.Number),
+			Count:       rand.Int(),
 			Title:       title,
 			Plot:        episode.Overview,
 			PlotOutline: episode.Overview,

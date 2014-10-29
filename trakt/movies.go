@@ -2,6 +2,7 @@ package trakt
 
 import (
 	"fmt"
+	"math/rand"
 	"strings"
 
 	"github.com/jmcvetta/napping"
@@ -51,7 +52,7 @@ func (movie *Movie) ToListItem() *xbmc.ListItem {
 	return &xbmc.ListItem{
 		Label: movie.Title,
 		Info: &xbmc.ListItemInfo{
-			Count:       movie.IMDBId,
+			Count:       rand.Int(),
 			Title:       movie.Title,
 			Genre:       strings.Join(movie.Genres, " / "),
 			Plot:        movie.Overview,

@@ -7,7 +7,7 @@ import (
 	"github.com/op/go-logging"
 	"github.com/steeve/pulsar/bittorrent"
 	"github.com/steeve/pulsar/tmdb"
-	"github.com/steeve/pulsar/trakt"
+	"github.com/steeve/pulsar/tvdb"
 )
 
 var DefaultTrackers = []string{
@@ -59,7 +59,7 @@ func SearchMovie(searchers []MovieSearcher, movie *tmdb.Movie) []*bittorrent.Tor
 	return processLinks(torrentsChan)
 }
 
-func SearchEpisode(searchers []EpisodeSearcher, episode *trakt.ShowEpisode) []*bittorrent.Torrent {
+func SearchEpisode(searchers []EpisodeSearcher, episode *tvdb.Episode) []*bittorrent.Torrent {
 	torrentsChan := make(chan *bittorrent.Torrent)
 	go func() {
 		wg := sync.WaitGroup{}

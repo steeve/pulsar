@@ -14,7 +14,7 @@ import (
 	"github.com/op/go-logging"
 	"github.com/steeve/pulsar/bittorrent"
 	"github.com/steeve/pulsar/tmdb"
-	"github.com/steeve/pulsar/trakt"
+	"github.com/steeve/pulsar/tvdb"
 	"github.com/steeve/pulsar/util"
 	"github.com/steeve/pulsar/xbmc"
 )
@@ -121,13 +121,13 @@ func (as *AddonSearcher) GetMovieSearchObject(movie *tmdb.Movie) *MovieSearchObj
 	return sObject
 }
 
-func (as *AddonSearcher) GetEpisodeSearchObject(episode *trakt.ShowEpisode) *EpisodeSearchObject {
+func (as *AddonSearcher) GetEpisodeSearchObject(episode *tvdb.Episode) *EpisodeSearchObject {
 	return &EpisodeSearchObject{
-		IMDBId:  episode.Show.IMDBId,
-		TVDBId:  episode.Show.TVDBId,
-		Title:   NormalizeTitle(episode.Show.Title),
-		Season:  episode.Season.Season,
-		Episode: episode.Episode,
+		IMDBId:  episode.ImdbId,
+		TVDBId:  episode.Id,
+		Title:   NormalizeTitle(episode.Show.SeriesName),
+		Season:  episode.SeasonNumber,
+		Episode: episode.EpisodeNumber,
 	}
 }
 
@@ -163,6 +163,6 @@ func (as *AddonSearcher) SearchMovieLinks(movie *tmdb.Movie) []*bittorrent.Torre
 	return as.call("search_movie", as.GetMovieSearchObject(movie))
 }
 
-func (as *AddonSearcher) SearchEpisodeLinks(episode *trakt.ShowEpisode) []*bittorrent.Torrent {
+func (as *AddonSearcher) SearchEpisodeLinks(episode *tvdb.Episode) []*bittorrent.Torrent {
 	return as.call("search_episode", as.GetEpisodeSearchObject(episode))
 }

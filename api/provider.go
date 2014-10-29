@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/steeve/pulsar/providers"
 	"github.com/steeve/pulsar/tmdb"
-	"github.com/steeve/pulsar/trakt"
+	"github.com/steeve/pulsar/tvdb"
 )
 
 type providerDebugResponse struct {
@@ -48,10 +48,14 @@ func ProviderGetEpisode(ctx *gin.Context) {
 
 	log.Println("Searching links for TVDB Id:", showId)
 
-	show := trakt.NewShow(showId)
-	episode := show.Season(seasonNumber).Episode(episodeNumber)
+	show, err := tvdb.NewShow(showId, "en")
+	if err != nil {
+		ctx.Error(err, nil)
+		return
+	}
+	episode := show.Seasons[seasonNumber].Episodes[episodeNumber-1]
 
-	log.Printf("Resolved %s to %s\n", showId, show.Title)
+	log.Printf("Resolved %s to %s\n", showId, show.SeriesName)
 
 	searcher := providers.NewAddonSearcher(provider)
 	torrents := searcher.SearchEpisodeLinks(episode)

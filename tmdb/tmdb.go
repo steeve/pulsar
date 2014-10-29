@@ -1,8 +1,11 @@
 package tmdb
 
 import (
+	"strconv"
+	"sync"
 	"time"
 
+	"github.com/jmcvetta/napping"
 	"github.com/steeve/pulsar/util"
 )
 
@@ -57,12 +60,14 @@ type Entity struct {
 	BackdropPath  string    `json:"backdrop_path"`
 	Id            int       `json:"id"`
 	Genres        []*IdName `json:"genres"`
-	OriginalTitle string    `json:"original_title"`
+	OriginalTitle string    `json:"original_title,omitempty"`
 	ReleaseDate   string    `json:"release_date"`
 	PosterPath    string    `json:"poster_path"`
-	Title         string    `json:"title"`
+	Title         string    `json:"title,omitempty"`
 	VoteAverage   float32   `json:"vote_average"`
 	VoteCount     int       `json:"vote_count"`
+	OriginalName  string    `json:"original_name,omitempty"`
+	Name          string    `json:"name,omitempty"`
 }
 
 type EntityList struct {
@@ -76,13 +81,19 @@ type ExternalIDs struct {
 	IMDBId      string `json:"imdb_id"`
 	FreeBaseID  string `json:"freebase_id"`
 	FreeBaseMID string `json:"freebase_mid"`
-	TVDBID      string `json:"tvdb_id"`
-	TVRageID    string `json:"tvrage_id"`
+	TVDBID      int    `json:"tvdb_id"`
+	TVRageID    int    `json:"tvrage_id"`
 }
 
 type AlternativeTitle struct {
 	ISO_3166_1 string `json:"iso_3166_1"`
 	Title      string `json:"title"`
+}
+
+type Language struct {
+	ISO_639_1   string `json:"iso_639_1"`
+	Name        string `json:"name"`
+	EnglishName string `json:"english_name,omitempty"`
 }
 
 const (
@@ -99,4 +110,37 @@ var rateLimiter = util.NewRateLimiter(burstRate, burstTime, simultaneousConnecti
 
 func imageURL(uri string, size string) string {
 	return imageEndpoint + size + uri
+}
+
+func ListEntities(endpoint string, genre string, sortBy string) []*Entity {
+	var wg sync.WaitGroup
+	entities := make([]*Entity, popularMoviesMaxPages*moviesPerPage)
+
+	wg.Add(popularMoviesMaxPages)
+	for i := 0; i < popularMoviesMaxPages; i++ {
+		go func(page int) {
+			defer wg.Done()
+			var tmp EntityList
+			rateLimiter.Call(func() {
+				napping.Get(
+					tmdbEndpoint+endpoint,
+					&napping.Params{
+						"api_key":     apiKey,
+						"sort_by":     sortBy,
+						"language":    "en",
+						"page":        strconv.Itoa(popularMoviesStartPage + page),
+						"with_genres": genre,
+					},
+					&tmp,
+					nil,
+				)
+			})
+			for i, entity := range tmp.Results {
+				entities[page*moviesPerPage+i] = entity
+			}
+		}(i)
+	}
+	wg.Wait()
+
+	return entities
 }

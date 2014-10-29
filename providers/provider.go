@@ -3,7 +3,7 @@ package providers
 import (
 	"github.com/steeve/pulsar/bittorrent"
 	"github.com/steeve/pulsar/tmdb"
-	"github.com/steeve/pulsar/trakt"
+	"github.com/steeve/pulsar/tvdb"
 )
 
 type Searcher interface {
@@ -15,5 +15,5 @@ type MovieSearcher interface {
 }
 
 type EpisodeSearcher interface {
-	SearchEpisodeLinks(episode *trakt.ShowEpisode) []*bittorrent.Torrent
+	SearchEpisodeLinks(episode *tvdb.Episode) []*bittorrent.Torrent
 }

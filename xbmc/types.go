@@ -35,7 +35,7 @@ type ListItem struct {
 
 type ListItemInfo struct {
 	// General Values that apply to all types
-	Count string `json:"count,omitempty"`
+	Count int    `json:"count,omitempty"`
 	Size  int    `json:"size,omitempty"`
 	Date  string `json:"date,omitempty"`
 
@@ -120,3 +120,7 @@ func NewView(contentType string, items ListItems) *View {
 		Items:       items,
 	}
 }
+
+func (li ListItems) Len() int           { return len(li) }
+func (li ListItems) Swap(i, j int)      { li[i], li[j] = li[j], li[i] }
+func (li ListItems) Less(i, j int) bool { return false }
