@@ -74,6 +74,9 @@ func movieLinks(imdbId string) []*bittorrent.Torrent {
 	log.Printf("Resolved %s to %s\n", imdbId, movie.Title)
 
 	searchers := providers.GetMovieSearchers()
+	if len(searchers) == 0 {
+		xbmc.Notify("Pulsar", "Unable to find any providers")
+	}
 
 	return providers.SearchMovie(searchers, movie)
 }
@@ -82,7 +85,7 @@ func MovieLinks(ctx *gin.Context) {
 	torrents := movieLinks(ctx.Params.ByName("imdbId"))
 
 	if len(torrents) == 0 {
-		xbmc.Notify("Pulsar", "No links were found.")
+		xbmc.Notify("Pulsar", "No links were found")
 		return
 	}
 

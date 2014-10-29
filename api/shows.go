@@ -102,6 +102,9 @@ func showEpisodeLinks(showId string, seasonNumber, episodeNumber int) ([]*bittor
 	log.Printf("Resolved %s to %s\n", showId, show.SeriesName)
 
 	searchers := providers.GetEpisodeSearchers()
+	if len(searchers) == 0 {
+		xbmc.Notify("Pulsar", "Unable to find any providers")
+	}
 
 	return providers.SearchEpisode(searchers, show, episode), nil
 }
@@ -116,7 +119,7 @@ func ShowEpisodeLinks(ctx *gin.Context) {
 	}
 
 	if len(torrents) == 0 {
-		xbmc.Notify("Pulsar", "No links were found.")
+		xbmc.Notify("Pulsar", "No links were found")
 		return
 	}
 
