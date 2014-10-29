@@ -1,11 +1,15 @@
 package tmdb
 
 import (
+	"fmt"
+	"path"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/jmcvetta/napping"
+	"github.com/steeve/pulsar/cache"
+	"github.com/steeve/pulsar/config"
 	"github.com/steeve/pulsar/util"
 )
 
@@ -96,6 +100,14 @@ type Language struct {
 	EnglishName string `json:"english_name,omitempty"`
 }
 
+type FindResult struct {
+	MovieResults     []*Entity `json:"movie_results"`
+	PersonResults    []*Entity `json:"person_results"`
+	TVResults        []*Entity `json:"tv_results"`
+	TVEpisodeResults []*Entity `json:"tv_episode_results"`
+	TVSeasonResults  []*Entity `json:"tv_season_results"`
+}
+
 const (
 	tmdbEndpoint            = "http://api.themoviedb.org/3/"
 	imageEndpoint           = "http://image.tmdb.org/t/p/"
@@ -143,4 +155,24 @@ func ListEntities(endpoint string, genre string, sortBy string) []*Entity {
 	wg.Wait()
 
 	return entities
+}
+
+func Find(externalId string, externalSource string) *FindResult {
+	var result *FindResult
+
+	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
+	key := fmt.Sprintf("com.tmdb.find.%s.%s", externalSource, externalId)
+	if err := cacheStore.Get(key, &result); err != nil {
+		rateLimiter.Call(func() {
+			napping.Get(
+				tmdbEndpoint+"find/"+externalId,
+				&napping.Params{"api_key": apiKey, "external_source": externalSource},
+				&result,
+				nil,
+			)
+			cacheStore.Set(key, result, 365*24*time.Hour)
+		})
+	}
+
+	return result
 }
