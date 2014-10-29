@@ -41,13 +41,13 @@ func SearchShows(ctx *gin.Context) {
 }
 
 func ShowSeasons(ctx *gin.Context) {
-	show, err := tvdb.NewShow(ctx.Params.ByName("showId"), "en")
+	show, err := tvdb.NewShowCached(ctx.Params.ByName("showId"), "en")
 	if err != nil {
 		ctx.Error(err, nil)
 		return
 	}
 
-	items := show.Seasons.ToListItems()
+	items := show.Seasons.ToListItems(show)
 	reversedItems := make(xbmc.ListItems, 0)
 	for i := len(items) - 1; i >= 0; i-- {
 		item := items[i]
@@ -60,7 +60,7 @@ func ShowSeasons(ctx *gin.Context) {
 }
 
 func ShowEpisodes(ctx *gin.Context) {
-	show, err := tvdb.NewShow(ctx.Params.ByName("showId"), "en")
+	show, err := tvdb.NewShowCached(ctx.Params.ByName("showId"), "en")
 	if err != nil {
 		ctx.Error(err, nil)
 		return
@@ -69,7 +69,7 @@ func ShowEpisodes(ctx *gin.Context) {
 	seasonNumber, _ := strconv.Atoi(ctx.Params.ByName("season"))
 
 	season := show.Seasons[seasonNumber]
-	items := season.Episodes.ToListItems()
+	items := season.Episodes.ToListItems(show)
 	for _, item := range items {
 		item.Path = UrlForXBMC("/show/%d/season/%d/episode/%d/play",
 			show.Id,
@@ -92,7 +92,7 @@ func ShowEpisodes(ctx *gin.Context) {
 func showEpisodeLinks(showId string, seasonNumber, episodeNumber int) ([]*bittorrent.Torrent, error) {
 	log.Println("Searching links for TVDB Id:", showId)
 
-	show, err := tvdb.NewShow(showId, "en")
+	show, err := tvdb.NewShowCached(showId, "en")
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func showEpisodeLinks(showId string, seasonNumber, episodeNumber int) ([]*bittor
 
 	searchers := providers.GetEpisodeSearchers()
 
-	return providers.SearchEpisode(searchers, episode), nil
+	return providers.SearchEpisode(searchers, show, episode), nil
 }
 
 func ShowEpisodeLinks(ctx *gin.Context) {

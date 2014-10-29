@@ -121,11 +121,11 @@ func (as *AddonSearcher) GetMovieSearchObject(movie *tmdb.Movie) *MovieSearchObj
 	return sObject
 }
 
-func (as *AddonSearcher) GetEpisodeSearchObject(episode *tvdb.Episode) *EpisodeSearchObject {
+func (as *AddonSearcher) GetEpisodeSearchObject(show *tvdb.Show, episode *tvdb.Episode) *EpisodeSearchObject {
 	return &EpisodeSearchObject{
 		IMDBId:  episode.ImdbId,
 		TVDBId:  episode.Id,
-		Title:   NormalizeTitle(episode.Show.SeriesName),
+		Title:   NormalizeTitle(show.SeriesName),
 		Season:  episode.SeasonNumber,
 		Episode: episode.EpisodeNumber,
 	}
@@ -163,6 +163,6 @@ func (as *AddonSearcher) SearchMovieLinks(movie *tmdb.Movie) []*bittorrent.Torre
 	return as.call("search_movie", as.GetMovieSearchObject(movie))
 }
 
-func (as *AddonSearcher) SearchEpisodeLinks(episode *tvdb.Episode) []*bittorrent.Torrent {
-	return as.call("search_episode", as.GetEpisodeSearchObject(episode))
+func (as *AddonSearcher) SearchEpisodeLinks(show *tvdb.Show, episode *tvdb.Episode) []*bittorrent.Torrent {
+	return as.call("search_episode", as.GetEpisodeSearchObject(show, episode))
 }

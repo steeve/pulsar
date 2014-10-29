@@ -7,9 +7,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"path"
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/steeve/pulsar/cache"
+	"github.com/steeve/pulsar/config"
 )
 
 const (
@@ -19,7 +23,7 @@ const (
 	burstRate               = 30
 	burstTime               = 1 * time.Second
 	simultaneousConnections = 20
-	cacheTime               = 60 * 24 * time.Hour
+	cacheTime               = 2 * time.Hour
 )
 
 type SeasonList []*Season
@@ -48,8 +52,6 @@ type Episode struct {
 
 	AbsoluteNumber       int    `xml:"-"`
 	AbsoluteNumberString string `xml:"absolute_number"`
-
-	Show *Show `xml:"-"`
 }
 
 type Show struct {
@@ -78,14 +80,12 @@ type Show struct {
 
 	Runtime int `xml:"-"`
 
-	Seasons  SeasonList  `xml:"-"`
-	Episodes EpisodeList `xml:"-"`
-	Banners  []*Banner   `xml:"-"`
-	Actors   []*Actor    `xml:"-"`
+	Seasons SeasonList `xml:"-"`
+	Banners []*Banner  `xml:"-"`
+	Actors  []*Actor   `xml:"-"`
 }
 
 type Season struct {
-	Show     *Show
 	Season   int
 	Episodes EpisodeList
 }
@@ -166,21 +166,19 @@ func NewShow(tvdbId string, language string) (*Show, error) {
 	show := serie.Serie
 	show.Actors = actors.Actors
 	show.Banners = banners.Banners
-	show.Episodes = serie.Episodes
 	show.Seasons = make([]*Season, 0)
 
 	sort.Sort(sort.Reverse(BannersByRating(banners.Banners)))
-	sort.Sort(BySeasonAndEpisodeNumber(show.Episodes))
+	sort.Sort(BySeasonAndEpisodeNumber(serie.Episodes))
 
 	if rt, err := strconv.Atoi(show.RuntimeString); err == nil {
 		show.Runtime = rt
 	}
 
 	curSeasonNumber := -1
-	for _, episode := range show.Episodes {
+	for _, episode := range serie.Episodes {
 		for _ = 0; curSeasonNumber < episode.SeasonNumber; curSeasonNumber++ {
 			show.Seasons = append(show.Seasons, &Season{
-				Show:     show,
 				Season:   episode.SeasonNumber,
 				Episodes: make([]*Episode, 0),
 			})
@@ -189,10 +187,24 @@ func NewShow(tvdbId string, language string) (*Show, error) {
 		if an, err := strconv.Atoi(episode.AbsoluteNumberString); err == nil {
 			episode.AbsoluteNumber = an
 		}
-		episode.Show = show
 		season.Episodes = append(season.Episodes, episode)
 	}
 
+	return show, nil
+}
+
+func NewShowCached(tvdbId string, language string) (*Show, error) {
+	var show *Show
+	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
+	key := fmt.Sprintf("com.tvdb.show.%s.%s", tvdbId, language)
+	if err := cacheStore.Get(key, &show); err != nil {
+		newShow, err := NewShow(tvdbId, language)
+		if err != nil {
+			return nil, err
+		}
+		cacheStore.Set(key, newShow, cacheTime)
+		show = newShow
+	}
 	return show, nil
 }
 

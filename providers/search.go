@@ -59,7 +59,7 @@ func SearchMovie(searchers []MovieSearcher, movie *tmdb.Movie) []*bittorrent.Tor
 	return processLinks(torrentsChan)
 }
 
-func SearchEpisode(searchers []EpisodeSearcher, episode *tvdb.Episode) []*bittorrent.Torrent {
+func SearchEpisode(searchers []EpisodeSearcher, show *tvdb.Show, episode *tvdb.Episode) []*bittorrent.Torrent {
 	torrentsChan := make(chan *bittorrent.Torrent)
 	go func() {
 		wg := sync.WaitGroup{}
@@ -67,7 +67,7 @@ func SearchEpisode(searchers []EpisodeSearcher, episode *tvdb.Episode) []*bittor
 			wg.Add(1)
 			go func(searcher EpisodeSearcher) {
 				defer wg.Done()
-				for _, torrent := range searcher.SearchEpisodeLinks(episode) {
+				for _, torrent := range searcher.SearchEpisodeLinks(show, episode) {
 					torrentsChan <- torrent
 				}
 			}(searcher)

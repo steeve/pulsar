@@ -48,7 +48,7 @@ func ProviderGetEpisode(ctx *gin.Context) {
 
 	log.Println("Searching links for TVDB Id:", showId)
 
-	show, err := tvdb.NewShow(showId, "en")
+	show, err := tvdb.NewShowCached(showId, "en")
 	if err != nil {
 		ctx.Error(err, nil)
 		return
@@ -58,14 +58,14 @@ func ProviderGetEpisode(ctx *gin.Context) {
 	log.Printf("Resolved %s to %s\n", showId, show.SeriesName)
 
 	searcher := providers.NewAddonSearcher(provider)
-	torrents := searcher.SearchEpisodeLinks(episode)
+	torrents := searcher.SearchEpisodeLinks(show, episode)
 	if ctx.Request.URL.Query().Get("resolve") == "true" {
 		for _, torrent := range torrents {
 			torrent.Resolve()
 		}
 	}
 	data, err := json.MarshalIndent(providerDebugResponse{
-		Payload: searcher.GetEpisodeSearchObject(episode),
+		Payload: searcher.GetEpisodeSearchObject(show, episode),
 		Results: torrents,
 	}, "", "    ")
 	if err != nil {

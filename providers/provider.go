@@ -15,5 +15,5 @@ type MovieSearcher interface {
 }
 
 type EpisodeSearcher interface {
-	SearchEpisodeLinks(episode *tvdb.Episode) []*bittorrent.Torrent
+	SearchEpisodeLinks(show *tvdb.Show, episode *tvdb.Episode) []*bittorrent.Torrent
 }
