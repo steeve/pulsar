@@ -1,6 +1,8 @@
 package main
 
 import (
+	"compress/gzip"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -13,7 +15,7 @@ func Migrate() {
 		return
 	}
 	file, _ := os.Create(firstRun)
-	file.Close()
+	defer file.Close()
 
 	log.Info("Preparing for first run")
 
@@ -21,6 +23,23 @@ func Migrate() {
 	gaFile := filepath.Join(config.Get().Info.Profile, "cache", "io.steeve.pulsar.ga")
 	if _, err := os.Stat(gaFile); err == nil {
 		os.Rename(gaFile, filepath.Join(config.Get().Info.Profile, "io.steeve.pulsar.ga"))
+	}
+
+	gaFile = filepath.Join(config.Get().Info.Profile, "io.steeve.pulsar.ga")
+	if file, err := os.Open(gaFile); err == nil {
+		if gzReader, err := gzip.NewReader(file); err != nil {
+			outFile, _ := os.Create(gaFile + ".gz")
+			gzWriter := gzip.NewWriter(outFile)
+			file.Seek(0, os.SEEK_SET)
+			io.Copy(gzWriter, file)
+			gzWriter.Flush()
+			gzWriter.Close()
+			outFile.Close()
+			file.Close()
+			os.Rename(gaFile+".gz", gaFile)
+		} else {
+			gzReader.Close()
+		}
 	}
 
 	// // Remove the cache
