@@ -19,6 +19,11 @@ import (
 	"github.com/steeve/pulsar/xbmc"
 )
 
+const (
+	// if >= 80% of episodes have absolute numbers, assume it's because we need it
+	mixAbsoluteNumberPercentage = 0.8
+)
+
 type AddonSearcher struct {
 	MovieSearcher
 	EpisodeSearcher
@@ -122,12 +127,30 @@ func (as *AddonSearcher) GetMovieSearchObject(movie *tmdb.Movie) *MovieSearchObj
 }
 
 func (as *AddonSearcher) GetEpisodeSearchObject(show *tvdb.Show, episode *tvdb.Episode) *EpisodeSearchObject {
+	absoluteNumber := 0
+	if episode.AbsoluteNumber > 0 {
+		totalEpisodes := 0
+		totalEpisodesWithAbsoluteNumber := 0
+		for _, season := range show.Seasons {
+			totalEpisodes += len(season.Episodes)
+			for _, episode := range season.Episodes {
+				if episode.AbsoluteNumber > 0 {
+					totalEpisodesWithAbsoluteNumber++
+				}
+			}
+		}
+		if float64(totalEpisodesWithAbsoluteNumber)/float64(totalEpisodes) >= mixAbsoluteNumberPercentage {
+			absoluteNumber = episode.AbsoluteNumber
+		}
+	}
+
 	return &EpisodeSearchObject{
-		IMDBId:  episode.ImdbId,
-		TVDBId:  episode.Id,
-		Title:   NormalizeTitle(show.SeriesName),
-		Season:  episode.SeasonNumber,
-		Episode: episode.EpisodeNumber,
+		IMDBId:         episode.ImdbId,
+		TVDBId:         episode.Id,
+		Title:          NormalizeTitle(show.SeriesName),
+		Season:         episode.SeasonNumber,
+		Episode:        episode.EpisodeNumber,
+		AbsoluteNumber: absoluteNumber,
 	}
 }
 
