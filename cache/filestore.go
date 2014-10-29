@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"errors"
 	"os"
@@ -31,13 +32,16 @@ func (c *FileStore) Set(key string, value interface{}, expires time.Duration) er
 	}
 	defer file.Close()
 
+	gzWriter := gzip.NewWriter(file)
+	defer gzWriter.Close()
+
 	item := fileStoreItem{
 		Key:     key,
 		Value:   value,
 		Expires: time.Now().Local().Add(expires),
 	}
 
-	return json.NewEncoder(file).Encode(item)
+	return json.NewEncoder(gzWriter).Encode(item)
 }
 
 func (c *FileStore) Add(key string, value interface{}, expires time.Duration) error {
@@ -61,10 +65,16 @@ func (c *FileStore) Get(key string, value interface{}) error {
 	}
 	defer file.Close()
 
+	gzReader, err := gzip.NewReader(file)
+	if err != nil {
+		return err
+	}
+	defer gzReader.Close()
+
 	item := fileStoreItem{
 		Value: value,
 	}
-	if err = json.NewDecoder(file).Decode(&item); err != nil {
+	if err = json.NewDecoder(gzReader).Decode(&item); err != nil {
 		return err
 	}
 	if item.Expires.Before(time.Now()) {
