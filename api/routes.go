@@ -31,6 +31,7 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 
 	r.GET("/", Index)
 	r.GET("/search", Search)
+	r.GET("/pasted", PasteURL)
 
 	movies := r.Group("/movies")
 	{

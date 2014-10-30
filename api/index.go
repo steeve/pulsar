@@ -16,5 +16,6 @@ func Index(c *gin.Context) {
 		{Label: "Popular TV Shows", Path: UrlForXBMC("/shows/popular")},
 
 		{Label: "Search", Path: UrlForXBMC("/search")},
+		{Label: "Paste URL", Path: UrlForXBMC("/pasted")},
 	}))
 }

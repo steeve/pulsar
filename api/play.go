@@ -8,6 +8,7 @@ import (
 	"github.com/steeve/pulsar/bittorrent"
 	"github.com/steeve/pulsar/config"
 	"github.com/steeve/pulsar/util"
+	"github.com/steeve/pulsar/xbmc"
 )
 
 func Play(btService *bittorrent.BTService) gin.HandlerFunc {
@@ -28,4 +29,12 @@ func Play(btService *bittorrent.BTService) gin.HandlerFunc {
 		rUrl, _ := url.Parse(fmt.Sprintf("http://%s:%d/files/%s", hostname, config.ListenPort, player.PlayURL()))
 		ctx.Redirect(302, rUrl.String())
 	}
+}
+
+func PasteURL(ctx *gin.Context) {
+	magnet := xbmc.Keyboard("", "Paste Magnet or URL")
+	if magnet == "" {
+		return
+	}
+	xbmc.PlayURL(UrlQuery(UrlForXBMC("/play"), "uri", magnet))
 }
