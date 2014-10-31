@@ -163,12 +163,12 @@ func (s *BTService) startServices() {
 	s.Session.Listen_on(ports, errCode)
 
 	s.log.Info("Starting DHT...")
-	s.Session.Start_dht()
 	for _, node := range dhtBootstrapNodes {
 		pair := libtorrent.NewStd_pair_string_int(node, 6881)
 		defer libtorrent.DeleteStd_pair_string_int(pair)
 		s.Session.Add_dht_router(pair)
 	}
+	s.Session.Start_dht()
 
 	s.log.Info("Starting LSD...")
 	s.Session.Start_lsd()
