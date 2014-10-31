@@ -1,7 +1,9 @@
 package bittorrent
 
 import (
+	"net"
 	"runtime"
+	"time"
 
 	"github.com/op/go-logging"
 	"github.com/steeve/libtorrent-go"
@@ -11,6 +13,7 @@ import (
 
 const (
 	libtorrentAlertWaitTime = 1
+	internetCheckAddress    = "google.com"
 )
 
 var dhtBootstrapNodes = []string{
@@ -62,8 +65,36 @@ func NewBTService() *BTService {
 	})
 	go s.alertsConsumer()
 	go s.logAlerts()
+	go s.internetMonitor()
 
 	return s
+}
+
+func (s *BTService) internetMonitor() {
+	closing, done := s.closing.Listen()
+	defer close(done)
+	lastConnected := false
+	oneSecond := time.Tick(1 * time.Second)
+	for {
+		select {
+		case <-closing:
+			return
+		case <-oneSecond:
+			_, err := net.LookupHost(internetCheckAddress)
+			connected := (err == nil)
+			if connected != lastConnected {
+				lastConnected = connected
+				if connected {
+					s.log.Info("Internet connection status changed, listening...")
+					s.Listen()
+					s.startServices()
+				} else {
+					s.log.Info("No internet connection available")
+					s.stopServices()
+				}
+			}
+		}
+	}
 }
 
 func (s *BTService) Close() {
@@ -73,7 +104,6 @@ func (s *BTService) Close() {
 
 func (s *BTService) Start() {
 	s.log.Info("Starting streamer BTService...")
-	s.startServices()
 }
 
 func (s *BTService) Stop() {
@@ -155,13 +185,15 @@ func (s *BTService) Configure(c *BTConfiguration) {
 	}
 }
 
-func (s *BTService) startServices() {
+func (s *BTService) Listen() {
 	errCode := libtorrent.NewError_code()
 	defer libtorrent.DeleteError_code(errCode)
 	ports := libtorrent.NewStd_pair_int_int(s.config.LowerListenPort, s.config.UpperListenPort)
 	defer libtorrent.DeleteStd_pair_int_int(ports)
 	s.Session.Listen_on(ports, errCode)
+}
 
+func (s *BTService) startServices() {
 	s.log.Info("Starting DHT...")
 	for _, node := range dhtBootstrapNodes {
 		pair := libtorrent.NewStd_pair_string_int(node, 6881)
