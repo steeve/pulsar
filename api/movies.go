@@ -15,14 +15,20 @@ import (
 )
 
 func MoviesIndex(ctx *gin.Context) {
-	ctx.JSON(200, xbmc.NewView("", xbmc.ListItems{
+	items := xbmc.ListItems{
 		{Label: "Search", Path: UrlForXBMC("/movies/search")},
 		{Label: "Most Popular", Path: UrlForXBMC("/movies/popular")},
 		{Label: "Top Rated", Path: UrlForXBMC("/movies/top")},
 		{Label: "Most Voted", Path: UrlForXBMC("/movies/mostvoted")},
 		{Label: "IMDB Top 250", Path: UrlForXBMC("/movies/imdb250")},
-		{Label: "Genres", Path: UrlForXBMC("/movies/genres")},
-	}))
+	}
+	for _, genre := range tmdb.GetMovieGenres() {
+		items = append(items, &xbmc.ListItem{
+			Label: genre.Name,
+			Path:  UrlForXBMC("/movies/popular/%s", strconv.Itoa(genre.Id)),
+		})
+	}
+	ctx.JSON(200, xbmc.NewView("", items))
 }
 
 func renderMovies(movies tmdb.Movies, ctx *gin.Context) {

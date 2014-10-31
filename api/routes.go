@@ -20,6 +20,7 @@ const (
 	DefaultCacheTime    = 6 * time.Hour
 	RepositoryCacheTime = 20 * time.Minute
 	EpisodesCacheTime   = 15 * time.Minute
+	IndexCacheTime      = 15 * 24 * time.Hour // 15 days caching for index
 )
 
 func Routes(btService *bittorrent.BTService) *gin.Engine {
@@ -35,14 +36,14 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 
 	movies := r.Group("/movies")
 	{
-		movies.GET("/", MoviesIndex)
+		movies.GET("/", cache.Cache(store, IndexCacheTime), MoviesIndex)
 		movies.GET("/search", SearchMovies)
 		movies.GET("/popular", cache.Cache(store, DefaultCacheTime), PopularMovies)
 		movies.GET("/popular/:genre", cache.Cache(store, DefaultCacheTime), PopularMovies)
 		movies.GET("/top", cache.Cache(store, DefaultCacheTime), TopRatedMovies)
 		movies.GET("/imdb250", cache.Cache(store, DefaultCacheTime), IMDBTop250)
 		movies.GET("/mostvoted", cache.Cache(store, DefaultCacheTime), MoviesMostVoted)
-		movies.GET("/genres", MovieGenres)
+		movies.GET("/genres", cache.Cache(store, IndexCacheTime), MovieGenres)
 	}
 	movie := r.Group("/movie")
 	{
@@ -52,13 +53,13 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 
 	shows := r.Group("/shows")
 	{
-		shows.GET("/", TVIndex)
+		shows.GET("/", cache.Cache(store, IndexCacheTime), TVIndex)
 		shows.GET("/search", SearchShows)
 		shows.GET("/popular", cache.Cache(store, DefaultCacheTime), PopularShows)
 		shows.GET("/popular/:genre", cache.Cache(store, DefaultCacheTime), PopularShows)
 		shows.GET("/top", cache.Cache(store, DefaultCacheTime), TopRatedShows)
 		shows.GET("/mostvoted", cache.Cache(store, DefaultCacheTime), TVMostVoted)
-		shows.GET("/genres", TVGenres)
+		shows.GET("/genres", cache.Cache(store, IndexCacheTime), TVGenres)
 	}
 	show := r.Group("/show")
 	{

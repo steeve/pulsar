@@ -14,13 +14,18 @@ import (
 )
 
 func TVIndex(ctx *gin.Context) {
-	ctx.JSON(200, xbmc.NewView("", xbmc.ListItems{
+	items := xbmc.ListItems{
 		{Label: "Search", Path: UrlForXBMC("/shows/search")},
 		{Label: "Most Popular", Path: UrlForXBMC("/shows/popular")},
-		// {Label: "Top Rated", Path: UrlForXBMC("/shows/top")},
-		// {Label: "Most Voted", Path: UrlForXBMC("/shows/mostvoted")},
-		{Label: "Genres", Path: UrlForXBMC("/shows/genres")},
-	}))
+	}
+	for _, genre := range tmdb.GetTVGenres() {
+		items = append(items, &xbmc.ListItem{
+			Label: genre.Name,
+			Path:  UrlForXBMC("/shows/popular/%s", strconv.Itoa(genre.Id)),
+		})
+	}
+
+	ctx.JSON(200, xbmc.NewView("", items))
 }
 
 func TVGenres(ctx *gin.Context) {
