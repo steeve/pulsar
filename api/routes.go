@@ -26,6 +26,8 @@ const (
 func Routes(btService *bittorrent.BTService) *gin.Engine {
 	r := gin.Default()
 
+	gin.SetMode(gin.ReleaseMode)
+
 	r.Use(ga.GATracker())
 
 	store := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
