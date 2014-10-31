@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/jmcvetta/napping"
 	"github.com/steeve/pulsar/cache"
@@ -105,25 +106,28 @@ func SearchShows(query string, language string) Shows {
 	return GetShows(tmdbIds, language)
 }
 
-func ListShowsComplete(endpoint string, genre string, sortBy string) Shows {
+func ListShowsComplete(endpoint string, params napping.Params) Shows {
 	shows := make(Shows, popularMoviesMaxPages*moviesPerPage)
+
+	params["api_key"] = apiKey
+	params["language"] = "en"
 
 	wg := sync.WaitGroup{}
 	for i := 0; i < popularMoviesMaxPages; i++ {
 		wg.Add(1)
 		go func(page int) {
 			defer wg.Done()
-			tmp := EntityList{}
+			var tmp *EntityList
+			tmpParams := napping.Params{
+				"page": strconv.Itoa(popularMoviesStartPage + page),
+			}
+			for k, v := range params {
+				tmpParams[k] = v
+			}
 			rateLimiter.Call(func() {
 				napping.Get(
 					tmdbEndpoint+endpoint,
-					&napping.Params{
-						"api_key":     apiKey,
-						"sort_by":     sortBy,
-						"language":    "en",
-						"page":        strconv.Itoa(popularMoviesStartPage + page),
-						"with_genres": genre,
-					},
+					&tmpParams,
 					&tmp,
 					nil,
 				)
@@ -139,11 +143,36 @@ func ListShowsComplete(endpoint string, genre string, sortBy string) Shows {
 }
 
 func PopularShowsComplete(genre string) Shows {
-	return ListShowsComplete("tv/popular", genre, "")
+	return ListShowsComplete("discover/tv", napping.Params{
+		"sort_by":            "popularity.desc",
+		"first_air_date.lte": time.Now().UTC().Format("2006-01-02"),
+		"with_genres":        genre,
+	})
 }
 
 func TopRatedShowsComplete(genre string) Shows {
-	return ListShowsComplete("tv/top_rated", genre, "")
+	return ListShowsComplete("tv/top_rated", napping.Params{})
+}
+
+func MostVotedShowsComplete(genre string) Movies {
+	return ListMoviesComplete("discover/tv", napping.Params{
+		"sort_by":            "vote_count.desc",
+		"first_air_date.lte": time.Now().UTC().Format("2006-01-02"),
+		"with_genres":        genre,
+	})
+}
+
+func GetTVGenres() []*Genre {
+	genres := GenreList{}
+	rateLimiter.Call(func() {
+		napping.Get(
+			tmdbEndpoint+"genre/tv/list",
+			&napping.Params{"api_key": apiKey},
+			&genres,
+			nil,
+		)
+	})
+	return genres.Genres
 }
 
 func (show *Show) ToListItem() *xbmc.ListItem {

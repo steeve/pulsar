@@ -108,6 +108,18 @@ type FindResult struct {
 	TVSeasonResults  []*Entity `json:"tv_season_results"`
 }
 
+type List struct {
+	CreatedBy     string    `json:"created_by"`
+	Description   string    `json:"description"`
+	FavoriteCount int       `json:"favorite_count"`
+	Id            string    `json:"id"`
+	ItemCount     int       `json:"item_count"`
+	ISO_639_1     string    `json:"iso_639_1"`
+	Name          string    `json:"name"`
+	PosterPath    string    `json:"poster_path"`
+	Items         []*Entity `json:"items"`
+}
+
 const (
 	tmdbEndpoint            = "http://api.themoviedb.org/3/"
 	imageEndpoint           = "http://image.tmdb.org/t/p/"
@@ -124,25 +136,27 @@ func imageURL(uri string, size string) string {
 	return imageEndpoint + size + uri
 }
 
-func ListEntities(endpoint string, genre string, sortBy string) []*Entity {
+func ListEntities(endpoint string, params napping.Params) []*Entity {
 	var wg sync.WaitGroup
 	entities := make([]*Entity, popularMoviesMaxPages*moviesPerPage)
+	params["api_key"] = apiKey
+	params["language"] = "en"
 
 	wg.Add(popularMoviesMaxPages)
 	for i := 0; i < popularMoviesMaxPages; i++ {
 		go func(page int) {
 			defer wg.Done()
-			var tmp EntityList
+			var tmp *EntityList
+			tmpParams := napping.Params{
+				"page": strconv.Itoa(popularMoviesStartPage + page),
+			}
+			for k, v := range params {
+				tmpParams[k] = v
+			}
 			rateLimiter.Call(func() {
 				napping.Get(
 					tmdbEndpoint+endpoint,
-					&napping.Params{
-						"api_key":     apiKey,
-						"sort_by":     sortBy,
-						"language":    "en",
-						"page":        strconv.Itoa(popularMoviesStartPage + page),
-						"with_genres": genre,
-					},
+					&tmpParams,
 					&tmp,
 					nil,
 				)

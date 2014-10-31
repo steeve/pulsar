@@ -13,6 +13,29 @@ import (
 	"github.com/steeve/pulsar/xbmc"
 )
 
+func TVIndex(ctx *gin.Context) {
+	ctx.JSON(200, xbmc.NewView("", xbmc.ListItems{
+		{Label: "Search", Path: UrlForXBMC("/shows/search")},
+		{Label: "Most Popular", Path: UrlForXBMC("/shows/popular")},
+		// {Label: "Top Rated", Path: UrlForXBMC("/shows/top")},
+		// {Label: "Most Voted", Path: UrlForXBMC("/shows/mostvoted")},
+		{Label: "Genres", Path: UrlForXBMC("/shows/genres")},
+	}))
+}
+
+func TVGenres(ctx *gin.Context) {
+	genres := tmdb.GetTVGenres()
+	items := make(xbmc.ListItems, 0, len(genres))
+	for _, genre := range genres {
+		items = append(items, &xbmc.ListItem{
+			Label: genre.Name,
+			Path:  UrlForXBMC("/shows/popular/%s", strconv.Itoa(genre.Id)),
+		})
+	}
+
+	ctx.JSON(200, xbmc.NewView("", items))
+}
+
 func renderShows(shows tmdb.Shows, ctx *gin.Context) {
 	items := make(xbmc.ListItems, 0, len(shows))
 	for _, show := range shows {
@@ -25,11 +48,19 @@ func renderShows(shows tmdb.Shows, ctx *gin.Context) {
 }
 
 func PopularShows(ctx *gin.Context) {
-	renderShows(tmdb.PopularShowsComplete(""), ctx)
+	genre := ctx.Params.ByName("genre")
+	if genre == "0" {
+		genre = ""
+	}
+	renderShows(tmdb.PopularShowsComplete(genre), ctx)
 }
 
 func TopRatedShows(ctx *gin.Context) {
 	renderShows(tmdb.TopRatedShowsComplete(""), ctx)
+}
+
+func TVMostVoted(ctx *gin.Context) {
+	renderMovies(tmdb.MostVotedShowsComplete(""), ctx)
 }
 
 func SearchShows(ctx *gin.Context) {

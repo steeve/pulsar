@@ -14,6 +14,17 @@ import (
 	"github.com/steeve/pulsar/xbmc"
 )
 
+func MoviesIndex(ctx *gin.Context) {
+	ctx.JSON(200, xbmc.NewView("", xbmc.ListItems{
+		{Label: "Search", Path: UrlForXBMC("/movies/search")},
+		{Label: "Most Popular", Path: UrlForXBMC("/movies/popular")},
+		{Label: "Top Rated", Path: UrlForXBMC("/movies/top")},
+		{Label: "Most Voted", Path: UrlForXBMC("/movies/mostvoted")},
+		{Label: "IMDB Top 250", Path: UrlForXBMC("/movies/imdb250")},
+		{Label: "Genres", Path: UrlForXBMC("/movies/genres")},
+	}))
+}
+
 func renderMovies(movies tmdb.Movies, ctx *gin.Context) {
 	items := make(xbmc.ListItems, 0, len(movies))
 	for _, movie := range movies {
@@ -43,6 +54,14 @@ func TopRatedMovies(ctx *gin.Context) {
 		genre = ""
 	}
 	renderMovies(tmdb.TopRatedMoviesComplete(genre), ctx)
+}
+
+func IMDBTop250(ctx *gin.Context) {
+	renderMovies(tmdb.GetList("522effe419c2955e9922fcf3"), ctx)
+}
+
+func MoviesMostVoted(ctx *gin.Context) {
+	renderMovies(tmdb.MostVotedMoviesComplete(""), ctx)
 }
 
 func SearchMovies(ctx *gin.Context) {
