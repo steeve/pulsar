@@ -20,7 +20,7 @@ type fileStoreItem struct {
 }
 
 func NewFileStore(path string) *FileStore {
-	os.MkdirAll(path, 0766)
+	os.MkdirAll(path, 0777)
 	return &FileStore{path}
 }
 
