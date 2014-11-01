@@ -38,7 +38,7 @@ func (c *FileStore) Set(key string, value interface{}, expires time.Duration) er
 	item := fileStoreItem{
 		Key:     key,
 		Value:   value,
-		Expires: time.Now().Local().Add(expires),
+		Expires: time.Now().UTC().Add(expires),
 	}
 
 	return json.NewEncoder(gzWriter).Encode(item)
@@ -77,7 +77,7 @@ func (c *FileStore) Get(key string, value interface{}) error {
 	if err = json.NewDecoder(gzReader).Decode(&item); err != nil {
 		return err
 	}
-	if item.Expires.Before(time.Now()) {
+	if item.Expires.Before(time.Now().UTC()) {
 		return errors.New("key is expired")
 	}
 	return nil
