@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/steeve/pulsar/config"
+	"github.com/steeve/pulsar/repository"
 )
 
 func Migrate() {
@@ -45,4 +46,9 @@ func Migrate() {
 	// // Remove the cache
 	log.Info("Clearing cache")
 	os.RemoveAll(filepath.Join(config.Get().Info.Profile, "cache"))
+
+	log.Info("Creating Pulsar Repository Addon")
+	if err := repository.MakePulsarRepositoryAddon(); err != nil {
+		log.Error("Unable to create repository addon: %s", err)
+	}
 }
