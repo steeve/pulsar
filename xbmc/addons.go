@@ -21,79 +21,87 @@ func ExecuteAddon(addonId string, args ...interface{}) {
 }
 
 type Addon struct {
-	XMLName      xml.Name `xml:"addon"`
-	Id           string   `xml:"id,attr"`
-	Name         string   `xml:"name,attr"`
-	Version      string   `xml:"version,attr"`
-	ProviderName string   `xml:"provider-name,attr"`
+	XMLName      xml.Name          `xml:"addon"`
+	Id           string            `xml:"id,attr"`
+	Name         string            `xml:"name,attr"`
+	Version      string            `xml:"version,attr"`
+	ProviderName string            `xml:"provider-name,attr"`
+	Requires     []*AddonImport    `xml:"requires>import,omitempty"`
+	Extensions   []*AddonExtension `xml:"extension"`
+}
 
-	Requires []struct {
-		Addon    string `xml:"addon,attr"`
-		Version  string `xml:"version,attr"`
-		Optional string `xml:"optional,attr,omitempty"`
-	} `xml:"requires>import,omitempty"`
+type AddonImport struct {
+	XMLName  xml.Name `xml:"import"`
+	Addon    string   `xml:"addon,attr"`
+	Version  string   `xml:"version,attr"`
+	Optional string   `xml:"optional,attr,omitempty"`
+}
 
-	Extensions []struct {
-		Point string `xml:"point,attr"`
+type AddonText struct {
+	Text string `xml:",chardata"`
+	Lang string `xml:"lang,attr"`
+}
 
-		// xbmc.python.pluginsource
-		// xbmc.service
-		Library string `xml:"library,attr,omitempty"`
+type AddonRepositoryInfo struct {
+	XMLName    xml.Name `xml:"info"`
+	Text       string   `xml:",chardata"`
+	Compressed bool     `xml:"compressed,attr"`
+}
 
-		// xbmc.python.pluginsource
-		Provides string `xml:"provides,omitempty"`
+type AddonRepositoryDataDir struct {
+	XMLName xml.Name `xml:"datadir"`
+	Text    string   `xml:",chardata"`
+	Zip     bool     `xml:"zip,attr"`
+}
 
-		// xbmc.service
-		Start string `xml:"start,attr,omitempty"`
+type AddonSkinResolution struct {
+	XMLName xml.Name `xml:"res"`
+	Width   int      `xml:"width,attr"`
+	Height  int      `xml:"height,attr"`
+	Aspect  string   `xml:"aspect,attr"`
+	Default bool     `xml:"default,attr"`
+	Folder  string   `xml:"folder,attr"`
+}
 
-		// xbmc.addon.metadata
-		Language  string `xml:"language,omitempty"`
-		Platform  string `xml:"platform,omitempty"`
-		License   string `xml:"license,omitempty"`
-		Forum     string `xml:"forum,omitempty"`
-		Website   string `xml:"website,omitempty"`
-		Email     string `xml:"email,omitempty"`
-		Source    string `xml:"source,omitempty"`
-		Broken    string `xml:"broken,omitempty"`
-		Summaries []struct {
-			Text string `xml:",chardata"`
-			Lang string `xml:"lang,attr"`
-		} `xml:"summary,omitempty"`
-		Disclaimers []struct {
-			Text string `xml:",chardata"`
-			Lang string `xml:"lang,attr"`
-		} `xml:"disclaimer,omitempty"`
-		Descriptions []struct {
-			Text string `xml:",chardata"`
-			Lang string `xml:"lang,attr"`
-		} `xml:"description,omitempty"`
+type AddonExtension struct {
+	Point string `xml:"point,attr"`
 
-		// xbmc.addon.repository
-		Name string `xml:"name,attr,omitempty"`
-		Info *struct {
-			Text       string `xml:",chardata"`
-			Compressed bool   `xml:"compressed,attr"`
-		} `xml:"info,omitempty"`
-		Checksum string `xml:"checksum,omitempty"`
-		Datadir  *struct {
-			Text string `xml:",chardata"`
-			Zip  bool   `xml:"zip,attr"`
-		} `xml:"datadir,omitempty"`
+	// xbmc.python.pluginsource
+	// xbmc.service
+	Library string `xml:"library,attr,omitempty"`
 
-		// xbmc.gui.skin
-		DefaultResolution     string `xml:"defaultresolution,omitempty"`
-		DefaultResolutionWide string `xml:"defaultresolutionwide,omitempty"`
-		DefaultThemeName      string `xml:"defaultthemename,omitempty"`
-		EffectsSlowdown       string `xml:"effectslowdown,omitempty"`
-		Debugging             string `xml:"debugging,omitempty"`
-		Resolutions           []struct {
-			Width   int    `xml:"width,attr"`
-			Height  int    `xml:"height,attr"`
-			Aspect  string `xml:"aspect,attr"`
-			Default bool   `xml:"default,attr"`
-			Folder  string `xml:"folder,attr"`
-		} `xml:"res,omitempty"`
-	} `xml:"extension"`
+	// xbmc.python.pluginsource
+	Provides string `xml:"provides,omitempty"`
+
+	// xbmc.service
+	Start string `xml:"start,attr,omitempty"`
+
+	// xbmc.addon.metadata
+	Language     string       `xml:"language,omitempty"`
+	Platform     string       `xml:"platform,omitempty"`
+	License      string       `xml:"license,omitempty"`
+	Forum        string       `xml:"forum,omitempty"`
+	Website      string       `xml:"website,omitempty"`
+	Email        string       `xml:"email,omitempty"`
+	Source       string       `xml:"source,omitempty"`
+	Broken       string       `xml:"broken,omitempty"`
+	Summaries    []*AddonText `xml:"summary,omitempty"`
+	Disclaimers  []*AddonText `xml:"disclaimer,omitempty"`
+	Descriptions []*AddonText `xml:"description,omitempty"`
+
+	// xbmc.addon.repository
+	Name     string                  `xml:"name,attr,omitempty"`
+	Info     *AddonRepositoryInfo    `xml:"info,omitempty"`
+	Checksum string                  `xml:"checksum,omitempty"`
+	Datadir  *AddonRepositoryDataDir `xml:"datadir,omitempty"`
+
+	// xbmc.gui.skin
+	DefaultResolution     string                 `xml:"defaultresolution,omitempty"`
+	DefaultResolutionWide string                 `xml:"defaultresolutionwide,omitempty"`
+	DefaultThemeName      string                 `xml:"defaultthemename,omitempty"`
+	EffectsSlowdown       string                 `xml:"effectslowdown,omitempty"`
+	Debugging             string                 `xml:"debugging,omitempty"`
+	Resolutions           []*AddonSkinResolution `xml:"res,omitempty"`
 }
 
 type AddonList struct {
