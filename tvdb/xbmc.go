@@ -18,8 +18,7 @@ func (seasons SeasonList) ToListItems(show *Show) []*xbmc.ListItem {
 
 	fanarts := make([]string, 0)
 	for _, banner := range show.Banners {
-		if banner.BannerType == "fanart" &&
-			banner.BannerType2 == "1280x720" {
+		if banner.BannerType == "fanart" {
 			fanarts = append(fanarts, imageURL(banner.BannerPath))
 		}
 	}
@@ -48,8 +47,7 @@ func (episodes EpisodeList) ToListItems(show *Show) []*xbmc.ListItem {
 
 	fanarts := make([]string, 0)
 	for _, banner := range show.Banners {
-		if banner.BannerType == "fanart" &&
-			banner.BannerType2 == "1280x720" {
+		if banner.BannerType == "fanart" {
 			fanarts = append(fanarts, imageURL(banner.BannerPath))
 		}
 	}
