@@ -33,7 +33,9 @@ func (seasons SeasonList) ToListItems(show *Show) []*xbmc.ListItem {
 			continue
 		}
 		item := season.ToListItem(show)
-		item.Art.FanArt = fanarts[rand.Int()%len(fanarts)]
+		if len(fanarts) > 0 {
+			item.Art.FanArt = fanarts[rand.Int()%len(fanarts)]
+		}
 		items = append(items, item)
 	}
 	return items
@@ -59,7 +61,9 @@ func (episodes EpisodeList) ToListItems(show *Show) []*xbmc.ListItem {
 			continue
 		}
 		item := episode.ToListItem(show)
-		item.Art.FanArt = fanarts[rand.Int()%len(fanarts)]
+		if len(fanarts) > 0 {
+			item.Art.FanArt = fanarts[rand.Int()%len(fanarts)]
+		}
 		items = append(items, item)
 	}
 	return items
