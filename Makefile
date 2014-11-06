@@ -111,7 +111,10 @@ upx: force
 # GCC or Clang. However, on Windows this feature is not yet supported.
 	@find $(BUILD_PATH) -type f ! -name "*.exe" -exec $(UPX) --lzma {} \;
 
-dist: pulsar strip
+checksum: $(BUILD_PATH)/$(OUTPUT_NAME)
+	shasum -b $(BUILD_PATH)/$(OUTPUT_NAME) | cut -d' ' -f1 >> $(BUILD_PATH)/$(OUTPUT_NAME)
+
+dist: pulsar strip checksum
 
 alldist: force
 	$(MAKE) build TARGET_OS=darwin TARGET_ARCH=x64 MARGS="libtorrent-go pulsar strip upx"
