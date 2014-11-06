@@ -1,10 +1,6 @@
 package util
 
-import (
-	"fmt"
-
-	"github.com/steeve/libtorrent-go"
-)
+import "fmt"
 
 var (
 	GitCommit string
@@ -12,5 +8,5 @@ var (
 )
 
 func UserAgent() string {
-	return fmt.Sprintf("Pulsar/%s libtorrent/%s", Version, libtorrent.LIBTORRENT_VERSION)
+	return fmt.Sprintf("Pulsar/%s", Version)
 }
