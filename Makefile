@@ -65,13 +65,20 @@ force:
 	@true
 
 libtorrent-go: force
-	$(MAKE) -C $(LIBTORRENT_GO_HOME) clean all
+	$(MAKE) -C $(LIBTORRENT_GO_HOME)
 
 $(BUILD_PATH):
 	mkdir -p $(BUILD_PATH)
 
 $(BUILD_PATH)/$(OUTPUT_NAME): $(BUILD_PATH) force
-	LDFLAGS=$(LDFLAGS) CC=$(CC) GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) CGO_ENABLED=$(CGO_ENABLED) $(GO) build -v -gcflags "$(GO_GCFLAGS)" -tags $(GO_BUILD_TAGS) -o $(BUILD_PATH)/$(OUTPUT_NAME) -ldflags="$(GO_LDFLAGS)"
+	LDFLAGS='$(LDFLAGS)' \
+	CC='$(CC)' CXX='$(CXX)' \
+	GOOS='$(GOOS)' GOARCH='$(GOARCH)' GOARM='$(GOARM)' \
+	CGO_ENABLED='$(CGO_ENABLED)' \
+	$(GO) build -v \
+		-gcflags '$(GO_GCFLAGS)' \
+		-ldflags '$(GO_LDFLAGS)' \
+		-o '$(BUILD_PATH)/$(OUTPUT_NAME)'
 
 vendor_libs:
 	cp -f $(shell go env GOPATH)/src/github.com/steeve/libtorrent-go/$(BUILD_PATH)/* $(BUILD_PATH)
@@ -94,7 +101,6 @@ build: force
 
 docker: force
 	$(DOCKER) run -i --rm -v $(HOME):$(HOME) -t -e GOPATH=$(shell go env GOPATH) -w $(shell pwd) $(DOCKER_IMAGE):$(TARGET_OS)-$(TARGET_ARCH)
-
 
 strip: force
 	@find $(BUILD_PATH) -type f ! -name "*.exe" -exec $(STRIP) {} \;
