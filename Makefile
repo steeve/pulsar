@@ -80,8 +80,8 @@ $(BUILD_PATH)/$(OUTPUT_NAME): $(BUILD_PATH) force
 		-ldflags '$(GO_LDFLAGS)' \
 		-o '$(BUILD_PATH)/$(OUTPUT_NAME)'
 
-vendor_libs:
-	cp -f $(shell go env GOPATH)/src/github.com/steeve/libtorrent-go/$(BUILD_PATH)/* $(BUILD_PATH)
+vendor_libs_windows:
+	find $(shell go env GOPATH)/pkg/$(GOOS)_$(GOARCH) -name *.dll -exec cp -f {} $(BUILD_PATH) \;
 
 pulsar: $(BUILD_PATH)/$(OUTPUT_NAME)
 
@@ -114,11 +114,17 @@ upx: force
 checksum: $(BUILD_PATH)/$(OUTPUT_NAME)
 	shasum -b $(BUILD_PATH)/$(OUTPUT_NAME) | cut -d' ' -f1 >> $(BUILD_PATH)/$(OUTPUT_NAME)
 
+ifeq ($(TARGET_OS), windows)
+dist: pulsar vendor_libs_windows strip checksum
+else ifeq ($(TARGET_ARCH), arm)
 dist: pulsar strip checksum
+else
+dist: pulsar strip upx checksum
+endif
 
 alldist: force
-	$(MAKE) build TARGET_OS=darwin TARGET_ARCH=x64 MARGS="libtorrent-go pulsar strip upx"
-	$(MAKE) build TARGET_OS=linux TARGET_ARCH=x86 MARGS="libtorrent-go pulsar strip upx"
-	$(MAKE) build TARGET_OS=linux TARGET_ARCH=x64 MARGS="libtorrent-go pulsar strip upx"
-	$(MAKE) build TARGET_OS=linux TARGET_ARCH=arm MARGS="libtorrent-go pulsar strip"
-	$(MAKE) build TARGET_OS=windows TARGET_ARCH=x86 MARGS="libtorrent-go pulsar vendor_libs strip upx"
+	$(MAKE) build TARGET_OS=darwin TARGET_ARCH=x64 MARGS="dist"
+	$(MAKE) build TARGET_OS=linux TARGET_ARCH=x86 MARGS="dist"
+	$(MAKE) build TARGET_OS=linux TARGET_ARCH=x64 MARGS="dist"
+	$(MAKE) build TARGET_OS=linux TARGET_ARCH=arm MARGS="dist"
+	$(MAKE) build TARGET_OS=windows TARGET_ARCH=x86 MARGS="dist"
