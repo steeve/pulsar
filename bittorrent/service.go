@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	libtorrentAlertWaitTime = 1
+	libtorrentAlertWaitTime = 1 // 1 second
 	internetCheckAddress    = "google.com"
 )
 
@@ -231,17 +231,17 @@ func (s *BTService) alertsConsumer() {
 
 	defer s.alertsBroadcaster.Close()
 
+	ltOneSecond := libtorrent.Seconds(libtorrentAlertWaitTime)
 	for {
 		select {
 		case <-s.closing:
 			s.log.Info("Closing all alert channels...")
 			return
 		default:
-			s.Session.Wait_for_alert(libtorrent.Seconds(libtorrentAlertWaitTime))
-			alert := s.Session.Pop_alert()
-			if alert.Swigcptr() == 0 {
+			if s.Session.Wait_for_alert(ltOneSecond).Swigcptr() == 0 {
 				continue
 			}
+			alert := s.Session.Pop_alert()
 			runtime.SetFinalizer(&alert, func(alert *libtorrent.Alert) {
 				libtorrent.DeleteAlert(*alert)
 			})
