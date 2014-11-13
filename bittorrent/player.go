@@ -44,7 +44,7 @@ type BTPlayer struct {
 	torrentName    string
 	deleteAfter    bool
 	diskStatus     *diskusage.DiskStatus
-	closing        *broadcast.Broadcaster
+	closing        chan interface{}
 	didBuffer      *broadcast.Broadcaster
 }
 
@@ -54,7 +54,7 @@ func NewBTPlayer(bts *BTService, uri string, deleteAfter bool) *BTPlayer {
 		uri:         uri,
 		log:         logging.MustGetLogger("btplayer"),
 		deleteAfter: deleteAfter,
-		closing:     broadcast.NewBroadcaster(),
+		closing:     make(chan interface{}),
 		didBuffer:   broadcast.NewBroadcaster(),
 	}
 	return btp
@@ -232,13 +232,13 @@ func (btp *BTPlayer) onStateChanged(stateAlert libtorrent.State_changed_alert) {
 		}
 		btp.torrentHandle.Prioritize_pieces(piecesPriorities)
 
-		btp.didBuffer.Write(nil)
+		btp.didBuffer.Signal()
 		break
 	}
 }
 
 func (btp *BTPlayer) Close() {
-	btp.closing.Write(nil)
+	close(btp.closing)
 
 	if btp.torrentInfo != nil && btp.torrentInfo.Swigcptr() != 0 {
 		libtorrent.DeleteTorrent_info(btp.torrentInfo)
@@ -256,9 +256,6 @@ func (btp *BTPlayer) Close() {
 func (btp *BTPlayer) consumeAlerts() {
 	alerts, alertsDone := btp.bts.Alerts()
 	defer close(alertsDone)
-
-	closing, closingDone := btp.closing.Listen()
-	defer close(closingDone)
 
 	for {
 		select {
@@ -280,7 +277,7 @@ func (btp *BTPlayer) consumeAlerts() {
 				}
 				break
 			}
-		case <-closing:
+		case <-btp.closing:
 			return
 		}
 	}

@@ -48,7 +48,7 @@ type BTService struct {
 	log               *logging.Logger
 	libtorrentLog     *logging.Logger
 	alertsBroadcaster *broadcast.Broadcaster
-	closing           *broadcast.Broadcaster
+	closing           chan interface{}
 }
 
 func NewBTService() *BTService {
@@ -57,7 +57,7 @@ func NewBTService() *BTService {
 		log:               logging.MustGetLogger("btservice"),
 		libtorrentLog:     logging.MustGetLogger("libtorrent"),
 		alertsBroadcaster: broadcast.NewBroadcaster(),
-		closing:           broadcast.NewBroadcaster(),
+		closing:           make(chan interface{}),
 	}
 	// Ensure we properly free the session object.
 	runtime.SetFinalizer(s, func(s *BTService) {
@@ -71,13 +71,11 @@ func NewBTService() *BTService {
 }
 
 func (s *BTService) internetMonitor() {
-	closing, done := s.closing.Listen()
-	defer close(done)
 	lastConnected := false
 	oneSecond := time.Tick(1 * time.Second)
 	for {
 		select {
-		case <-closing:
+		case <-s.closing:
 			return
 		case <-oneSecond:
 			_, err := net.LookupHost(internetCheckAddress)
@@ -98,7 +96,7 @@ func (s *BTService) internetMonitor() {
 }
 
 func (s *BTService) Close() {
-	s.closing.Close()
+	close(s.closing)
 	libtorrent.DeleteSession(s.Session)
 }
 
@@ -233,11 +231,9 @@ func (s *BTService) alertsConsumer() {
 
 	defer s.alertsBroadcaster.Close()
 
-	serviceClosing, serviceClosingDone := s.closing.Listen()
-	defer close(serviceClosingDone)
 	for {
 		select {
-		case <-serviceClosing:
+		case <-s.closing:
 			s.log.Info("Closing all alert channels...")
 			return
 		default:
