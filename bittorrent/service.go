@@ -245,7 +245,7 @@ func (s *BTService) alertsConsumer() {
 			runtime.SetFinalizer(&alert, func(alert *libtorrent.Alert) {
 				libtorrent.DeleteAlert(*alert)
 			})
-			s.alertsBroadcaster.Write(alert)
+			s.alertsBroadcaster.Broadcast(alert)
 		}
 	}
 }

@@ -11,6 +11,7 @@ import (
 
 	"github.com/op/go-logging"
 	"github.com/steeve/libtorrent-go"
+	"github.com/steeve/pulsar/broadcast"
 )
 
 const (
@@ -37,7 +38,7 @@ type TorrentFile struct {
 	pieces            Bitfield
 	piecesLastUpdated time.Time
 	lastStatus        libtorrent.Torrent_status
-	removed           chan interface{}
+	removed           *broadcast.Broadcaster
 }
 
 func NewTorrentFS(service *BTService, path string) *TorrentFS {
@@ -93,7 +94,7 @@ func NewTorrentFile(file *os.File, tfs *TorrentFS, torrentHandle libtorrent.Torr
 		pieceLength:   torrentInfo.Piece_length(),
 		fileOffset:    fileEntry.GetOffset(),
 		fileSize:      fileEntry.GetSize(),
-		removed:       make(chan interface{}),
+		removed:       broadcast.NewBroadcaster(),
 	}
 	go tf.consumeAlerts()
 
@@ -108,7 +109,7 @@ func (tf *TorrentFile) consumeAlerts() {
 		case libtorrent.Torrent_removed_alertAlert_type:
 			removedAlert := libtorrent.SwigcptrTorrent_alert(alert.Swigcptr())
 			if removedAlert.GetHandle().Equal(tf.torrentHandle) {
-				close(tf.removed)
+				tf.removed.Signal()
 				return
 			}
 		}
@@ -151,7 +152,7 @@ func (tf *TorrentFile) hasPiece(idx int) bool {
 
 func (tf *TorrentFile) Close() error {
 	tf.tfs.log.Info("Closing file...")
-	close(tf.removed)
+	tf.removed.Signal()
 	libtorrent.DeleteTorrent_info(tf.torrentInfo)
 	return tf.File.Close()
 }
@@ -214,9 +215,11 @@ func (tf *TorrentFile) waitForPiece(piece int) error {
 	tf.tfs.log.Info("Waiting for piece %d", piece)
 
 	pieceRefreshTicker := time.Tick(piecesRefreshDuration)
+	removed, done := tf.removed.Listen()
+	defer close(done)
 	for tf.hasPiece(piece) == false {
 		select {
-		case <-tf.removed:
+		case <-removed:
 			tf.tfs.log.Info("Unable to wait for piece %d as file was closed", piece)
 			return errors.New("File was closed.")
 		case <-pieceRefreshTicker:

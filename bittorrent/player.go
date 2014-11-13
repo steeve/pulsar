@@ -304,7 +304,7 @@ bufferLoop:
 			if btp.dialogProgress.IsCanceled() {
 				btp.log.Info("User cancelled the buffering")
 				go ga.TrackEvent("player", "buffer_canceled", btp.torrentName, -1)
-				btp.didBuffer.Write(fmt.Errorf("user canceled the buffering"))
+				btp.didBuffer.Broadcast(fmt.Errorf("user canceled the buffering"))
 				return
 			}
 			status := btp.torrentHandle.Status(uint(libtorrent.Torrent_handleQuery_name))
@@ -324,7 +324,7 @@ playbackWaitLoop:
 		select {
 		case <-playbackTimeout:
 			btp.log.Info("Playback was unable to start after %d seconds. Aborting...", playbackMaxWait)
-			btp.didBuffer.Write(fmt.Errorf("Playback was unable to start before timeout."))
+			btp.didBuffer.Broadcast(fmt.Errorf("Playback was unable to start before timeout."))
 			return
 		case <-secondTicker:
 			ga.TrackEvent("player", "waiting_playback", btp.torrentName, -1)
