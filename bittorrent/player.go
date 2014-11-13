@@ -17,9 +17,10 @@ import (
 )
 
 const (
-	startPiecesBuffer = 0.01
-	endPiecesSize     = 10 * 1024 * 1024 // 10m
-	playbackMaxWait   = 20 * time.Second
+	startBufferPercent = 0.01
+	startBufferMinSize = 20 * 1024 * 1024 // 20m
+	endBufferSize      = 10 * 1024 * 1024 // 10m
+	playbackMaxWait    = 20 * time.Second
 )
 
 var statusStrings = []string{
@@ -144,12 +145,20 @@ func (btp *BTPlayer) onMetadataReceived() {
 	btp.log.Info("Biggest file: %s", btp.biggestFile.GetPath())
 
 	btp.log.Info("Setting piece priorities")
+
+	pieceLength := float64(btp.torrentInfo.Piece_length())
+
 	startPiece, endPiece, _ := btp.getFilePiecesAndOffset(btp.biggestFile)
-	startBufferPieces := int(math.Ceil(float64(endPiece-startPiece) * startPiecesBuffer))
+
+	startLength := float64(endPiece-startPiece) * float64(pieceLength) * startBufferPercent
+	if startLength < startBufferMinSize {
+		startLength = startBufferMinSize
+	}
+	startBufferPieces := int(math.Ceil(startLength / pieceLength))
 
 	// Prefer a fixed size, since metadata are very rarely over endPiecesSize=10MB
 	// anyway.
-	endBufferPieces := int(math.Ceil(float64(endPiecesSize) / float64(btp.torrentInfo.Piece_length())))
+	endBufferPieces := int(math.Ceil(float64(endBufferSize) / pieceLength))
 
 	piecesPriorities := libtorrent.NewStd_vector_int()
 	defer libtorrent.DeleteStd_vector_int(piecesPriorities)
