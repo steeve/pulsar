@@ -26,7 +26,7 @@ var config = &Configuration{}
 var lock = sync.RWMutex{}
 
 const (
-	ListenPort = 10001
+	ListenPort = 65251
 )
 
 func Get() *Configuration {

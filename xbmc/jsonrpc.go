@@ -13,7 +13,7 @@ var Results map[string]chan interface{}
 
 const (
 	XBMCDefaultJSONRPCHost = "localhost:9090"
-	XBMCExJSONRPCHost      = "localhost:9091"
+	XBMCExJSONRPCHost      = "localhost:65252"
 )
 
 func executeJSONRPC(method string, retVal interface{}, args []interface{}) error {
