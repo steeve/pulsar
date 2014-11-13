@@ -54,6 +54,14 @@ func (b *Broadcaster) Write(v interface{}) {
 	b.c = c
 }
 
+func (b *Broadcaster) Broadcast(v interface{}) {
+	b.Write(v)
+}
+
+func (b *Broadcaster) Signal() {
+	b.Write(nil)
+}
+
 // Listen creates a receiver that can read written values.
 func (b *Broadcaster) Listen() (<-chan interface{}, chan<- interface{}) {
 	b.mx.Lock()
