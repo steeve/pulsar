@@ -44,7 +44,7 @@ func main() {
 	for _, line := range strings.Split(PulsarLogo, "\n") {
 		log.Info(line)
 	}
-	log.Info("Version: %s Git: %s", util.Version, util.GitCommit)
+	log.Info("Version: %s Git: %s Go: %s", util.Version, util.GitCommit, runtime.Version())
 
 	config.Reload()
 
