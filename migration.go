@@ -43,7 +43,7 @@ func Migrate() {
 		}
 	}
 
-	// // Remove the cache
+	// Remove the cache
 	log.Info("Clearing cache")
 	os.RemoveAll(filepath.Join(config.Get().Info.Profile, "cache"))
 
