@@ -169,13 +169,13 @@ func (btp *BTPlayer) onMetadataReceived() {
 		piecesPriorities.Add(0)
 	}
 	for _ = 0; curPiece < startPiece+startBufferPieces; curPiece++ { // get this part
-		piecesPriorities.Add(1)
+		piecesPriorities.Add(7)
 	}
 	for _ = 0; curPiece < endPiece-endBufferPieces; curPiece++ {
 		piecesPriorities.Add(0)
 	}
 	for _ = 0; curPiece <= endPiece; curPiece++ { // get this part
-		piecesPriorities.Add(1)
+		piecesPriorities.Add(7)
 	}
 	numPieces := btp.torrentInfo.Num_pieces()
 	for _ = 0; curPiece < numPieces; curPiece++ {
