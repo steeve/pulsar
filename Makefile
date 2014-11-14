@@ -115,7 +115,7 @@ checksum: $(BUILD_PATH)/$(OUTPUT_NAME)
 	shasum -b $(BUILD_PATH)/$(OUTPUT_NAME) | cut -d' ' -f1 >> $(BUILD_PATH)/$(OUTPUT_NAME)
 
 ifeq ($(TARGET_OS), windows)
-dist: pulsar vendor_libs_windows strip checksum
+dist: pulsar vendor_libs_windows strip upx checksum
 else ifeq ($(TARGET_ARCH), arm)
 dist: pulsar strip checksum
 else
