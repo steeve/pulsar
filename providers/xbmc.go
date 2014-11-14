@@ -146,6 +146,8 @@ func (as *AddonSearcher) GetEpisodeSearchObject(show *tvdb.Show, episode *tvdb.E
 
 	seriesName := show.SeriesName
 	tmdbFindResults := tmdb.Find(strconv.Itoa(show.Id), "tvdb_id")
+
+	// FIXME: This can crash
 	for _, result := range tmdbFindResults.TVResults {
 		seriesName = result.Name
 		break
