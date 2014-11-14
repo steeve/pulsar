@@ -70,27 +70,31 @@ func NewBTService() *BTService {
 	return s
 }
 
+func (s *BTService) onInternetCheck(lastConnected bool) bool {
+	_, err := net.LookupHost(internetCheckAddress)
+	connected := (err == nil)
+	if connected != lastConnected {
+		if connected {
+			s.log.Info("Internet connection status changed, listening...")
+			s.Listen()
+			s.startServices()
+		} else {
+			s.log.Info("No internet connection available")
+			s.stopServices()
+		}
+	}
+	return connected
+}
+
 func (s *BTService) internetMonitor() {
-	lastConnected := false
+	lastConnected := s.onInternetCheck(false)
 	oneSecond := time.Tick(1 * time.Second)
 	for {
 		select {
 		case <-s.closing:
 			return
 		case <-oneSecond:
-			_, err := net.LookupHost(internetCheckAddress)
-			connected := (err == nil)
-			if connected != lastConnected {
-				lastConnected = connected
-				if connected {
-					s.log.Info("Internet connection status changed, listening...")
-					s.Listen()
-					s.startServices()
-				} else {
-					s.log.Info("No internet connection available")
-					s.stopServices()
-				}
-			}
+			lastConnected = s.onInternetCheck(lastConnected)
 		}
 	}
 }
