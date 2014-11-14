@@ -241,8 +241,8 @@ func (s *BTService) alertsConsumer() {
 			if s.Session.Wait_for_alert(ltOneSecond).Swigcptr() == 0 {
 				continue
 			}
-			alert := s.Session.Pop_alert()
-			runtime.SetFinalizer(&alert, func(alert *libtorrent.Alert) {
+			alert := &Alert{s.Session.Pop_alert()}
+			runtime.SetFinalizer(alert, func(alert *Alert) {
 				libtorrent.DeleteAlert(*alert)
 			})
 			s.alertsBroadcaster.Broadcast(alert)
@@ -250,12 +250,12 @@ func (s *BTService) alertsConsumer() {
 	}
 }
 
-func (s *BTService) Alerts() (<-chan libtorrent.Alert, chan<- interface{}) {
+func (s *BTService) Alerts() (<-chan *Alert, chan<- interface{}) {
 	c, done := s.alertsBroadcaster.Listen()
-	ac := make(chan libtorrent.Alert)
+	ac := make(chan *Alert)
 	go func() {
 		for v := range c {
-			ac <- v.(libtorrent.Alert)
+			ac <- v.(*Alert)
 		}
 	}()
 	return ac, done
