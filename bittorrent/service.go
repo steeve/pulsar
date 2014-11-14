@@ -229,8 +229,7 @@ func (s *BTService) stopServices() {
 }
 
 func (s *BTService) alertsConsumer() {
-	s.Session.Set_alert_mask(uint(libtorrent.AlertError_notification |
-		libtorrent.AlertStatus_notification |
+	s.Session.Set_alert_mask(uint(libtorrent.AlertStatus_notification |
 		libtorrent.AlertStorage_notification))
 
 	defer s.alertsBroadcaster.Close()
