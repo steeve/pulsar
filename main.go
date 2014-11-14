@@ -99,7 +99,7 @@ func main() {
 		shutdown()
 	}))
 
-	xbmc.Notify("Pulsar", "Pulsar daemon has started.")
+	xbmc.Notify("Pulsar", "Pulsar daemon has started")
 
 	http.ListenAndServe(":"+strconv.Itoa(config.ListenPort), nil)
 }

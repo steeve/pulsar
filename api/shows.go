@@ -186,7 +186,7 @@ func ShowEpisodePlay(ctx *gin.Context) {
 	}
 
 	if len(torrents) == 0 {
-		xbmc.Notify("Pulsar", "No links were found.")
+		xbmc.Notify("Pulsar", "No links were found")
 		return
 	}
 

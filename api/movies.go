@@ -149,7 +149,7 @@ func MovieLinks(ctx *gin.Context) {
 func MoviePlay(ctx *gin.Context) {
 	torrents := movieLinks(ctx.Params.ByName("imdbId"))
 	if len(torrents) == 0 {
-		xbmc.Notify("Pulsar", "No links were found.")
+		xbmc.Notify("Pulsar", "No links were found")
 		return
 	}
 	sort.Sort(sort.Reverse(providers.ByQuality(torrents)))
