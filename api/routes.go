@@ -86,6 +86,11 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 	r.GET("/play", Play(btService))
 	r.POST("/callbacks/:cid", providers.CallbackHandler)
 
+	cmd := r.Group("/cmd")
+	{
+		cmd.GET("/clear_cache", ClearCache)
+	}
+
 	return r
 }
 
