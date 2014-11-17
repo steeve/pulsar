@@ -34,8 +34,8 @@ type ProxySettings struct {
 }
 
 type BTConfiguration struct {
-	MaxDownloadRate int
 	MaxUploadRate   int
+	MaxDownloadRate int
 	LowerListenPort int
 	UpperListenPort int
 	DownloadPath    string
@@ -51,18 +51,17 @@ type BTService struct {
 	closing           chan interface{}
 }
 
-func NewBTService() *BTService {
+func NewBTService(config BTConfiguration) *BTService {
 	s := &BTService{
 		Session:           libtorrent.NewSession(),
 		log:               logging.MustGetLogger("btservice"),
 		libtorrentLog:     logging.MustGetLogger("libtorrent"),
 		alertsBroadcaster: broadcast.NewBroadcaster(),
+		config:            &config,
 		closing:           make(chan interface{}),
 	}
-	// Ensure we properly free the session object.
-	runtime.SetFinalizer(s, func(s *BTService) {
-		s.Close()
-	})
+
+	s.configure()
 	go s.alertsConsumer()
 	go s.logAlerts()
 	go s.internetMonitor()
@@ -100,40 +99,41 @@ func (s *BTService) internetMonitor() {
 }
 
 func (s *BTService) Close() {
+	s.log.Info("Stopping BT Services...")
 	close(s.closing)
 	libtorrent.DeleteSession(s.Session)
 }
 
-func (s *BTService) Start() {
-	s.log.Info("Starting streamer BTService...")
-}
-
-func (s *BTService) Stop() {
-	s.log.Info("Stopping BTServices...")
+func (s *BTService) Reconfigure(config BTConfiguration) {
 	s.stopServices()
+	s.config = &config
+	s.configure()
+	s.Listen()
+	s.startServices()
 }
 
-func (s *BTService) Configure(c *BTConfiguration) {
-	s.config = c
+func (s *BTService) configure() {
 	settings := s.Session.Settings()
 
 	s.log.Info("Setting Session settings...")
 
 	settings.SetUser_agent(util.UserAgent())
 
-	settings.SetRequest_timeout(5)
-	settings.SetPeer_connect_timeout(2)
+	settings.SetRequest_timeout(10)
+	settings.SetPeer_connect_timeout(10)
 	settings.SetAnnounce_to_all_trackers(true)
 	settings.SetAnnounce_to_all_tiers(true)
 	settings.SetConnection_speed(100)
 	if s.config.MaxDownloadRate > 0 {
-		settings.SetDownload_rate_limit(s.config.MaxDownloadRate * 1024)
+		s.log.Info("Rate limiting download to %dkb/s", s.config.MaxDownloadRate/1024)
 	}
+	settings.SetDownload_rate_limit(s.config.MaxDownloadRate)
 	if s.config.MaxUploadRate > 0 {
-		settings.SetUpload_rate_limit(s.config.MaxUploadRate * 1024)
+		s.log.Info("Rate limiting upload to %dkb/s", s.config.MaxUploadRate/1024)
 		// If we have an upload rate, use the nicer bittyrant choker
 		settings.SetChoking_algorithm(int(libtorrent.Session_settingsBittyrant_choker))
 	}
+	settings.SetUpload_rate_limit(s.config.MaxUploadRate)
 
 	settings.SetTorrent_connect_boost(100)
 	settings.SetRate_limit_ip_overhead(true)
@@ -153,7 +153,7 @@ func (s *BTService) Configure(c *BTConfiguration) {
 	settings.SetAuto_scrape_interval(1200)    // 20 minutes
 	settings.SetAuto_scrape_min_interval(900) // 15 minutes
 	settings.SetIgnore_limits_on_local_network(true)
-	settings.SetRate_limit_utp(false)
+	settings.SetRate_limit_utp(true)
 	settings.SetMixed_mode_algorithm(int(libtorrent.Session_settingsPeer_proportional))
 
 	setPlatformSpecificSettings(settings)
@@ -235,6 +235,7 @@ func (s *BTService) alertsConsumer() {
 	defer s.alertsBroadcaster.Close()
 
 	ltOneSecond := libtorrent.Seconds(libtorrentAlertWaitTime)
+	s.log.Info("Consuming alerts...")
 	for {
 		select {
 		case <-s.closing:
@@ -265,8 +266,7 @@ func (s *BTService) Alerts() (<-chan *Alert, chan<- interface{}) {
 }
 
 func (s *BTService) logAlerts() {
-	alerts, done := s.Alerts()
-	defer close(done)
+	alerts, _ := s.Alerts()
 	for alert := range alerts {
 		alertCategory := alert.Category()
 		if alertCategory&int(libtorrent.AlertError_notification) != 0 {

@@ -53,21 +53,17 @@ func main() {
 
 	log.Info("Addon: %s v%s", config.Get().Info.Id, config.Get().Info.Version)
 
-	btService := bittorrent.NewBTService()
-
-	var startBtService = func() {
-		btService.Configure(&bittorrent.BTConfiguration{
-			LowerListenPort: config.Get().BTListenPortMin,
-			UpperListenPort: config.Get().BTListenPortMax,
-			DownloadPath:    config.Get().DownloadPath,
-		})
-		btService.Start()
-	}
-	startBtService()
+	btService := bittorrent.NewBTService(bittorrent.BTConfiguration{
+		LowerListenPort: config.Get().BTListenPortMin,
+		UpperListenPort: config.Get().BTListenPortMax,
+		DownloadPath:    config.Get().DownloadPath,
+		MaxUploadRate:   config.Get().UploadRateLimit,
+		MaxDownloadRate: config.Get().DownloadRateLimit,
+	})
 
 	var shutdown = func() {
 		log.Info("Shutting down...")
-		btService.Stop()
+		btService.Close()
 		log.Info("Bye bye")
 		os.Exit(0)
 	}
@@ -91,9 +87,14 @@ func main() {
 		handler.ServeHTTP(w, r)
 	}))
 	http.Handle("/reload", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		btService.Stop()
 		config.Reload()
-		startBtService()
+		btService.Reconfigure(bittorrent.BTConfiguration{
+			LowerListenPort: config.Get().BTListenPortMin,
+			UpperListenPort: config.Get().BTListenPortMax,
+			DownloadPath:    config.Get().DownloadPath,
+			MaxUploadRate:   config.Get().UploadRateLimit,
+			MaxDownloadRate: config.Get().DownloadRateLimit,
+		})
 	}))
 	http.Handle("/shutdown", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		shutdown()

@@ -46,6 +46,8 @@ func Reload() error {
 		Info:               info,
 		Platform:           xbmc.GetPlatform(),
 		ProfilePath:        info.Profile,
+		UploadRateLimit:    xbmc.GetSettingInt("max_upload_rate") * 1024,
+		DownloadRateLimit:  xbmc.GetSettingInt("max_download_rate") * 1024,
 		KeepFilesAfterStop: xbmc.GetSettingBool("keep_files"),
 		BTListenPortMin:    xbmc.GetSettingInt("listen_port_min"),
 		BTListenPortMax:    xbmc.GetSettingInt("listen_port_max"),
