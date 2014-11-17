@@ -2,6 +2,7 @@ package repository
 
 import (
 	"encoding/xml"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -31,6 +32,7 @@ func MakePulsarRepositoryAddon() error {
 	addonId := "repository.pulsar"
 	addonName := "Pulsar Repository"
 
+	pulsarHost := fmt.Sprintf("http://localhost:%d", config.ListenPort)
 	addon := &xbmc.Addon{
 		Id:           addonId,
 		Name:         addonName,
@@ -41,12 +43,12 @@ func MakePulsarRepositoryAddon() error {
 				Point: "xbmc.addon.repository",
 				Name:  addonName,
 				Info: &xbmc.AddonRepositoryInfo{
-					Text:       "http://localhost:10001/repository/steeve/plugin.video.pulsar/addons.xml",
+					Text:       pulsarHost + "/repository/steeve/plugin.video.pulsar/addons.xml",
 					Compressed: false,
 				},
-				Checksum: "http://localhost:10001/repository/steeve/plugin.video.pulsar/addons.xml.md5",
+				Checksum: pulsarHost + "/repository/steeve/plugin.video.pulsar/addons.xml.md5",
 				Datadir: &xbmc.AddonRepositoryDataDir{
-					Text: "http://localhost:10001/repository/steeve/",
+					Text: pulsarHost + "/repository/steeve/",
 					Zip:  true,
 				},
 			},
