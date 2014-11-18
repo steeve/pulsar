@@ -20,7 +20,7 @@ type MovieSearchObject struct {
 
 type EpisodeSearchObject struct {
 	IMDBId         string            `json:"imdb_id"`
-	TVDBId         string            `json:"tvdb_id"`
+	TVDBId         int               `json:"tvdb_id"`
 	Title          string            `json:"title"`
 	Season         int               `json:"season"`
 	Episode        int               `json:"episode"`

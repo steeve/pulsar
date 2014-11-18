@@ -154,8 +154,8 @@ func (as *AddonSearcher) GetEpisodeSearchObject(show *tvdb.Show, episode *tvdb.E
 	}
 
 	return &EpisodeSearchObject{
-		IMDBId:         episode.ImdbId,
-		TVDBId:         episode.Id,
+		IMDBId:         show.ImdbId,
+		TVDBId:         show.Id,
 		Title:          NormalizeTitle(seriesName),
 		Season:         episode.SeasonNumber,
 		Episode:        episode.EpisodeNumber,
