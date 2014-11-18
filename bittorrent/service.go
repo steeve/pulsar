@@ -16,6 +16,14 @@ const (
 	internetCheckAddress    = "google.com"
 )
 
+const (
+	ipToSDefault     = iota
+	ipToSLowDelay    = 1 << iota
+	ipToSReliability = 1 << iota
+	ipToSThroughput  = 1 << iota
+	ipToSLowCost     = 1 << iota
+)
+
 var dhtBootstrapNodes = []string{
 	"router.bittorrent.com",
 	"router.utorrent.com",
@@ -135,6 +143,7 @@ func (s *BTService) configure() {
 	}
 	settings.SetUpload_rate_limit(s.config.MaxUploadRate)
 
+	settings.SetPeer_tos(ipToSLowCost)
 	settings.SetTorrent_connect_boost(100)
 	settings.SetRate_limit_ip_overhead(true)
 	settings.SetNo_atime_storage(true)
