@@ -34,6 +34,9 @@ func MoviesIndex(ctx *gin.Context) {
 func renderMovies(movies tmdb.Movies, ctx *gin.Context) {
 	items := make(xbmc.ListItems, 0, len(movies))
 	for _, movie := range movies {
+		if movie == nil {
+			continue
+		}
 		item := movie.ToListItem()
 		item.Path = UrlForXBMC("/movie/%s/play", movie.IMDBId)
 		item.IsPlayable = true
