@@ -13,3 +13,15 @@ func PlayURL(url string) {
 	retVal := 0
 	executeJSONRPC("Player.Open", &retVal, Args{item})
 }
+
+const (
+	ISO_639_1 = iota
+	ISO_639_2
+	EnglishName
+)
+
+func ConvertLanguage(language string, format int) string {
+	retVal := ""
+	executeJSONRPCEx("ConvertLanguage", &retVal, Args{language, format})
+	return retVal
+}

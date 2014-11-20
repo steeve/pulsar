@@ -22,6 +22,7 @@ type ListItems []*ListItem
 
 type ListItem struct {
 	Label       string            `json:"label"`
+	Label2      string            `json:"label2"`
 	Icon        string            `json:"icon"`
 	Thumbnail   string            `json:"thumbnail"`
 	IsPlayable  bool              `json:"is_playable"`

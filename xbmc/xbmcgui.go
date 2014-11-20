@@ -59,6 +59,12 @@ func ListDialog(title string, items ...string) int {
 	return retVal
 }
 
+func PlayerGetPlayingFile() string {
+	retVal := ""
+	executeJSONRPCEx("Player_GetPlayingFile", &retVal, nil)
+	return retVal
+}
+
 func PlayerIsPlaying() bool {
 	retVal := 0
 	executeJSONRPCEx("Player_IsPlaying", &retVal, nil)
