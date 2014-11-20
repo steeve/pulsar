@@ -19,6 +19,62 @@ import (
 	"github.com/steeve/pulsar/xbmc"
 )
 
+func appendLocalFilePayloads(playingFile string, payloads *[]osdb.SearchPayload) error {
+	file, err := os.Open(playingFile)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	hashPayload := osdb.SearchPayload{}
+	if h, err := osdb.HashFile(file); err == nil {
+		hashPayload.Hash = h
+	}
+	if s, err := file.Stat(); err == nil {
+		hashPayload.Size = s.Size()
+	}
+
+	*payloads = append(*payloads, []osdb.SearchPayload{
+		hashPayload,
+		{Query: filepath.Base(playingFile)},
+	}...)
+
+	return nil
+}
+
+func appendMoviePayloads(labels map[string]string, payloads *[]osdb.SearchPayload) error {
+	title := labels["VideoPlayer.OriginalTitle"]
+	if title == "" {
+		title = labels["VideoPlayer.Title"]
+	}
+	*payloads = append(*payloads, osdb.SearchPayload{
+		Query: fmt.Sprintf("%s %s", title, labels["VideoPlayer.Year"]),
+	})
+	return nil
+}
+
+func appendEpisodePayloads(labels map[string]string, payloads *[]osdb.SearchPayload) error {
+	season := -1
+	if labels["VideoPlayer.Season"] != "" {
+		if s, err := strconv.Atoi(labels["VideoPlayer.Season"]); err == nil {
+			season = s
+		}
+	}
+	episode := -1
+	if labels["VideoPlayer.Episode"] != "" {
+		if e, err := strconv.Atoi(labels["VideoPlayer.Episode"]); err == nil {
+			episode = e
+		}
+	}
+	if season >= 0 && episode > 0 {
+		searchString := fmt.Sprintf("%s S%02dE%02d", labels["VideoPlayer.TVshowtitle"], season, episode)
+		*payloads = append(*payloads, osdb.SearchPayload{
+			Query: searchString,
+		})
+	}
+	return nil
+}
+
 func SubtitlesIndex(ctx *gin.Context) {
 	q := ctx.Request.URL.Query()
 	searchString := q.Get("searchstring")
@@ -33,6 +89,7 @@ func SubtitlesIndex(ctx *gin.Context) {
 		"VideoPlayer.Episode",
 	)
 	playingFile := xbmc.PlayerGetPlayingFile()
+
 	// are we reading a file from Pulsar?
 	if strings.HasPrefix(playingFile, util.GetHTTPHost()) {
 		playingFile = strings.Replace(playingFile, util.GetHTTPHost()+"/files", config.Get().DownloadPath, 1)
@@ -51,19 +108,6 @@ func SubtitlesIndex(ctx *gin.Context) {
 		}
 	}
 
-	file, _ := os.Open(playingFile)
-	defer file.Close()
-
-	fileSize := int64(-1)
-	if s, err := file.Stat(); err == nil {
-		fileSize = s.Size()
-	}
-
-	fileHash := ""
-	if h, err := osdb.HashFile(file); err == nil {
-		fileHash = h
-	}
-
 	payloads := []osdb.SearchPayload{}
 	if searchString != "" {
 		payloads = append(payloads, osdb.SearchPayload{
@@ -71,48 +115,20 @@ func SubtitlesIndex(ctx *gin.Context) {
 			Languages: strings.Join(languages, ","),
 		})
 	} else {
-		payloads = append(payloads, []osdb.SearchPayload{
-			{
-				Hash:      fileHash,
-				Size:      fileSize,
-				Languages: strings.Join(languages, ","),
-			},
-			{
-				Query:     filepath.Base(playingFile),
-				Languages: strings.Join(languages, ","),
-			},
-		}...)
+		if strings.HasPrefix(playingFile, "http://") == false && strings.HasPrefix(playingFile, "https://") == false {
+			appendLocalFilePayloads(playingFile, &payloads)
+		}
 
 		if labels["VideoPlayer.TVshowtitle"] != "" {
-			season := -1
-			if labels["VideoPlayer.Season"] != "" {
-				if s, err := strconv.Atoi(labels["VideoPlayer.Season"]); err == nil {
-					season = s
-				}
-			}
-			episode := -1
-			if labels["VideoPlayer.Episode"] != "" {
-				if e, err := strconv.Atoi(labels["VideoPlayer.Episode"]); err == nil {
-					episode = e
-				}
-			}
-			if season >= 0 && episode > 0 {
-				searchString += fmt.Sprintf("%s S%02dE%02d", labels["VideoPlayer.TVshowtitle"], season, episode)
-				payloads = append(payloads, osdb.SearchPayload{
-					Query:     searchString,
-					Languages: strings.Join(languages, ","),
-				})
-			}
+			appendEpisodePayloads(labels, &payloads)
 		} else {
-			title := labels["VideoPlayer.OriginalTitle"]
-			if title == "" {
-				title = labels["VideoPlayer.Title"]
-			}
-			payloads = append(payloads, osdb.SearchPayload{
-				Query:     fmt.Sprintf("%s %s", title, labels["VideoPlayer.Year"]),
-				Languages: strings.Join(languages, ","),
-			})
+			appendMoviePayloads(labels, &payloads)
 		}
+	}
+
+	for i, payload := range payloads {
+		payload.Languages = strings.Join(languages, ",")
+		payloads[i] = payload
 	}
 
 	client, err := osdb.NewClient()
