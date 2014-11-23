@@ -37,7 +37,7 @@ else ifeq ($(TARGET_OS), linux)
 	GO_LDFLAGS = -linkmode=external -extld=$(CC)
 else ifeq ($(TARGET_OS), android)
 	EXT =
-	GOOS = linux
+	GOOS = android
 	GOARM = 7
 	GO_LDFLAGS = -linkmode=external -extld=$(CC)
 endif
