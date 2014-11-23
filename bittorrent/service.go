@@ -1,6 +1,8 @@
 package bittorrent
 
 import (
+	"io"
+	"io/ioutil"
 	"net"
 	"runtime"
 	"time"
@@ -201,6 +203,26 @@ func (s *BTService) Listen() {
 	ports := libtorrent.NewStd_pair_int_int(s.config.LowerListenPort, s.config.UpperListenPort)
 	defer libtorrent.DeleteStd_pair_int_int(ports)
 	s.Session.Listen_on(ports, errCode)
+}
+
+func (s *BTService) WriteState(f io.Writer) error {
+	entry := libtorrent.NewEntry()
+	defer libtorrent.DeleteEntry(entry)
+	s.Session.Save_state(entry, 0xFFFF)
+	_, err := f.Write([]byte(libtorrent.Bencode(entry)))
+	return err
+}
+
+func (s *BTService) LoadState(f io.Reader) error {
+	data, err := ioutil.ReadAll(f)
+	if err != nil {
+		return err
+	}
+	entry := libtorrent.NewLazy_entry()
+	defer libtorrent.DeleteLazy_entry(entry)
+	libtorrent.Lazy_bdecode(string(data), entry)
+	s.Session.Load_state(entry)
+	return nil
 }
 
 func (s *BTService) startServices() {
