@@ -59,7 +59,7 @@ LIBTORRENT_GO = github.com/steeve/libtorrent-go
 LIBTORRENT_GO_HOME = $(shell go env GOPATH)/src/$(LIBTORRENT_GO)
 GO_BUILD_TAGS = netgo
 GO_LDFLAGS += -w -X $(GO_PKG)/util.Version "$(VERSION)" -X $(GO_PKG)/util.GitCommit "$(GIT_VERSION)"
-PLATFORMS = darwin-x64 windows-x86 linux-x86 linux-x64 linux-arm
+PLATFORMS = darwin-x64 windows-x86 linux-x86 linux-x64 linux-arm android-arm
 
 force:
 	@true
@@ -128,3 +128,4 @@ alldist: force
 	$(MAKE) build TARGET_OS=linux TARGET_ARCH=x64 MARGS="dist"
 	$(MAKE) build TARGET_OS=linux TARGET_ARCH=arm MARGS="dist"
 	$(MAKE) build TARGET_OS=windows TARGET_ARCH=x86 MARGS="dist"
+	$(MAKE) build TARGET_OS=android TARGET_ARCH=arm MARGS="dist"
