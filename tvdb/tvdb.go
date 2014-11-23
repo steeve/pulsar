@@ -202,7 +202,9 @@ func NewShowCached(tvdbId string, language string) (*Show, error) {
 		if err != nil {
 			return nil, err
 		}
-		cacheStore.Set(key, newShow, cacheTime)
+		if newShow != nil {
+			cacheStore.Set(key, newShow, cacheTime)
+		}
 		show = newShow
 	}
 	return show, nil

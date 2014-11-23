@@ -47,7 +47,7 @@ type Show struct {
 type Shows []*Show
 
 func GetShow(showId int, language string) *Show {
-	var show Show
+	var show *Show
 	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
 	key := fmt.Sprintf("com.tmdb.show.%d.%s", showId, language)
 	if err := cacheStore.Get(key, &show); err != nil {
@@ -59,7 +59,9 @@ func GetShow(showId int, language string) *Show {
 				nil,
 			)
 		})
-		cacheStore.Set(key, show, cacheTime)
+		if show != nil {
+			cacheStore.Set(key, show, cacheTime)
+		}
 	}
 	switch t := show.RawPopularity.(type) {
 	case string:
@@ -69,7 +71,7 @@ func GetShow(showId int, language string) *Show {
 	case float64:
 		show.Popularity = t
 	}
-	return &show
+	return show
 }
 
 func GetShows(showIds []int, language string) Shows {

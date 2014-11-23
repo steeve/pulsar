@@ -44,6 +44,9 @@ func TVGenres(ctx *gin.Context) {
 func renderShows(shows tmdb.Shows, ctx *gin.Context) {
 	items := make(xbmc.ListItems, 0, len(shows))
 	for _, show := range shows {
+		if show == nil {
+			continue
+		}
 		item := show.ToListItem()
 		item.Path = UrlForXBMC("/show/%d/seasons", show.ExternalIDs.TVDBID)
 		items = append(items, item)

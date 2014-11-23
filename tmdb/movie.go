@@ -56,7 +56,7 @@ func GetMovie(tmdbId int) *Movie {
 }
 
 func getMovieById(movieId string, language string) *Movie {
-	movie := Movie{}
+	var movie *Movie
 	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
 	key := fmt.Sprintf("com.tmdb.movie.%s.%s", movieId, language)
 	if err := cacheStore.Get(key, &movie); err != nil {
@@ -67,7 +67,9 @@ func getMovieById(movieId string, language string) *Movie {
 				&movie,
 				nil,
 			)
-			cacheStore.Set(key, movie, cacheTime)
+			if movie != nil {
+				cacheStore.Set(key, movie, cacheTime)
+			}
 		})
 	}
 	switch t := movie.RawPopularity.(type) {
@@ -77,7 +79,7 @@ func getMovieById(movieId string, language string) *Movie {
 	case float64:
 		movie.Popularity = t
 	}
-	return &movie
+	return movie
 }
 
 func GetMovies(tmdbIds []int) Movies {
