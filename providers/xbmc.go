@@ -128,30 +128,38 @@ func (as *AddonSearcher) GetMovieSearchObject(movie *tmdb.Movie) *MovieSearchObj
 }
 
 func (as *AddonSearcher) GetEpisodeSearchObject(show *tvdb.Show, episode *tvdb.Episode) *EpisodeSearchObject {
-	absoluteNumber := 0
-	if episode.AbsoluteNumber > 0 {
-		totalEpisodes := 0
-		totalEpisodesWithAbsoluteNumber := 0
-		for _, season := range show.Seasons {
-			totalEpisodes += len(season.Episodes)
-			for _, episode := range season.Episodes {
-				if episode.AbsoluteNumber > 0 {
-					totalEpisodesWithAbsoluteNumber++
-				}
-			}
-		}
-		if float64(totalEpisodesWithAbsoluteNumber)/float64(totalEpisodes) >= mixAbsoluteNumberPercentage {
-			absoluteNumber = episode.AbsoluteNumber
-		}
-	}
-
 	seriesName := show.SeriesName
+	absoluteNumber := 0
 	tmdbFindResults := tmdb.Find(strconv.Itoa(show.Id), "tvdb_id")
 
 	// FIXME: This can crash
-	for _, result := range tmdbFindResults.TVResults {
-		seriesName = result.Name
-		break
+	if tmdbFindResults != nil {
+		var tmdbShow *tmdb.Show
+		for _, result := range tmdbFindResults.TVResults {
+			tmdbShow = tmdb.GetShow(result.Id, "en")
+			break
+		}
+		if tmdbShow != nil {
+			seriesName = tmdbShow.Name
+		}
+		// is this an anime?
+		countryIsJP := false
+		for _, country := range tmdbShow.OriginCountry {
+			if country == "JP" {
+				countryIsJP = true
+				break
+			}
+		}
+		genreIsAnim := false
+		for _, genre := range tmdbShow.Genres {
+			if genre.Name == "Animation" {
+				genreIsAnim = true
+				break
+			}
+		}
+		if countryIsJP && genreIsAnim {
+			absoluteNumber = episode.AbsoluteNumber
+		}
 	}
 
 	return &EpisodeSearchObject{

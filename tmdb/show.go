@@ -28,7 +28,7 @@ type Show struct {
 	NumberOfEpisodes    int          `json:"number_of_episodes"`
 	NumberOfSeasons     int          `json:"number_of_seasons"`
 	OriginalName        string       `json:"original_name"`
-	OriginCountry       string       `json:"origin_country"`
+	OriginCountry       []string     `json:"origin_country"`
 	Overview            string       `json:"overview"`
 	EpisodeRuntime      []int        `json:"runtime"`
 	RawPopularity       interface{}  `json:"popularity"`
