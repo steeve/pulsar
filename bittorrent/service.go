@@ -129,11 +129,12 @@ func (s *BTService) configure() {
 
 	settings.SetUser_agent(util.UserAgent())
 
-	settings.SetRequest_timeout(10)
-	settings.SetPeer_connect_timeout(10)
+	settings.SetRequest_timeout(5)
+	settings.SetPeer_connect_timeout(2)
+	settings.SetPeer_timeout(10)
 	settings.SetAnnounce_to_all_trackers(true)
 	settings.SetAnnounce_to_all_tiers(true)
-	settings.SetConnection_speed(20)
+	settings.SetConnection_speed(100)
 	if s.config.MaxDownloadRate > 0 {
 		s.log.Info("Rate limiting download to %dkb/s", s.config.MaxDownloadRate/1024)
 	}
@@ -151,6 +152,7 @@ func (s *BTService) configure() {
 	settings.SetNo_atime_storage(true)
 	settings.SetAnnounce_double_nat(true)
 	settings.SetIgnore_limits_on_local_network(true)
+	settings.SetPrioritize_partial_pieces(true)
 
 	// Prioritize people starting downloads
 	// settings.SetSeed_choking_algorithm(int(libtorrent.Session_settingsAnti_leech))

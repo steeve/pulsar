@@ -1,10 +1,12 @@
 package bittorrent
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -17,7 +19,7 @@ import (
 )
 
 const (
-	startBufferPercent = 0.01
+	startBufferPercent = 0.005
 	startBufferMinSize = 20 * 1024 * 1024 // 20m
 	endBufferSize      = 10 * 1024 * 1024 // 10m
 	playbackMaxWait    = 20 * time.Second
@@ -35,28 +37,32 @@ var statusStrings = []string{
 }
 
 type BTPlayer struct {
-	bts            *BTService
-	uri            string
-	torrentHandle  libtorrent.Torrent_handle
-	torrentInfo    libtorrent.Torrent_info
-	biggestFile    libtorrent.File_entry
-	log            *logging.Logger
-	dialogProgress *xbmc.DialogProgress
-	torrentName    string
-	deleteAfter    bool
-	diskStatus     *diskusage.DiskStatus
-	closing        chan interface{}
-	didBuffer      *broadcast.Broadcaster
+	bts                      *BTService
+	uri                      string
+	torrentHandle            libtorrent.Torrent_handle
+	torrentInfo              libtorrent.Torrent_info
+	biggestFile              libtorrent.File_entry
+	lastStatus               libtorrent.Torrent_status
+	log                      *logging.Logger
+	bufferPiecesProgress     map[int]float64
+	bufferPiecesProgressLock sync.RWMutex
+	dialogProgress           *xbmc.DialogProgress
+	torrentName              string
+	deleteAfter              bool
+	diskStatus               *diskusage.DiskStatus
+	closing                  chan interface{}
+	bufferEvents             *broadcast.Broadcaster
 }
 
 func NewBTPlayer(bts *BTService, uri string, deleteAfter bool) *BTPlayer {
 	btp := &BTPlayer{
-		bts:         bts,
-		uri:         uri,
-		log:         logging.MustGetLogger("btplayer"),
-		deleteAfter: deleteAfter,
-		closing:     make(chan interface{}),
-		didBuffer:   broadcast.NewBroadcaster(),
+		bts:                  bts,
+		uri:                  uri,
+		log:                  logging.MustGetLogger("btplayer"),
+		deleteAfter:          deleteAfter,
+		closing:              make(chan interface{}),
+		bufferEvents:         broadcast.NewBroadcaster(),
+		bufferPiecesProgress: map[int]float64{},
 	}
 	return btp
 }
@@ -106,7 +112,7 @@ func (btp *BTPlayer) Buffer() error {
 		return err
 	}
 
-	buffered, done := btp.didBuffer.Listen()
+	buffered, done := btp.bufferEvents.Listen()
 	defer close(done)
 
 	btp.dialogProgress = xbmc.NewDialogProgress("Pulsar", "", "", "")
@@ -137,6 +143,7 @@ func (btp *BTPlayer) onMetadataReceived() {
 		if btp.diskStatus.Free < torrentSize {
 			btp.log.Info("Unsufficient free space on %s. Has %d, needs %d.", btp.bts.config.DownloadPath, btp.diskStatus.Free, torrentSize)
 			xbmc.Notify("Pulsar", "Not enough space available on the download path.")
+			btp.bufferEvents.Broadcast(errors.New("Not enough space on download destination."))
 			return
 		}
 	}
@@ -163,19 +170,24 @@ func (btp *BTPlayer) onMetadataReceived() {
 	piecesPriorities := libtorrent.NewStd_vector_int()
 	defer libtorrent.DeleteStd_vector_int(piecesPriorities)
 
+	btp.bufferPiecesProgressLock.Lock()
+	defer btp.bufferPiecesProgressLock.Unlock()
+
 	// Properly set the pieces priority vector
 	curPiece := 0
 	for _ = 0; curPiece < startPiece; curPiece++ {
 		piecesPriorities.Add(0)
 	}
 	for _ = 0; curPiece < startPiece+startBufferPieces; curPiece++ { // get this part
-		piecesPriorities.Add(7)
+		piecesPriorities.Add(1)
+		btp.bufferPiecesProgress[curPiece] = 0
 	}
 	for _ = 0; curPiece < endPiece-endBufferPieces; curPiece++ {
-		piecesPriorities.Add(0)
+		piecesPriorities.Add(1)
 	}
 	for _ = 0; curPiece <= endPiece; curPiece++ { // get this part
 		piecesPriorities.Add(7)
+		btp.bufferPiecesProgress[curPiece] = 0
 	}
 	numPieces := btp.torrentInfo.Num_pieces()
 	for _ = 0; curPiece < numPieces; curPiece++ {
@@ -184,8 +196,8 @@ func (btp *BTPlayer) onMetadataReceived() {
 	btp.torrentHandle.Prioritize_pieces(piecesPriorities)
 }
 
-func (btp *BTPlayer) statusStrings(status libtorrent.Torrent_status) (string, string, string) {
-	line1 := fmt.Sprintf("%s (%.2f%%)", statusStrings[int(status.GetState())], status.GetProgress()*100)
+func (btp *BTPlayer) statusStrings(progress float64, status libtorrent.Torrent_status) (string, string, string) {
+	line1 := fmt.Sprintf("%s (%.2f%%)", statusStrings[int(status.GetState())], progress*100)
 	if btp.torrentInfo != nil && btp.torrentInfo.Swigcptr() != 0 {
 		line1 += " - " + humanize.Bytes(uint64(btp.torrentInfo.Total_size()))
 	}
@@ -240,8 +252,6 @@ func (btp *BTPlayer) onStateChanged(stateAlert libtorrent.State_changed_alert) {
 			piecesPriorities.Add(1)
 		}
 		btp.torrentHandle.Prioritize_pieces(piecesPriorities)
-
-		btp.didBuffer.Signal()
 		break
 	}
 }
@@ -292,38 +302,94 @@ func (btp *BTPlayer) consumeAlerts() {
 	}
 }
 
+func (btp *BTPlayer) piecesProgress(pieces map[int]float64) {
+	queue := libtorrent.NewStd_vector_partial_piece_info()
+	defer libtorrent.DeleteStd_vector_partial_piece_info(queue)
+
+	btp.torrentHandle.Get_download_queue(queue)
+	for piece, _ := range pieces {
+		if btp.torrentHandle.Have_piece(piece) == true {
+			pieces[piece] = 1.0
+		}
+	}
+	queueSize := queue.Size()
+	for i := 0; i < int(queueSize); i++ {
+		ppi := queue.Get(i)
+		pieceIndex := ppi.GetPiece_index()
+		if _, exists := pieces[pieceIndex]; exists {
+			blocks := ppi.Blocks()
+			totalBlocks := ppi.GetBlocks_in_piece()
+			totalBlockDownloaded := uint(0)
+			totalBlockSize := uint(0)
+			for j := 0; j < totalBlocks; j++ {
+				block := blocks.Getitem(j)
+				totalBlockDownloaded += block.GetBytes_progress()
+				totalBlockSize += block.GetBlock_size()
+			}
+			pieces[pieceIndex] = float64(totalBlockDownloaded) / float64(totalBlockSize)
+		}
+	}
+}
+
+func (btp *BTPlayer) bufferDialog() {
+	halfSecond := time.NewTicker(500 * time.Millisecond)
+	defer halfSecond.Stop()
+	oneSecond := time.NewTicker(1 * time.Second)
+	defer oneSecond.Stop()
+
+dialogLoop:
+	for {
+		select {
+		case <-halfSecond.C:
+			if btp.dialogProgress.IsCanceled() {
+				btp.log.Info("User cancelled the buffering")
+				go ga.TrackEvent("player", "buffer_canceled", btp.torrentName, -1)
+				btp.bufferEvents.Broadcast(errors.New("user canceled the buffering"))
+				break dialogLoop
+			}
+		case <-oneSecond.C:
+			bufferProgress := float64(0)
+			btp.bufferPiecesProgressLock.Lock()
+			if len(btp.bufferPiecesProgress) > 0 {
+				totalProgress := float64(0)
+				btp.piecesProgress(btp.bufferPiecesProgress)
+				for _, v := range btp.bufferPiecesProgress {
+					totalProgress += v
+				}
+				bufferProgress = totalProgress / float64(len(btp.bufferPiecesProgress))
+			}
+			btp.bufferPiecesProgressLock.Unlock()
+			status := btp.torrentHandle.Status(uint(libtorrent.Torrent_handleQuery_name))
+			line1, line2, line3 := btp.statusStrings(bufferProgress, status)
+			btp.dialogProgress.Update(int(bufferProgress*100.0), line1, line2, line3)
+			if bufferProgress >= 1 {
+				btp.bufferEvents.Signal()
+			}
+		}
+	}
+}
+
 func (btp *BTPlayer) playerLoop() {
 	defer btp.Close()
 
 	start := time.Now()
 
-	secondTicker := time.Tick(1 * time.Second)
-
 	btp.log.Info("Buffer loop")
-	buffered, done := btp.didBuffer.Listen()
-	defer close(done)
-bufferLoop:
-	for {
-		select {
-		case <-buffered:
-			btp.log.Info("Buffer complete")
-			break bufferLoop
-		case <-secondTicker:
-			ga.TrackEvent("player", "buffering", btp.torrentName, -1)
-			if btp.dialogProgress.IsCanceled() {
-				btp.log.Info("User cancelled the buffering")
-				go ga.TrackEvent("player", "buffer_canceled", btp.torrentName, -1)
-				btp.didBuffer.Broadcast(fmt.Errorf("user canceled the buffering"))
-				return
-			}
-			status := btp.torrentHandle.Status(uint(libtorrent.Torrent_handleQuery_name))
-			line1, line2, line3 := btp.statusStrings(status)
-			btp.dialogProgress.Update(int(status.GetProgress()*100.0), line1, line2, line3)
-		}
+
+	buffered, bufferDone := btp.bufferEvents.Listen()
+	defer close(bufferDone)
+
+	go btp.bufferDialog()
+
+	if err := <-buffered; err != nil {
+		return
 	}
+
 	ga.TrackTiming("player", "buffer_time_real", int(time.Now().Sub(start).Seconds()*1000), "")
 
 	btp.log.Info("Waiting for playback...")
+	oneSecond := time.NewTicker(1 * time.Second)
+	defer oneSecond.Stop()
 	playbackTimeout := time.After(playbackMaxWait)
 playbackWaitLoop:
 	for {
@@ -333,9 +399,9 @@ playbackWaitLoop:
 		select {
 		case <-playbackTimeout:
 			btp.log.Info("Playback was unable to start after %d seconds. Aborting...", playbackMaxWait)
-			btp.didBuffer.Broadcast(fmt.Errorf("Playback was unable to start before timeout."))
+			btp.bufferEvents.Broadcast(errors.New("Playback was unable to start before timeout."))
 			return
-		case <-secondTicker:
+		case <-oneSecond.C:
 			ga.TrackEvent("player", "waiting_playback", btp.torrentName, -1)
 		}
 	}
@@ -343,16 +409,17 @@ playbackWaitLoop:
 	ga.TrackTiming("player", "buffer_time_perceived", int(time.Now().Sub(start).Seconds()*1000), "")
 
 	btp.log.Info("Playback loop")
-	playingTicker := time.Tick(60 * time.Second)
+	playingTicker := time.NewTicker(60 * time.Second)
+	defer playingTicker.Stop()
 playbackLoop:
 	for {
 		if xbmc.PlayerIsPlaying() == false {
 			break playbackLoop
 		}
 		select {
-		case <-playingTicker:
+		case <-playingTicker.C:
 			ga.TrackEvent("player", "playing", btp.torrentName, -1)
-		case <-secondTicker:
+		case <-oneSecond.C:
 		}
 	}
 
