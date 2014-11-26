@@ -6,11 +6,16 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/op/go-logging"
 	"github.com/steeve/pulsar/bittorrent"
 	"github.com/steeve/pulsar/providers"
 	"github.com/steeve/pulsar/tmdb"
 	"github.com/steeve/pulsar/tvdb"
 	"github.com/steeve/pulsar/xbmc"
+)
+
+var (
+	showsLog = logging.MustGetLogger("shows")
 )
 
 func TVIndex(ctx *gin.Context) {
