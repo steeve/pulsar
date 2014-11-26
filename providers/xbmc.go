@@ -205,10 +205,13 @@ func (as *AddonSearcher) SearchMovieLinks(movie *tmdb.Movie) []*bittorrent.Torre
 }
 
 func (as *AddonSearcher) SearchEpisodeLinks(show *tvdb.Show, episode *tvdb.Episode) []*bittorrent.Torrent {
-	torrents := as.call("search_episode", as.GetEpisodeSearchObject(show, episode))
-	as.log.Info("Filtering irrelevant items")
+	epSearchObject := as.GetEpisodeSearchObject(show, episode)
+	torrents := as.call("search_episode", epSearchObject)
+	epMatch := regexp.MustCompile(fmt.Sprintf("s%02de%02d", epSearchObject.Season, epSearchObject.Episode))
+	if epSearchObject.AbsoluteNumber > 0 {
+		epMatch = regexp.MustCompile(fmt.Sprintf("%03d", epSearchObject.AbsoluteNumber))
+	}
 
-	epMatch := regexp.MustCompile(fmt.Sprintf("s%02de%02d", episode.SeasonNumber, episode.EpisodeNumber))
 	cleanTorrents := make([]*bittorrent.Torrent, 0)
 	for _, torrent := range torrents {
 		lowerName := strings.ToLower(torrent.Name)
@@ -217,7 +220,9 @@ func (as *AddonSearcher) SearchEpisodeLinks(show *tvdb.Show, episode *tvdb.Episo
 		}
 	}
 
-	as.log.Info("Filtered %d irrelevant items", len(torrents)-len(cleanTorrents))
+	if len(cleanTorrents) < len(torrents) {
+		as.log.Info("Filtered %d irrelevant items", len(torrents)-len(cleanTorrents))
+	}
 
 	return cleanTorrents
 }
