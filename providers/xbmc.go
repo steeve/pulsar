@@ -207,7 +207,9 @@ func (as *AddonSearcher) SearchMovieLinks(movie *tmdb.Movie) []*bittorrent.Torre
 func (as *AddonSearcher) SearchEpisodeLinks(show *tvdb.Show, episode *tvdb.Episode) []*bittorrent.Torrent {
 	epSearchObject := as.GetEpisodeSearchObject(show, episode)
 	torrents := as.call("search_episode", epSearchObject)
-	epMatch := regexp.MustCompile(fmt.Sprintf("s%02de%02d", epSearchObject.Season, epSearchObject.Episode))
+	epMatch := regexp.MustCompile(fmt.Sprintf("(s%02de%02d|%dx%02d)",
+		epSearchObject.Season, epSearchObject.Episode,
+		epSearchObject.Season, epSearchObject.Episode))
 	if epSearchObject.AbsoluteNumber > 0 {
 		epMatch = regexp.MustCompile(fmt.Sprintf("%03d", epSearchObject.AbsoluteNumber))
 	}
