@@ -131,7 +131,7 @@ func (s *BTService) configure() {
 
 	settings.SetRequest_timeout(5)
 	settings.SetPeer_connect_timeout(2)
-	settings.SetPeer_timeout(10)
+	settings.SetStrict_end_game_mode(false)
 	settings.SetAnnounce_to_all_trackers(true)
 	settings.SetAnnounce_to_all_tiers(true)
 	settings.SetConnection_speed(100)
