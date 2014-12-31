@@ -92,7 +92,9 @@ func processLinks(torrentsChan chan *bittorrent.Torrent) []*bittorrent.Torrent {
 		wg.Add(1)
 		go func(torrent *bittorrent.Torrent) {
 			defer wg.Done()
-			torrent.Resolve()
+			if err := torrent.Resolve(); err != nil {
+				log.Error("Unable to resolve .torrent file at: %s", torrent.URI)
+			}
 		}(torrent)
 	}
 	wg.Wait()
