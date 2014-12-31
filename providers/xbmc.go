@@ -211,7 +211,7 @@ func (as *AddonSearcher) SearchEpisodeLinks(show *tvdb.Show, episode *tvdb.Episo
 		epSearchObject.Season, epSearchObject.Episode,
 		epSearchObject.Season, epSearchObject.Episode))
 	if epSearchObject.AbsoluteNumber > 0 {
-		epMatch = regexp.MustCompile(fmt.Sprintf("%03d", epSearchObject.AbsoluteNumber))
+		epMatch = regexp.MustCompile(fmt.Sprintf("%02d", epSearchObject.AbsoluteNumber))
 	}
 
 	cleanTorrents := make([]*bittorrent.Torrent, 0)
