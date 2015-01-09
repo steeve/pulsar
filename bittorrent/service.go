@@ -152,7 +152,7 @@ func (s *BTService) configure() {
 	settings.SetNo_atime_storage(true)
 	settings.SetAnnounce_double_nat(true)
 	settings.SetIgnore_limits_on_local_network(true)
-	settings.SetPrioritize_partial_pieces(true)
+	settings.SetPrioritize_partial_pieces(false)
 
 	// Prioritize people starting downloads
 	// settings.SetSeed_choking_algorithm(int(libtorrent.Session_settingsAnti_leech))
