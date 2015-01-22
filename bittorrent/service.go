@@ -180,6 +180,13 @@ func (s *BTService) configure() {
 	// Add all the libtorrent extensions
 	s.Session.Add_extensions()
 
+	s.log.Info("Setting DHT settings")
+	dhtSettings := libtorrent.NewDht_settings()
+	defer libtorrent.DeleteDht_settings(dhtSettings)
+	dhtSettings.SetMax_torrents(200)
+	dhtSettings.SetMax_dht_items(200)
+	s.Session.Set_dht_settings(dhtSettings)
+
 	s.log.Info("Setting Encryption settings...")
 	encryptionSettings := libtorrent.NewPe_settings()
 	defer libtorrent.DeletePe_settings(encryptionSettings)
