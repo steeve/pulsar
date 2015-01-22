@@ -148,14 +148,19 @@ func (s *BTService) configure() {
 
 	settings.SetPeer_tos(ipToSLowCost)
 	settings.SetTorrent_connect_boost(100)
-	settings.SetRate_limit_ip_overhead(false)
+	settings.SetRate_limit_ip_overhead(true)
 	settings.SetNo_atime_storage(true)
 	settings.SetAnnounce_double_nat(true)
 	settings.SetIgnore_limits_on_local_network(true)
 	settings.SetPrioritize_partial_pieces(false)
+	settings.SetFree_torrent_hashes(true)
+	// Make sure the disk cache is not swapped out (useful for slower devices)
+	settings.SetLock_disk_cache(true)
+	settings.SetNo_atime_storage(true)
+	settings.SetDisk_cache_algorithm(libtorrent.Session_settingsLargest_contiguous)
 
 	// Prioritize people starting downloads
-	// settings.SetSeed_choking_algorithm(int(libtorrent.Session_settingsAnti_leech))
+	settings.SetSeed_choking_algorithm(int(libtorrent.Session_settingsAnti_leech))
 
 	// copied from qBitorrent at
 	// https://github.com/qbittorrent/qBittorrent/blob/master/src/qtlibtorrent/qbtsession.cpp
