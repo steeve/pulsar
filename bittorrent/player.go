@@ -181,6 +181,7 @@ func (btp *BTPlayer) onMetadataReceived() {
 	for _ = 0; curPiece < startPiece+startBufferPieces; curPiece++ { // get this part
 		piecesPriorities.Add(1)
 		btp.bufferPiecesProgress[curPiece] = 0
+		btp.torrentHandle.Set_piece_deadline(curPiece, 1000, 0)
 	}
 	for _ = 0; curPiece < endPiece-endBufferPieces; curPiece++ {
 		piecesPriorities.Add(1)
@@ -188,6 +189,7 @@ func (btp *BTPlayer) onMetadataReceived() {
 	for _ = 0; curPiece <= endPiece; curPiece++ { // get this part
 		piecesPriorities.Add(7)
 		btp.bufferPiecesProgress[curPiece] = 0
+		btp.torrentHandle.Set_piece_deadline(curPiece, 1000, 0)
 	}
 	numPieces := btp.torrentInfo.Num_pieces()
 	for _ = 0; curPiece < numPieces; curPiece++ {
