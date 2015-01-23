@@ -339,7 +339,6 @@ func (btp *BTPlayer) bufferDialog() {
 	oneSecond := time.NewTicker(1 * time.Second)
 	defer oneSecond.Stop()
 
-dialogLoop:
 	for {
 		select {
 		case <-halfSecond.C:
@@ -347,7 +346,7 @@ dialogLoop:
 				btp.log.Info("User cancelled the buffering")
 				go ga.TrackEvent("player", "buffer_canceled", btp.torrentName, -1)
 				btp.bufferEvents.Broadcast(errors.New("user canceled the buffering"))
-				break dialogLoop
+				return
 			}
 		case <-oneSecond.C:
 			bufferProgress := float64(0)
@@ -366,6 +365,7 @@ dialogLoop:
 			btp.dialogProgress.Update(int(bufferProgress*100.0), line1, line2, line3)
 			if bufferProgress >= 1 {
 				btp.bufferEvents.Signal()
+				return
 			}
 		}
 	}
