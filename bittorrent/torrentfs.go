@@ -202,9 +202,6 @@ func (tf *TorrentFile) Seek(offset int64, whence int) (int64, error) {
 			piecesPriorities.Add(1)
 		}
 		tf.torrentHandle.Prioritize_pieces(piecesPriorities)
-		for i := 0; i < 2; i++ {
-			tf.torrentHandle.Set_piece_deadline(piece+i, i*1000, 0)
-		}
 	}
 
 	return tf.File.Seek(offset, whence)
