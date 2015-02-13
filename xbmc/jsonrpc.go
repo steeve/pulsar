@@ -11,9 +11,9 @@ type Object map[string]interface{}
 
 var Results map[string]chan interface{}
 
-const (
-	XBMCDefaultJSONRPCHost = "localhost:9090"
-	XBMCExJSONRPCHost      = "localhost:65252"
+var (
+	XBMCDefaultJSONRPCHost = net.JoinHostPort("localhost", "9090")
+	XBMCExJSONRPCHost      = net.JoinHostPort("localhost", "65252")
 )
 
 func executeJSONRPC(method string, retVal interface{}, args []interface{}) error {
