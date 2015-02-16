@@ -126,7 +126,7 @@ func addonZip(ctx *gin.Context, user string, repository string, lastTagName stri
 		assets, _, _ := client.Repositories.ListReleaseAssets(user, repository, *release.ID, nil)
 		for _, asset := range assets {
 			if addonZipRE.MatchString(*asset.Name) {
-				ctx.Redirect(302, *asset.BrowserDownloadUrl)
+				ctx.Redirect(302, *asset.BrowserDownloadURL)
 				return
 			}
 		}

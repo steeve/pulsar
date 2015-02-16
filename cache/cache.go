@@ -105,7 +105,7 @@ func Cache(store CacheStore, expire time.Duration) gin.HandlerFunc {
 					ctx.Writer.Header().Add(k, v)
 				}
 			}
-			ctx.Abort(cache.Status)
+			ctx.AbortWithStatus(cache.Status)
 			ctx.Writer.Write(cache.Data)
 		} else {
 			// replace writer
