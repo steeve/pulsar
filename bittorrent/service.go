@@ -129,37 +129,39 @@ func (s *BTService) configure() {
 
 	settings.SetUser_agent(util.UserAgent())
 
-	settings.SetRequest_timeout(5)
+	settings.SetRequest_timeout(2)
 	settings.SetPeer_connect_timeout(2)
+	settings.SetStrict_end_game_mode(true)
 	settings.SetAnnounce_to_all_trackers(true)
 	settings.SetAnnounce_to_all_tiers(true)
-	settings.SetConnection_speed(100)
+	settings.SetConnection_speed(500)
+
 	if s.config.MaxDownloadRate > 0 {
 		s.log.Info("Rate limiting download to %dkb/s", s.config.MaxDownloadRate/1024)
+		settings.SetDownload_rate_limit(s.config.MaxDownloadRate)
 	}
-	settings.SetDownload_rate_limit(s.config.MaxDownloadRate)
 	if s.config.MaxUploadRate > 0 {
 		s.log.Info("Rate limiting upload to %dkb/s", s.config.MaxUploadRate/1024)
 		// If we have an upload rate, use the nicer bittyrant choker
 		settings.SetChoking_algorithm(int(libtorrent.Session_settingsBittyrant_choker))
+		settings.SetUpload_rate_limit(s.config.MaxUploadRate)
 	}
-	settings.SetUpload_rate_limit(s.config.MaxUploadRate)
 
 	settings.SetPeer_tos(ipToSLowCost)
-	settings.SetTorrent_connect_boost(100)
+	settings.SetTorrent_connect_boost(500)
 	settings.SetRate_limit_ip_overhead(true)
 	settings.SetNo_atime_storage(true)
 	settings.SetAnnounce_double_nat(true)
-	settings.SetIgnore_limits_on_local_network(true)
 	settings.SetPrioritize_partial_pieces(false)
 	settings.SetFree_torrent_hashes(true)
+	settings.SetUse_parole_mode(true)
+
 	// Make sure the disk cache is not swapped out (useful for slower devices)
 	settings.SetLock_disk_cache(true)
-	settings.SetNo_atime_storage(true)
 	settings.SetDisk_cache_algorithm(libtorrent.Session_settingsLargest_contiguous)
 
 	// Prioritize people starting downloads
-	settings.SetSeed_choking_algorithm(int(libtorrent.Session_settingsAnti_leech))
+	settings.SetSeed_choking_algorithm(int(libtorrent.Session_settingsFastest_upload))
 
 	// copied from qBitorrent at
 	// https://github.com/qbittorrent/qBittorrent/blob/master/src/qtlibtorrent/qbtsession.cpp
@@ -170,7 +172,7 @@ func (s *BTService) configure() {
 	settings.SetAuto_scrape_min_interval(900) // 15 minutes
 	settings.SetIgnore_limits_on_local_network(true)
 	settings.SetRate_limit_utp(true)
-	settings.SetMixed_mode_algorithm(int(libtorrent.Session_settingsPeer_proportional))
+	settings.SetMixed_mode_algorithm(int(libtorrent.Session_settingsPrefer_tcp))
 
 	setPlatformSpecificSettings(settings)
 
@@ -178,13 +180,6 @@ func (s *BTService) configure() {
 
 	// Add all the libtorrent extensions
 	s.Session.Add_extensions()
-
-	s.log.Info("Setting DHT settings")
-	dhtSettings := libtorrent.NewDht_settings()
-	defer libtorrent.DeleteDht_settings(dhtSettings)
-	dhtSettings.SetMax_torrents(200)
-	dhtSettings.SetMax_dht_items(200)
-	s.Session.Set_dht_settings(dhtSettings)
 
 	s.log.Info("Setting Encryption settings...")
 	encryptionSettings := libtorrent.NewPe_settings()
