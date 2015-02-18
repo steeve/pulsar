@@ -132,6 +132,10 @@ func (btp *BTPlayer) PlayURL() string {
 
 func (btp *BTPlayer) onMetadataReceived() {
 	btp.log.Info("Metadata received.")
+
+	btp.torrentHandle.Pause()
+	defer btp.torrentHandle.Resume()
+
 	btp.torrentName = btp.torrentHandle.Status(uint(0)).GetName()
 	go ga.TrackEvent("player", "metadata_received", btp.torrentName, -1)
 
