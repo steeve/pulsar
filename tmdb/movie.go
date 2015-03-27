@@ -41,6 +41,10 @@ type Movie struct {
 		Translations []*Language `json:"translations"`
 	} `json:"translations"`
 
+	Trailers *struct {
+		Youtube []*Trailer `json:"youtube"`
+	} `json:"trailers"`
+
 	Credits *Credits `json:"credits,omitempty"`
 	Images  *Images  `json:"images,omitempty"`
 }
@@ -63,7 +67,7 @@ func getMovieById(movieId string, language string) *Movie {
 		rateLimiter.Call(func() {
 			napping.Get(
 				tmdbEndpoint+"movie/"+movieId,
-				&napping.Params{"api_key": apiKey, "append_to_response": "credits,images,alternative_titles,translations,external_ids", "language": language},
+				&napping.Params{"api_key": apiKey, "append_to_response": "credits,images,alternative_titles,translations,external_ids,trailers", "language": language},
 				&movie,
 				nil,
 			)
@@ -244,6 +248,13 @@ func (movie *Movie) ToListItem() *xbmc.ListItem {
 		genres = append(genres, genre.Name)
 	}
 	item.Info.Genre = strings.Join(genres, " / ")
+
+	if movie.Trailers != nil {
+		for _, trailer := range movie.Trailers.Youtube {
+			item.Info.Trailer = trailer.Source
+			break
+		}
+	}
 
 	for _, language := range movie.SpokenLanguages {
 		item.StreamInfo = &xbmc.StreamInfo{

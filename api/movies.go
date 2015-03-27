@@ -75,6 +75,7 @@ func renderMovies(movies tmdb.Movies, ctx *gin.Context) {
 		}
 		item := movie.ToListItem()
 		item.Path = UrlForXBMC("/movie/%s/play", movie.IMDBId)
+		item.Info.Trailer = UrlForHTTP("/youtube/%s", item.Info.Trailer)
 		item.IsPlayable = true
 		item.ContextMenu = [][]string{
 			[]string{"Choose stream...", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/movie/%s/links", movie.IMDBId))},

@@ -120,6 +120,13 @@ type List struct {
 	Items         []*Entity `json:"items"`
 }
 
+type Trailer struct {
+	Name   string `json:"name"`
+	Size   string `json:"size"`
+	Source string `json:"source"`
+	Type   string `json:"type"`
+}
+
 const (
 	tmdbEndpoint            = "http://api.themoviedb.org/3/"
 	imageEndpoint           = "http://image.tmdb.org/t/p/"
