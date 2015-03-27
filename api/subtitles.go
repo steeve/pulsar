@@ -11,12 +11,18 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/steeve/pulsar/config"
 	"github.com/steeve/pulsar/osdb"
 	"github.com/steeve/pulsar/util"
 	"github.com/steeve/pulsar/xbmc"
+)
+
+const (
+	maxFetchTries = 10
+	osdbTimeout   = 4 * time.Second
 )
 
 func appendLocalFilePayloads(playingFile string, payloads *[]osdb.SearchPayload) error {
@@ -134,15 +140,36 @@ func SubtitlesIndex(ctx *gin.Context) {
 	client, err := osdb.NewClient()
 	if err != nil {
 		ctx.Fail(500, err)
-		return
 	}
-	if err := client.LogIn("", "", ""); err != nil {
-		ctx.Fail(500, err)
-		return
+
+	var results osdb.Subtitles
+
+searchLoop:
+	for i := 0; i < maxFetchTries; i++ {
+		c := make(chan error, 0)
+		go func() {
+			if err := client.LogIn("", "", ""); err != nil {
+				c <- err
+				close(c)
+			}
+			results, _ = client.SearchSubtitles(payloads)
+			close(c)
+		}()
+
+		select {
+		case <-time.After(osdbTimeout):
+			continue searchLoop
+		case err := <-c:
+			if err == nil {
+				break searchLoop
+			}
+		}
+	}
+	if results == nil {
+		ctx.Fail(500, fmt.Errorf("I was unable to fetch the subtitles"))
 	}
 
 	items := make(xbmc.ListItems, 0)
-	results, _ := client.SearchSubtitles(payloads)
 	for _, sub := range results {
 		rating, _ := strconv.ParseFloat(sub.SubRating, 64)
 		subLang := sub.LanguageName
