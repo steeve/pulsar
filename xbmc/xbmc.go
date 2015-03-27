@@ -25,3 +25,9 @@ func ConvertLanguage(language string, format int) string {
 	executeJSONRPCEx("ConvertLanguage", &retVal, Args{language, format})
 	return retVal
 }
+
+func GetLanguage(format int) string {
+	retVal := ""
+	executeJSONRPCEx("GetLanguage", &retVal, Args{format})
+	return retVal
+}

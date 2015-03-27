@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/op/go-logging"
 	"github.com/steeve/pulsar/bittorrent"
+	"github.com/steeve/pulsar/config"
 	"github.com/steeve/pulsar/providers"
 	"github.com/steeve/pulsar/tmdb"
 	"github.com/steeve/pulsar/tvdb"
@@ -36,7 +37,7 @@ func TVIndex(ctx *gin.Context) {
 }
 
 func TVGenres(ctx *gin.Context) {
-	genres := tmdb.GetTVGenres()
+	genres := tmdb.GetTVGenres(config.Get().Language)
 	items := make(xbmc.ListItems, 0, len(genres))
 	for _, genre := range genres {
 		items = append(items, &xbmc.ListItem{
@@ -67,15 +68,15 @@ func PopularShows(ctx *gin.Context) {
 	if genre == "0" {
 		genre = ""
 	}
-	renderShows(tmdb.PopularShowsComplete(genre), ctx)
+	renderShows(tmdb.PopularShowsComplete(genre, config.Get().Language), ctx)
 }
 
 func TopRatedShows(ctx *gin.Context) {
-	renderShows(tmdb.TopRatedShowsComplete(""), ctx)
+	renderShows(tmdb.TopRatedShowsComplete("", config.Get().Language), ctx)
 }
 
 func TVMostVoted(ctx *gin.Context) {
-	renderMovies(tmdb.MostVotedShowsComplete(""), ctx)
+	renderMovies(tmdb.MostVotedShowsComplete("", config.Get().Language), ctx)
 }
 
 func SearchShows(ctx *gin.Context) {
@@ -83,11 +84,11 @@ func SearchShows(ctx *gin.Context) {
 	if query == "" {
 		query = xbmc.Keyboard("", "Search TV Shows")
 	}
-	renderShows(tmdb.SearchShows(query, "en"), ctx)
+	renderShows(tmdb.SearchShows(query, config.Get().Language), ctx)
 }
 
 func ShowSeasons(ctx *gin.Context) {
-	show, err := tvdb.NewShowCached(ctx.Params.ByName("showId"), "en")
+	show, err := tvdb.NewShowCached(ctx.Params.ByName("showId"), config.Get().Language)
 	if err != nil {
 		ctx.Error(err, nil)
 		return
@@ -106,7 +107,7 @@ func ShowSeasons(ctx *gin.Context) {
 }
 
 func ShowEpisodes(ctx *gin.Context) {
-	show, err := tvdb.NewShowCached(ctx.Params.ByName("showId"), "en")
+	show, err := tvdb.NewShowCached(ctx.Params.ByName("showId"), config.Get().Language)
 	if err != nil {
 		ctx.Error(err, nil)
 		return
@@ -138,7 +139,7 @@ func ShowEpisodes(ctx *gin.Context) {
 func showEpisodeLinks(showId string, seasonNumber, episodeNumber int) ([]*bittorrent.Torrent, error) {
 	log.Println("Searching links for TVDB Id:", showId)
 
-	show, err := tvdb.NewShowCached(showId, "en")
+	show, err := tvdb.NewShowCached(showId, config.Get().Language)
 	if err != nil {
 		return nil, err
 	}

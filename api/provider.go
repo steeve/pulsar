@@ -20,7 +20,7 @@ func ProviderGetMovie(ctx *gin.Context) {
 	imdbId := ctx.Params.ByName("imdbId")
 	provider := ctx.Params.ByName("provider")
 	log.Println("Searching links for IMDB:", imdbId)
-	movie := tmdb.GetMovieFromIMDB(imdbId)
+	movie := tmdb.GetMovieFromIMDB(imdbId, "en")
 	log.Printf("Resolved %s to %s\n", imdbId, movie.Title)
 
 	searcher := providers.NewAddonSearcher(provider)

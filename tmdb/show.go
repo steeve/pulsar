@@ -54,7 +54,7 @@ func GetShow(showId int, language string) *Show {
 		rateLimiter.Call(func() {
 			napping.Get(
 				tmdbEndpoint+"tv/"+strconv.Itoa(showId),
-				&napping.Params{"api_key": apiKey, "append_to_response": "credits,images,alternative_titles,translations,external_ids"},
+				&napping.Params{"api_key": apiKey, "append_to_response": "credits,images,alternative_titles,translations,external_ids", "language": language},
 				&show,
 				nil,
 			)
@@ -62,6 +62,9 @@ func GetShow(showId int, language string) *Show {
 		if show != nil {
 			cacheStore.Set(key, show, cacheTime)
 		}
+	}
+	if show == nil {
+		return nil
 	}
 	switch t := show.RawPopularity.(type) {
 	case string:
@@ -112,7 +115,6 @@ func ListShowsComplete(endpoint string, params napping.Params) Shows {
 	shows := make(Shows, popularMoviesMaxPages*moviesPerPage)
 
 	params["api_key"] = apiKey
-	params["language"] = "en"
 
 	wg := sync.WaitGroup{}
 	for i := 0; i < popularMoviesMaxPages; i++ {
@@ -135,7 +137,7 @@ func ListShowsComplete(endpoint string, params napping.Params) Shows {
 				)
 			})
 			for i, entity := range tmp.Results {
-				shows[page*moviesPerPage+i] = GetShow(entity.Id, "en")
+				shows[page*moviesPerPage+i] = GetShow(entity.Id, params["language"])
 			}
 		}(i)
 	}
@@ -144,32 +146,34 @@ func ListShowsComplete(endpoint string, params napping.Params) Shows {
 	return shows
 }
 
-func PopularShowsComplete(genre string) Shows {
+func PopularShowsComplete(genre string, language string) Shows {
 	return ListShowsComplete("discover/tv", napping.Params{
+		"language":           language,
 		"sort_by":            "popularity.desc",
 		"first_air_date.lte": time.Now().UTC().Format("2006-01-02"),
 		"with_genres":        genre,
 	})
 }
 
-func TopRatedShowsComplete(genre string) Shows {
-	return ListShowsComplete("tv/top_rated", napping.Params{})
+func TopRatedShowsComplete(genre string, language string) Shows {
+	return ListShowsComplete("tv/top_rated", napping.Params{"language": language})
 }
 
-func MostVotedShowsComplete(genre string) Movies {
+func MostVotedShowsComplete(genre string, language string) Movies {
 	return ListMoviesComplete("discover/tv", napping.Params{
+		"language":           language,
 		"sort_by":            "vote_count.desc",
 		"first_air_date.lte": time.Now().UTC().Format("2006-01-02"),
 		"with_genres":        genre,
 	})
 }
 
-func GetTVGenres() []*Genre {
+func GetTVGenres(language string) []*Genre {
 	genres := GenreList{}
 	rateLimiter.Call(func() {
 		napping.Get(
 			tmdbEndpoint+"genre/tv/list",
-			&napping.Params{"api_key": apiKey},
+			&napping.Params{"api_key": apiKey, "language": language},
 			&genres,
 			nil,
 		)
@@ -196,8 +200,13 @@ func (show *Show) ToListItem() *xbmc.ListItem {
 			TVShowTitle:   show.OriginalName,
 			Premiered:     show.FirstAirDate,
 		},
-		Art: &xbmc.ListItemArt{},
+		Art: &xbmc.ListItemArt{
+			FanArt: imageURL(show.BackdropPath, "w1280"),
+			Poster: imageURL(show.PosterPath, "w500"),
+		},
 	}
+	item.Thumbnail = item.Art.Poster
+	item.Art.Thumbnail = item.Art.Poster
 
 	if show.InProduction {
 		item.Info.Status = "Continuing"
@@ -232,18 +241,6 @@ func (show *Show) ToListItem() *xbmc.ListItem {
 		}
 		item.Info.Director = strings.Join(directors, " / ")
 		item.Info.Writer = strings.Join(writers, " / ")
-	}
-	if show.Images != nil {
-		for _, poster := range show.Images.Posters {
-			item.Art.Poster = imageURL(poster.FilePath, "w500")
-			item.Art.Thumbnail = item.Art.Poster
-			item.Thumbnail = item.Art.Poster
-			break
-		}
-		for _, backdrop := range show.Images.Backdrops {
-			item.Art.FanArt = imageURL(backdrop.FilePath, "w1280")
-			break
-		}
 	}
 	return item
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/steeve/pulsar/bittorrent"
+	"github.com/steeve/pulsar/config"
 	"github.com/steeve/pulsar/providers"
 	"github.com/steeve/pulsar/tmdb"
 	"github.com/steeve/pulsar/xbmc"
@@ -89,7 +90,7 @@ func PopularMovies(ctx *gin.Context) {
 	if genre == "0" {
 		genre = ""
 	}
-	renderMovies(tmdb.PopularMoviesComplete(genre), ctx)
+	renderMovies(tmdb.PopularMoviesComplete(genre, config.Get().Language), ctx)
 }
 
 func TopRatedMovies(ctx *gin.Context) {
@@ -97,15 +98,15 @@ func TopRatedMovies(ctx *gin.Context) {
 	if genre == "0" {
 		genre = ""
 	}
-	renderMovies(tmdb.TopRatedMoviesComplete(genre), ctx)
+	renderMovies(tmdb.TopRatedMoviesComplete(genre, config.Get().Language), ctx)
 }
 
 func IMDBTop250(ctx *gin.Context) {
-	renderMovies(tmdb.GetList("522effe419c2955e9922fcf3"), ctx)
+	renderMovies(tmdb.GetList("522effe419c2955e9922fcf3", config.Get().Language), ctx)
 }
 
 func MoviesMostVoted(ctx *gin.Context) {
-	renderMovies(tmdb.MostVotedMoviesComplete(""), ctx)
+	renderMovies(tmdb.MostVotedMoviesComplete("", config.Get().Language), ctx)
 }
 
 func SearchMovies(ctx *gin.Context) {
@@ -113,11 +114,11 @@ func SearchMovies(ctx *gin.Context) {
 	if query == "" {
 		query = xbmc.Keyboard("", "Search Movies")
 	}
-	renderMovies(tmdb.SearchMovies(query), ctx)
+	renderMovies(tmdb.SearchMovies(query, config.Get().Language), ctx)
 }
 
 func MovieGenres(ctx *gin.Context) {
-	genres := tmdb.GetMovieGenres()
+	genres := tmdb.GetMovieGenres(config.Get().Language)
 	items := make(xbmc.ListItems, 0, len(genres))
 	for _, genre := range genres {
 		items = append(items, &xbmc.ListItem{
@@ -132,7 +133,7 @@ func MovieGenres(ctx *gin.Context) {
 func movieLinks(imdbId string) []*bittorrent.Torrent {
 	log.Println("Searching links for IMDB:", imdbId)
 
-	movie := tmdb.GetMovieFromIMDB(imdbId)
+	movie := tmdb.GetMovieFromIMDB(imdbId, config.Get().Language)
 
 	log.Printf("Resolved %s to %s\n", imdbId, movie.Title)
 

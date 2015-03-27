@@ -47,12 +47,12 @@ type Movie struct {
 
 type Movies []*Movie
 
-func GetMovieFromIMDB(imdbId string) *Movie {
-	return getMovieById(imdbId, "en")
+func GetMovieFromIMDB(imdbId string, language string) *Movie {
+	return getMovieById(imdbId, language)
 }
 
-func GetMovie(tmdbId int) *Movie {
-	return getMovieById(strconv.Itoa(tmdbId), "en")
+func GetMovie(tmdbId int, language string) *Movie {
+	return getMovieById(strconv.Itoa(tmdbId), language)
 }
 
 func getMovieById(movieId string, language string) *Movie {
@@ -63,7 +63,7 @@ func getMovieById(movieId string, language string) *Movie {
 		rateLimiter.Call(func() {
 			napping.Get(
 				tmdbEndpoint+"movie/"+movieId,
-				&napping.Params{"api_key": apiKey, "append_to_response": "credits,images,alternative_titles,translations,external_ids"},
+				&napping.Params{"api_key": apiKey, "append_to_response": "credits,images,alternative_titles,translations,external_ids", "language": language},
 				&movie,
 				nil,
 			)
@@ -71,6 +71,9 @@ func getMovieById(movieId string, language string) *Movie {
 				cacheStore.Set(key, movie, cacheTime)
 			}
 		})
+	}
+	if movie == nil {
+		return nil
 	}
 	switch t := movie.RawPopularity.(type) {
 	case string:
@@ -82,26 +85,26 @@ func getMovieById(movieId string, language string) *Movie {
 	return movie
 }
 
-func GetMovies(tmdbIds []int) Movies {
+func GetMovies(tmdbIds []int, language string) Movies {
 	var wg sync.WaitGroup
 	movies := make(Movies, len(tmdbIds))
 	wg.Add(len(tmdbIds))
 	for i, tmdbId := range tmdbIds {
 		go func(i int, tmdbId int) {
 			defer wg.Done()
-			movies[i] = GetMovie(tmdbId)
+			movies[i] = GetMovie(tmdbId, language)
 		}(i, tmdbId)
 	}
 	wg.Wait()
 	return movies
 }
 
-func GetMovieGenres() []*Genre {
+func GetMovieGenres(language string) []*Genre {
 	genres := GenreList{}
 	rateLimiter.Call(func() {
 		napping.Get(
 			tmdbEndpoint+"genre/movie/list",
-			&napping.Params{"api_key": apiKey},
+			&napping.Params{"api_key": apiKey, "language": language},
 			&genres,
 			nil,
 		)
@@ -109,7 +112,7 @@ func GetMovieGenres() []*Genre {
 	return genres.Genres
 }
 
-func SearchMovies(query string) Movies {
+func SearchMovies(query string, language string) Movies {
 	var results EntityList
 	rateLimiter.Call(func() {
 		napping.Get(
@@ -126,10 +129,10 @@ func SearchMovies(query string) Movies {
 	for _, movie := range results.Results {
 		tmdbIds = append(tmdbIds, movie.Id)
 	}
-	return GetMovies(tmdbIds)
+	return GetMovies(tmdbIds, language)
 }
 
-func GetList(listId string) Movies {
+func GetList(listId string, language string) Movies {
 	var results *List
 	rateLimiter.Call(func() {
 		napping.Get(
@@ -145,7 +148,7 @@ func GetList(listId string) Movies {
 	for _, movie := range results.Items {
 		tmdbIds = append(tmdbIds, movie.Id)
 	}
-	return GetMovies(tmdbIds)
+	return GetMovies(tmdbIds, language)
 }
 
 type ByPopularity Movies
@@ -157,7 +160,6 @@ func (a ByPopularity) Less(i, j int) bool { return a[i].Popularity < a[j].Popula
 func ListMoviesComplete(endpoint string, params napping.Params) Movies {
 	movies := make(Movies, popularMoviesMaxPages*moviesPerPage)
 	params["api_key"] = apiKey
-	params["language"] = "en"
 
 	wg := sync.WaitGroup{}
 	for i := 0; i < popularMoviesMaxPages; i++ {
@@ -180,7 +182,7 @@ func ListMoviesComplete(endpoint string, params napping.Params) Movies {
 				)
 			})
 			for i, movie := range tmp.Results {
-				movies[page*moviesPerPage+i] = GetMovie(movie.Id)
+				movies[page*moviesPerPage+i] = GetMovie(movie.Id, params["language"])
 			}
 		}(i)
 	}
@@ -189,20 +191,22 @@ func ListMoviesComplete(endpoint string, params napping.Params) Movies {
 	return movies
 }
 
-func PopularMoviesComplete(genre string) Movies {
+func PopularMoviesComplete(genre string, language string) Movies {
 	return ListMoviesComplete("discover/movie", napping.Params{
+		"language":                 language,
 		"sort_by":                  "popularity.desc",
 		"primary_release_date.lte": time.Now().UTC().Format("2006-01-02"),
 		"with_genres":              genre,
 	})
 }
 
-func TopRatedMoviesComplete(genre string) Movies {
-	return ListMoviesComplete("movie/top_rated", napping.Params{})
+func TopRatedMoviesComplete(genre string, language string) Movies {
+	return ListMoviesComplete("movie/top_rated", napping.Params{"language": language})
 }
 
-func MostVotedMoviesComplete(genre string) Movies {
+func MostVotedMoviesComplete(genre string, language string) Movies {
 	return ListMoviesComplete("discover/movie", napping.Params{
+		"language":                 language,
 		"sort_by":                  "vote_count.desc",
 		"primary_release_date.lte": time.Now().UTC().Format("2006-01-02"),
 		"with_genres":              genre,
@@ -228,8 +232,13 @@ func (movie *Movie) ToListItem() *xbmc.ListItem {
 			Votes:         strconv.Itoa(movie.VoteCount),
 			Rating:        movie.VoteAverage,
 		},
-		Art: &xbmc.ListItemArt{},
+		Art: &xbmc.ListItemArt{
+			FanArt: imageURL(movie.BackdropPath, "w1280"),
+			Poster: imageURL(movie.PosterPath, "w500"),
+		},
 	}
+	item.Thumbnail = item.Art.Poster
+	item.Art.Thumbnail = item.Art.Poster
 	genres := make([]string, 0, len(movie.Genres))
 	for _, genre := range movie.Genres {
 		genres = append(genres, genre.Name)
@@ -266,18 +275,6 @@ func (movie *Movie) ToListItem() *xbmc.ListItem {
 		}
 		item.Info.Director = strings.Join(directors, " / ")
 		item.Info.Writer = strings.Join(writers, " / ")
-	}
-	if movie.Images != nil {
-		for _, poster := range movie.Images.Posters {
-			item.Art.Poster = imageURL(poster.FilePath, "w500")
-			item.Art.Thumbnail = item.Art.Poster
-			item.Thumbnail = item.Art.Poster
-			break
-		}
-		for _, backdrop := range movie.Images.Backdrops {
-			item.Art.FanArt = imageURL(backdrop.FilePath, "w1280")
-			break
-		}
 	}
 	return item
 }

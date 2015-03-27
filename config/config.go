@@ -14,6 +14,7 @@ type Configuration struct {
 	DownloadPath       string
 	Info               *xbmc.AddonInfo
 	Platform           *xbmc.Platform
+	Language           string
 	ProfilePath        string
 	KeepFilesAfterStop bool
 	UploadRateLimit    int
@@ -45,6 +46,7 @@ func Reload() error {
 		DownloadPath:       filepath.Dir(xbmc.GetSettingString("download_path")),
 		Info:               info,
 		Platform:           xbmc.GetPlatform(),
+		Language:           xbmc.GetLanguage(xbmc.ISO_639_1),
 		ProfilePath:        info.Profile,
 		UploadRateLimit:    xbmc.GetSettingInt("max_upload_rate") * 1024,
 		DownloadRateLimit:  xbmc.GetSettingInt("max_download_rate") * 1024,
