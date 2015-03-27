@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/steeve/pulsar/bittorrent"
 	"github.com/steeve/pulsar/config"
+	"github.com/steeve/pulsar/providers"
 	"github.com/steeve/pulsar/util"
 	"github.com/steeve/pulsar/xbmc"
 )
@@ -18,7 +19,9 @@ func Play(btService *bittorrent.BTService) gin.HandlerFunc {
 			return
 		}
 		torrent := bittorrent.NewTorrent(uri)
-		player := bittorrent.NewBTPlayer(btService, torrent.Magnet(), config.Get().KeepFilesAfterStop == false)
+		magnet := torrent.Magnet()
+		trackers := url.Values{"tr": providers.DefaultTrackers}
+		player := bittorrent.NewBTPlayer(btService, fmt.Sprintf("%s&%s", magnet, trackers.Encode()), config.Get().KeepFilesAfterStop == false)
 		if player.Buffer() != nil {
 			return
 		}
