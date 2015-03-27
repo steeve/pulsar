@@ -107,6 +107,10 @@ func UrlForXBMC(pattern string, args ...interface{}) string {
 	return "plugin://" + config.Get().Info.Id + u.String()
 }
 
+func AddonResource(args ...string) string {
+	return filepath.Join(config.Get().Info.Path, "resources", filepath.Join(args...))
+}
+
 func UrlQuery(route string, query ...string) string {
 	v := url.Values{}
 	for i := 0; i < len(query); i += 2 {

@@ -20,13 +20,15 @@ var (
 
 func TVIndex(ctx *gin.Context) {
 	items := xbmc.ListItems{
-		{Label: "Search", Path: UrlForXBMC("/shows/search")},
-		{Label: "Most Popular", Path: UrlForXBMC("/shows/popular")},
+		{Label: "Search", Path: UrlForXBMC("/shows/search"), Thumbnail: AddonResource("img", "search.png")},
+		{Label: "Most Popular", Path: UrlForXBMC("/shows/popular"), Thumbnail: AddonResource("img", "popular.png")},
 	}
-	for _, genre := range tmdb.GetTVGenres() {
+	for _, genre := range tmdb.GetTVGenres(config.Get().Language) {
+		slug, _ := genreSlugs[genre.Id]
 		items = append(items, &xbmc.ListItem{
-			Label: genre.Name,
-			Path:  UrlForXBMC("/shows/popular/%s", strconv.Itoa(genre.Id)),
+			Label:     genre.Name,
+			Path:      UrlForXBMC("/shows/popular/%s", strconv.Itoa(genre.Id)),
+			Thumbnail: AddonResource("img", fmt.Sprintf("genre_%s.png", slug)),
 		})
 	}
 

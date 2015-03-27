@@ -14,18 +14,53 @@ import (
 	"github.com/steeve/pulsar/xbmc"
 )
 
+// Maps TMDB movie genre ids to slugs for images
+var genreSlugs = map[int]string{
+	28:    "action",
+	10759: "action",
+	12:    "adventure",
+	16:    "animation",
+	35:    "comedy",
+	80:    "crime",
+	99:    "documentary",
+	18:    "drama",
+	10761: "education",
+	10751: "family",
+	14:    "fantasy",
+	10769: "foreign",
+	36:    "history",
+	27:    "horror",
+	10762: "kids",
+	10402: "music",
+	9648:  "mystery",
+	10763: "news",
+	10764: "reality",
+	10749: "romance",
+	878:   "scifi",
+	10765: "scifi",
+	10766: "soap",
+	10767: "talk",
+	10770: "tv",
+	53:    "thriller",
+	10752: "war",
+	10768: "war",
+	37:    "western",
+}
+
 func MoviesIndex(ctx *gin.Context) {
 	items := xbmc.ListItems{
-		{Label: "Search", Path: UrlForXBMC("/movies/search")},
-		{Label: "Most Popular", Path: UrlForXBMC("/movies/popular")},
-		{Label: "Top Rated", Path: UrlForXBMC("/movies/top")},
-		{Label: "Most Voted", Path: UrlForXBMC("/movies/mostvoted")},
-		{Label: "IMDB Top 250", Path: UrlForXBMC("/movies/imdb250")},
+		{Label: "Search", Path: UrlForXBMC("/movies/search"), Thumbnail: AddonResource("img", "search.png")},
+		{Label: "Most Popular", Path: UrlForXBMC("/movies/popular"), Thumbnail: AddonResource("img", "popular.png")},
+		{Label: "Top Rated", Path: UrlForXBMC("/movies/top"), Thumbnail: AddonResource("img", "top_rated.png")},
+		{Label: "Most Voted", Path: UrlForXBMC("/movies/mostvoted"), Thumbnail: AddonResource("img", "most_voted.png")},
+		{Label: "IMDB Top 250", Path: UrlForXBMC("/movies/imdb250"), Thumbnail: AddonResource("img", "imdb.png")},
 	}
-	for _, genre := range tmdb.GetMovieGenres() {
+	for _, genre := range tmdb.GetMovieGenres(config.Get().Language) {
+		slug, _ := genreSlugs[genre.Id]
 		items = append(items, &xbmc.ListItem{
-			Label: genre.Name,
-			Path:  UrlForXBMC("/movies/popular/%s", strconv.Itoa(genre.Id)),
+			Label:     genre.Name,
+			Path:      UrlForXBMC("/movies/popular/%s", strconv.Itoa(genre.Id)),
+			Thumbnail: AddonResource("img", fmt.Sprintf("genre_%s.png", slug)),
 		})
 	}
 	ctx.JSON(200, xbmc.NewView("", items))
