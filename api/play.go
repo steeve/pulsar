@@ -20,8 +20,11 @@ func Play(btService *bittorrent.BTService) gin.HandlerFunc {
 		}
 		torrent := bittorrent.NewTorrent(uri)
 		magnet := torrent.Magnet()
-		trackers := url.Values{"tr": providers.DefaultTrackers}
-		player := bittorrent.NewBTPlayer(btService, fmt.Sprintf("%s&%s", magnet, trackers.Encode()), config.Get().KeepFilesAfterStop == false)
+		boosters := url.Values{
+			"tr": providers.DefaultTrackers,
+		}
+		magnet += "&" + boosters.Encode()
+		player := bittorrent.NewBTPlayer(btService, magnet, config.Get().KeepFilesAfterStop == false)
 		if player.Buffer() != nil {
 			return
 		}

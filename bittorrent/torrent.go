@@ -133,6 +133,10 @@ var (
 	}
 )
 
+const (
+	torCache = "http://torcache.net/torrent/%s.torrent"
+)
+
 // Used to avoid infinite recursion in UnmarshalJSON
 type torrent Torrent
 
@@ -284,13 +288,14 @@ func (t *Torrent) Magnet() string {
 		t.Resolve()
 	}
 	if t.IsMagnet() {
-		return t.URI
+		return t.URI + "&" + url.Values{"as": []string{fmt.Sprintf(torCache, t.InfoHash)}}.Encode()
 	}
 	params := url.Values{}
 	params.Set("dn", t.Name)
 	for _, tracker := range t.Trackers {
 		params.Add("tr", tracker)
 	}
+	params.Add("as", t.URI)
 	return fmt.Sprintf("magnet:?xt=urn:btih:%s&%s", t.InfoHash, params.Encode())
 }
 
