@@ -57,7 +57,7 @@ OUTPUT_NAME = $(NAME)$(EXT)
 BUILD_PATH = build/$(TARGET_OS)_$(TARGET_ARCH)
 LIBTORRENT_GO = github.com/steeve/libtorrent-go
 LIBTORRENT_GO_HOME = $(shell go env GOPATH)/src/$(LIBTORRENT_GO)
-GO_BUILD_TAGS = netgo
+GO_BUILD_TAGS =
 GO_LDFLAGS += -w -X $(GO_PKG)/util.Version "$(VERSION)" -X $(GO_PKG)/util.GitCommit "$(GIT_VERSION)"
 PLATFORMS = darwin-x64 windows-x86 linux-x86 linux-x64 linux-arm android-arm
 
