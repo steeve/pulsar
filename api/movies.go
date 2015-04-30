@@ -50,18 +50,18 @@ var genreSlugs = map[int]string{
 
 func MoviesIndex(ctx *gin.Context) {
 	items := xbmc.ListItems{
-		{Label: "Search", Path: UrlForXBMC("/movies/search"), Thumbnail: AddonResource("img", "search.png")},
-		{Label: "Most Popular", Path: UrlForXBMC("/movies/popular"), Thumbnail: AddonResource("img", "popular.png")},
-		{Label: "Top Rated", Path: UrlForXBMC("/movies/top"), Thumbnail: AddonResource("img", "top_rated.png")},
-		{Label: "Most Voted", Path: UrlForXBMC("/movies/mostvoted"), Thumbnail: AddonResource("img", "most_voted.png")},
-		{Label: "IMDB Top 250", Path: UrlForXBMC("/movies/imdb250"), Thumbnail: AddonResource("img", "imdb.png")},
+		{Label: "Search", Path: UrlForXBMC("/movies/search"), Thumbnail: config.AddonResource("img", "search.png")},
+		{Label: "Most Popular", Path: UrlForXBMC("/movies/popular"), Thumbnail: config.AddonResource("img", "popular.png")},
+		{Label: "Top Rated", Path: UrlForXBMC("/movies/top"), Thumbnail: config.AddonResource("img", "top_rated.png")},
+		{Label: "Most Voted", Path: UrlForXBMC("/movies/mostvoted"), Thumbnail: config.AddonResource("img", "most_voted.png")},
+		{Label: "IMDB Top 250", Path: UrlForXBMC("/movies/imdb250"), Thumbnail: config.AddonResource("img", "imdb.png")},
 	}
 	for _, genre := range tmdb.GetMovieGenres(config.Get().Language) {
 		slug, _ := genreSlugs[genre.Id]
 		items = append(items, &xbmc.ListItem{
 			Label:     genre.Name,
 			Path:      UrlForXBMC("/movies/popular/%s", strconv.Itoa(genre.Id)),
-			Thumbnail: AddonResource("img", fmt.Sprintf("genre_%s.png", slug)),
+			Thumbnail: config.AddonResource("img", fmt.Sprintf("genre_%s.png", slug)),
 		})
 	}
 	ctx.JSON(200, xbmc.NewView("", items))
@@ -140,7 +140,7 @@ func movieLinks(imdbId string) []*bittorrent.Torrent {
 
 	searchers := providers.GetMovieSearchers()
 	if len(searchers) == 0 {
-		xbmc.Notify("Pulsar", "Unable to find any providers")
+		xbmc.Notify("Pulsar", "Unable to find any providers", config.AddonIcon())
 	}
 
 	return providers.SearchMovie(searchers, movie)
@@ -150,7 +150,7 @@ func MovieLinks(ctx *gin.Context) {
 	torrents := movieLinks(ctx.Params.ByName("imdbId"))
 
 	if len(torrents) == 0 {
-		xbmc.Notify("Pulsar", "No links were found")
+		xbmc.Notify("Pulsar", "No links were found", config.AddonIcon())
 		return
 	}
 
@@ -189,7 +189,7 @@ func MovieLinks(ctx *gin.Context) {
 func MoviePlay(ctx *gin.Context) {
 	torrents := movieLinks(ctx.Params.ByName("imdbId"))
 	if len(torrents) == 0 {
-		xbmc.Notify("Pulsar", "No links were found")
+		xbmc.Notify("Pulsar", "No links were found", config.AddonIcon())
 		return
 	}
 	sort.Sort(sort.Reverse(providers.ByQuality(torrents)))

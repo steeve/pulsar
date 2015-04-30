@@ -13,6 +13,7 @@ import (
 	"github.com/op/go-logging"
 	"github.com/steeve/libtorrent-go"
 	"github.com/steeve/pulsar/broadcast"
+	"github.com/steeve/pulsar/config"
 	"github.com/steeve/pulsar/diskusage"
 	"github.com/steeve/pulsar/ga"
 	"github.com/steeve/pulsar/xbmc"
@@ -146,7 +147,7 @@ func (btp *BTPlayer) onMetadataReceived() {
 		torrentSize := btp.torrentInfo.Total_size()
 		if btp.diskStatus.Free < torrentSize {
 			btp.log.Info("Unsufficient free space on %s. Has %d, needs %d.", btp.bts.config.DownloadPath, btp.diskStatus.Free, torrentSize)
-			xbmc.Notify("Pulsar", "Not enough space available on the download path.")
+			xbmc.Notify("Pulsar", "Not enough space available on the download path.", config.AddonIcon())
 			btp.bufferEvents.Broadcast(errors.New("Not enough space on download destination."))
 			return
 		}

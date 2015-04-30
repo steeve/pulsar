@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/url"
 	"path"
-	"path/filepath"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -108,10 +107,6 @@ func UrlForHTTP(pattern string, args ...interface{}) string {
 func UrlForXBMC(pattern string, args ...interface{}) string {
 	u, _ := url.Parse(fmt.Sprintf(pattern, args...))
 	return "plugin://" + config.Get().Info.Id + u.String()
-}
-
-func AddonResource(args ...string) string {
-	return filepath.Join(config.Get().Info.Path, "resources", filepath.Join(args...))
 }
 
 func UrlQuery(route string, query ...string) string {

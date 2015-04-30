@@ -21,15 +21,15 @@ var (
 
 func TVIndex(ctx *gin.Context) {
 	items := xbmc.ListItems{
-		{Label: "Search", Path: UrlForXBMC("/shows/search"), Thumbnail: AddonResource("img", "search.png")},
-		{Label: "Most Popular", Path: UrlForXBMC("/shows/popular"), Thumbnail: AddonResource("img", "popular.png")},
+		{Label: "Search", Path: UrlForXBMC("/shows/search"), Thumbnail: config.AddonResource("img", "search.png")},
+		{Label: "Most Popular", Path: UrlForXBMC("/shows/popular"), Thumbnail: config.AddonResource("img", "popular.png")},
 	}
 	for _, genre := range tmdb.GetTVGenres(config.Get().Language) {
 		slug, _ := genreSlugs[genre.Id]
 		items = append(items, &xbmc.ListItem{
 			Label:     genre.Name,
 			Path:      UrlForXBMC("/shows/popular/%s", strconv.Itoa(genre.Id)),
-			Thumbnail: AddonResource("img", fmt.Sprintf("genre_%s.png", slug)),
+			Thumbnail: config.AddonResource("img", fmt.Sprintf("genre_%s.png", slug)),
 		})
 	}
 
@@ -150,7 +150,7 @@ func showEpisodeLinks(showId string, seasonNumber, episodeNumber int) ([]*bittor
 
 	searchers := providers.GetEpisodeSearchers()
 	if len(searchers) == 0 {
-		xbmc.Notify("Pulsar", "Unable to find any providers")
+		xbmc.Notify("Pulsar", "Unable to find any providers", config.AddonIcon())
 	}
 
 	return providers.SearchEpisode(searchers, show, episode), nil
@@ -166,7 +166,7 @@ func ShowEpisodeLinks(ctx *gin.Context) {
 	}
 
 	if len(torrents) == 0 {
-		xbmc.Notify("Pulsar", "No links were found")
+		xbmc.Notify("Pulsar", "No links were found", config.AddonIcon())
 		return
 	}
 
@@ -197,7 +197,7 @@ func ShowEpisodePlay(ctx *gin.Context) {
 	}
 
 	if len(torrents) == 0 {
-		xbmc.Notify("Pulsar", "No links were found")
+		xbmc.Notify("Pulsar", "No links were found", config.AddonIcon())
 		return
 	}
 

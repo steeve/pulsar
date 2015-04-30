@@ -65,3 +65,11 @@ func Reload() error {
 
 	return nil
 }
+
+func AddonIcon() string {
+	return filepath.Join(Get().Info.Path, "icon.png")
+}
+
+func AddonResource(args ...string) string {
+	return filepath.Join(Get().Info.Path, "resources", filepath.Join(args...))
+}
