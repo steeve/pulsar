@@ -12,21 +12,40 @@ type Object map[string]interface{}
 var Results map[string]chan interface{}
 
 var (
-	XBMCDefaultJSONRPCHost = net.JoinHostPort("localhost", "9090")
-	XBMCExJSONRPCHost      = net.JoinHostPort("localhost", "65252")
+	XBMCJSONRPCHosts = []string{
+		net.JoinHostPort("::1", "9090"),
+		net.JoinHostPort("127.0.0.1", "9090"),
+	}
+	XBMCExJSONRPCHosts = []string{
+		net.JoinHostPort("::1", "65252"),
+		net.JoinHostPort("127.0.0.1", "65252"),
+	}
 )
+
+func getConnection(hosts ...string) (net.Conn, error) {
+	var err error
+
+	for _, host := range hosts {
+		c, err := net.Dial("tcp", host)
+		if err == nil {
+			return c, nil
+		}
+	}
+
+	return nil, err
+}
 
 func executeJSONRPC(method string, retVal interface{}, args []interface{}) error {
 	if args == nil {
 		args = Args{}
 	}
-	d := net.Dialer{DualStack: true}
-	c, err := d.Dial("tcp", XBMCDefaultJSONRPCHost)
+	conn, err := getConnection(XBMCJSONRPCHosts...)
 	if err != nil {
 		panic(err)
 	}
-	defer c.Close()
-	client := jsonrpc.NewClient(c)
+	defer conn.Close()
+
+	client := jsonrpc.NewClient(conn)
 	return client.Call(method, args, retVal)
 }
 
@@ -34,12 +53,12 @@ func executeJSONRPCEx(method string, retVal interface{}, args []interface{}) err
 	if args == nil {
 		args = Args{}
 	}
-	d := net.Dialer{DualStack: true}
-	c, err := d.Dial("tcp", XBMCExJSONRPCHost)
+	conn, err := getConnection(XBMCExJSONRPCHosts...)
 	if err != nil {
 		panic(err)
 	}
-	defer c.Close()
-	client := jsonrpc.NewClient(c)
+	defer conn.Close()
+
+	client := jsonrpc.NewClient(conn)
 	return client.Call(method, args, retVal)
 }
