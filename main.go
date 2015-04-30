@@ -51,6 +51,8 @@ func main() {
 	ensureSingleInstance()
 	Migrate()
 
+	xbmc.CloseAllDialogs()
+
 	log.Info("Addon: %s v%s", config.Get().Info.Id, config.Get().Info.Version)
 
 	btService := bittorrent.NewBTService(bittorrent.BTConfiguration{

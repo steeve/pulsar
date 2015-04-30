@@ -70,3 +70,9 @@ func PlayerIsPlaying() bool {
 	executeJSONRPCEx("Player_IsPlaying", &retVal, nil)
 	return retVal != 0
 }
+
+func CloseAllDialogs() bool {
+	retVal := 0
+	executeJSONRPCEx("Dialog_CloseAll", &retVal, nil)
+	return retVal != 0
+}
