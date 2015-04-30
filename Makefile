@@ -80,8 +80,19 @@ $(BUILD_PATH)/$(OUTPUT_NAME): $(BUILD_PATH) force
 		-ldflags '$(GO_LDFLAGS)' \
 		-o '$(BUILD_PATH)/$(OUTPUT_NAME)'
 
-vendor_libs_windows:
+vendor_darwin vendor_linux:
+
+vendor_windows:
 	find $(shell go env GOPATH)/pkg/$(GOOS)_$(GOARCH) -name *.dll -exec cp -f {} $(BUILD_PATH) \;
+
+vendor_android:
+	cp $(CROSS_ROOT)/$(CROSS_TRIPLE)/lib/libgnustl_shared.so $(BUILD_PATH)
+
+
+vendor_libs_windows:
+
+vendor_libs_android:
+	$(CROSS_ROOT)/arm-linux-androideabi/lib/libgnustl_shared.so
 
 pulsar: $(BUILD_PATH)/$(OUTPUT_NAME)
 
@@ -109,17 +120,16 @@ upx: force
 # Do not .exe files, as upx doesn't really work with 8l/6l linked files.
 # It's fine for other platforms, because we link with an external linker, namely
 # GCC or Clang. However, on Windows this feature is not yet supported.
-	@find $(BUILD_PATH) -type f ! -name "*.exe" -exec $(UPX) --lzma {} \;
+	@find $(BUILD_PATH) -type f ! -name "*.exe" -a ! -name "*.so"  -exec $(UPX) --lzma {} \;
 
 checksum: $(BUILD_PATH)/$(OUTPUT_NAME)
 	shasum -b $(BUILD_PATH)/$(OUTPUT_NAME) | cut -d' ' -f1 >> $(BUILD_PATH)/$(OUTPUT_NAME)
 
-ifeq ($(TARGET_OS), windows)
-dist: pulsar vendor_libs_windows strip upx checksum
-else ifeq ($(TARGET_ARCH), arm)
-dist: pulsar strip checksum
+
+ifeq ($(TARGET_ARCH), arm)
+dist: pulsar vendor_$(TARGET_OS) strip checksum
 else
-dist: pulsar strip upx checksum
+dist: pulsar vendor_$(TARGET_OS) strip upx checksum
 endif
 
 alldist: force
