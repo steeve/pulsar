@@ -14,6 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/op/go-logging"
 	"github.com/steeve/pulsar/bittorrent"
+	"github.com/steeve/pulsar/config"
 	"github.com/steeve/pulsar/tmdb"
 	"github.com/steeve/pulsar/tvdb"
 	"github.com/steeve/pulsar/util"
@@ -185,8 +186,14 @@ func (as *AddonSearcher) call(method string, searchObject interface{}) []*bittor
 
 	xbmc.ExecuteAddon(as.addonId, payload.String())
 
+	timeout := providerTimeout()
+	conf := config.Get()
+	if conf.CustomProviderTimeoutEnabled == true {
+		timeout = time.Duration(conf.CustomProviderTimeout) * time.Second
+	}
+
 	select {
-	case <-time.After(providerTimeout()):
+	case <-time.After(timeout):
 		as.log.Info("Provider %s was too slow. Ignored.", as.addonId)
 		RemoveCallback(cid)
 	case result := <-c:

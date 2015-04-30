@@ -23,6 +23,9 @@ type Configuration struct {
 	BTListenPortMin    int
 	BTListenPortMax    int
 
+	CustomProviderTimeoutEnabled bool
+	CustomProviderTimeout        int
+
 	SocksEnabled  bool
 	SocksHost     string
 	SocksPort     int
@@ -64,11 +67,15 @@ func Reload() *Configuration {
 		KeepFilesAfterStop: xbmc.GetSettingBool("keep_files"),
 		BTListenPortMin:    xbmc.GetSettingInt("listen_port_min"),
 		BTListenPortMax:    xbmc.GetSettingInt("listen_port_max"),
-		SocksEnabled:       xbmc.GetSettingBool("socks_enabled"),
-		SocksHost:          xbmc.GetSettingString("socks_host"),
-		SocksPort:          xbmc.GetSettingInt("socks_port"),
-		SocksLogin:         xbmc.GetSettingString("socks_login"),
-		SocksPassword:      xbmc.GetSettingString("socks_password"),
+
+		CustomProviderTimeoutEnabled: xbmc.GetSettingBool("custom_provider_timeout_enabled"),
+		CustomProviderTimeout:        xbmc.GetSettingInt("custom_provider_timeout"),
+
+		SocksEnabled:  xbmc.GetSettingBool("socks_enabled"),
+		SocksHost:     xbmc.GetSettingString("socks_host"),
+		SocksPort:     xbmc.GetSettingInt("socks_port"),
+		SocksLogin:    xbmc.GetSettingString("socks_login"),
+		SocksPassword: xbmc.GetSettingString("socks_password"),
 	}
 	lock.Lock()
 	config = &newConfig
