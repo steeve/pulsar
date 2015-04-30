@@ -33,14 +33,21 @@ var dhtBootstrapNodes = []string{
 	"dht.aelitis.com", // Vuze
 }
 
+const (
+	ProxyTypeNone = iota
+	ProxyTypeSocks4
+	ProxyTypeSocks5
+	ProxyTypeSocks5Password
+	ProxyTypeSocksHTTP
+	ProxyTypeSocksHTTPPassword
+)
+
 type ProxySettings struct {
-	Hostname             string
-	Port                 int
-	Username             string
-	Password             string
-	Type                 int
-	Hostnames            bool
-	ProxyPeerConnections bool
+	Hostname string
+	Port     int
+	Username string
+	Password string
+	Type     int
 }
 
 type BTConfiguration struct {

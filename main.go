@@ -34,6 +34,28 @@ func ensureSingleInstance() {
 	http.Head(fmt.Sprintf("http://localhost:%d/shutdown", config.ListenPort))
 }
 
+func makeBTConfiguration(conf *config.Configuration) *bittorrent.BTConfiguration {
+	btConfig := &bittorrent.BTConfiguration{
+		LowerListenPort: conf.BTListenPortMin,
+		UpperListenPort: conf.BTListenPortMax,
+		DownloadPath:    conf.DownloadPath,
+		MaxUploadRate:   conf.UploadRateLimit,
+		MaxDownloadRate: conf.DownloadRateLimit,
+	}
+
+	if conf.SocksEnabled == true {
+		btConfig.Proxy = &bittorrent.ProxySettings{
+			Type:     bittorrent.ProxyTypeSocks5Password,
+			Hostname: conf.SocksHost,
+			Port:     conf.SocksPort,
+			Username: conf.SocksLogin,
+			Password: conf.SocksPassword,
+		}
+	}
+
+	return btConfig
+}
+
 func main() {
 	// Make sure we are properly multithreaded.
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -46,22 +68,16 @@ func main() {
 	}
 	log.Info("Version: %s Git: %s Go: %s", util.Version, util.GitCommit, runtime.Version())
 
-	config.Reload()
+	conf := config.Reload()
 
 	ensureSingleInstance()
 	Migrate()
 
 	xbmc.CloseAllDialogs()
 
-	log.Info("Addon: %s v%s", config.Get().Info.Id, config.Get().Info.Version)
+	log.Info("Addon: %s v%s", conf.Info.Id, conf.Info.Version)
 
-	btService := bittorrent.NewBTService(bittorrent.BTConfiguration{
-		LowerListenPort: config.Get().BTListenPortMin,
-		UpperListenPort: config.Get().BTListenPortMax,
-		DownloadPath:    config.Get().DownloadPath,
-		MaxUploadRate:   config.Get().UploadRateLimit,
-		MaxDownloadRate: config.Get().DownloadRateLimit,
-	})
+	btService := bittorrent.NewBTService(*makeBTConfiguration(conf))
 
 	var shutdown = func() {
 		log.Info("Shutting down...")
@@ -89,14 +105,7 @@ func main() {
 		handler.ServeHTTP(w, r)
 	}))
 	http.Handle("/reload", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		config.Reload()
-		btService.Reconfigure(bittorrent.BTConfiguration{
-			LowerListenPort: config.Get().BTListenPortMin,
-			UpperListenPort: config.Get().BTListenPortMax,
-			DownloadPath:    config.Get().DownloadPath,
-			MaxUploadRate:   config.Get().UploadRateLimit,
-			MaxDownloadRate: config.Get().DownloadRateLimit,
-		})
+		btService.Reconfigure(*makeBTConfiguration(config.Reload()))
 	}))
 	http.Handle("/shutdown", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		shutdown()

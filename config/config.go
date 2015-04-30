@@ -22,6 +22,12 @@ type Configuration struct {
 	DownloadRateLimit  int
 	BTListenPortMin    int
 	BTListenPortMax    int
+
+	SocksEnabled  bool
+	SocksHost     string
+	SocksPort     int
+	SocksLogin    string
+	SocksPassword string
 }
 
 var config = &Configuration{}
@@ -37,7 +43,7 @@ func Get() *Configuration {
 	return config
 }
 
-func Reload() error {
+func Reload() *Configuration {
 	log.Info("Reloading configuration...")
 
 	info := xbmc.GetAddonInfo()
@@ -58,12 +64,17 @@ func Reload() error {
 		KeepFilesAfterStop: xbmc.GetSettingBool("keep_files"),
 		BTListenPortMin:    xbmc.GetSettingInt("listen_port_min"),
 		BTListenPortMax:    xbmc.GetSettingInt("listen_port_max"),
+		SocksEnabled:       xbmc.GetSettingBool("socks_enabled"),
+		SocksHost:          xbmc.GetSettingString("socks_host"),
+		SocksPort:          xbmc.GetSettingInt("socks_port"),
+		SocksLogin:         xbmc.GetSettingString("socks_login"),
+		SocksPassword:      xbmc.GetSettingString("socks_password"),
 	}
 	lock.Lock()
 	config = &newConfig
 	lock.Unlock()
 
-	return nil
+	return config
 }
 
 func AddonIcon() string {
