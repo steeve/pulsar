@@ -35,7 +35,7 @@ func ProviderGetMovie(ctx *gin.Context) {
 		Results: torrents,
 	}, "", "    ")
 	if err != nil {
-		ctx.Error(err, nil)
+		ctx.Error(err)
 	}
 	ctx.Data(200, "application/json", data)
 }
@@ -50,7 +50,7 @@ func ProviderGetEpisode(ctx *gin.Context) {
 
 	show, err := tvdb.NewShowCached(showId, "en")
 	if err != nil {
-		ctx.Error(err, nil)
+		ctx.Error(err)
 		return
 	}
 	episode := show.Seasons[seasonNumber].Episodes[episodeNumber-1]
@@ -69,7 +69,7 @@ func ProviderGetEpisode(ctx *gin.Context) {
 		Results: torrents,
 	}, "", "    ")
 	if err != nil {
-		ctx.Error(err, nil)
+		ctx.Error(err)
 	}
 	ctx.Data(200, "application/json", data)
 }

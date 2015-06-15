@@ -6,6 +6,10 @@ import (
 	"github.com/steeve/pulsar/xbmc"
 )
 
+func init() {
+	gin.SetMode(gin.ReleaseMode)
+}
+
 func Index(ctx *gin.Context) {
 	action := ctx.Request.URL.Query().Get("action")
 	if action == "search" || action == "manualsearch" {

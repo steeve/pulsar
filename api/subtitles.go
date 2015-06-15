@@ -133,11 +133,11 @@ func SubtitlesIndex(ctx *gin.Context) {
 
 	client, err := osdb.NewClient()
 	if err != nil {
-		ctx.Fail(500, err)
+		ctx.AbortWithError(500, err)
 		return
 	}
 	if err := client.LogIn("", "", ""); err != nil {
-		ctx.Fail(500, err)
+		ctx.AbortWithError(500, err)
 		return
 	}
 
@@ -180,21 +180,21 @@ func SubtitleGet(ctx *gin.Context) {
 
 	resp, err := http.Get(dl)
 	if err != nil {
-		ctx.Fail(500, err)
+		ctx.AbortWithError(500, err)
 		return
 	}
 	defer resp.Body.Close()
 
 	reader, err := gzip.NewReader(resp.Body)
 	if err != nil {
-		ctx.Fail(500, err)
+		ctx.AbortWithError(500, err)
 		return
 	}
 	defer reader.Close()
 
 	outFile, err := ioutil.TempFile("", "")
 	if err != nil {
-		ctx.Fail(500, err)
+		ctx.AbortWithError(500, err)
 		return
 	}
 	defer outFile.Close()

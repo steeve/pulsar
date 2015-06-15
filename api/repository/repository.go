@@ -72,7 +72,7 @@ func GetAddonsXML(ctx *gin.Context) {
 	repository := ctx.Params.ByName("repository")
 	addons, err := getAddons(user, repository)
 	if err != nil {
-		ctx.Fail(404, errors.New("Unable to retrieve the remote's addon.xml file."))
+		ctx.AbortWithError(404, errors.New("Unable to retrieve the remote's addon.xml file."))
 	}
 	ctx.XML(200, addons)
 }
@@ -82,7 +82,7 @@ func GetAddonsXMLChecksum(ctx *gin.Context) {
 	repository := ctx.Params.ByName("repository")
 	addons, err := getAddons(user, repository)
 	if err != nil {
-		ctx.Error(errors.New("Unable to retrieve the remote's addon.xml file."), nil)
+		ctx.Error(errors.New("Unable to retrieve the remote's addon.xml file."))
 	}
 	hasher := md5.New()
 	xml.NewEncoder(hasher).Encode(addons)
@@ -134,7 +134,7 @@ func addonZip(ctx *gin.Context, user string, repository string, lastTagName stri
 
 	resp, err := http.Get(fmt.Sprintf(tarballURL, user, repository, lastTagCommit))
 	if err != nil {
-		ctx.Fail(500, err)
+		ctx.AbortWithError(500, err)
 	}
 	gzReader, _ := gzip.NewReader(resp.Body)
 	tarReader := tar.NewReader(gzReader)
@@ -146,7 +146,7 @@ func addonZip(ctx *gin.Context, user string, repository string, lastTagName stri
 			break
 		}
 		if err != nil {
-			ctx.Fail(500, err)
+			ctx.AbortWithError(500, err)
 		}
 		// somehow Github packs this file too
 		if hdr.Name == "pax_global_header" {
@@ -156,10 +156,10 @@ func addonZip(ctx *gin.Context, user string, repository string, lastTagName stri
 		newFileName := strings.Replace(hdr.Name, fmt.Sprintf("%s-%s/", repository, lastTagCommit), fmt.Sprintf("%s/", repository), 1)
 		newFile, err := zipWriter.Create(newFileName)
 		if err != nil {
-			ctx.Fail(500, err)
+			ctx.AbortWithError(500, err)
 		}
 		if _, err := io.Copy(newFile, tarReader); err != nil {
-			ctx.Fail(500, err)
+			ctx.AbortWithError(500, err)
 		}
 	}
 }

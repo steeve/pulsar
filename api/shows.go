@@ -90,7 +90,7 @@ func SearchShows(ctx *gin.Context) {
 func ShowSeasons(ctx *gin.Context) {
 	show, err := tvdb.NewShowCached(ctx.Params.ByName("showId"), config.Get().Language)
 	if err != nil {
-		ctx.Error(err, nil)
+		ctx.Error(err)
 		return
 	}
 
@@ -109,7 +109,7 @@ func ShowSeasons(ctx *gin.Context) {
 func ShowEpisodes(ctx *gin.Context) {
 	show, err := tvdb.NewShowCached(ctx.Params.ByName("showId"), config.Get().Language)
 	if err != nil {
-		ctx.Error(err, nil)
+		ctx.Error(err)
 		return
 	}
 
@@ -161,7 +161,7 @@ func ShowEpisodeLinks(ctx *gin.Context) {
 	episodeNumber, _ := strconv.Atoi(ctx.Params.ByName("episode"))
 	torrents, err := showEpisodeLinks(ctx.Params.ByName("showId"), seasonNumber, episodeNumber)
 	if err != nil {
-		ctx.Error(err, nil)
+		ctx.Error(err)
 		return
 	}
 
@@ -192,7 +192,7 @@ func ShowEpisodePlay(ctx *gin.Context) {
 	episodeNumber, _ := strconv.Atoi(ctx.Params.ByName("episode"))
 	torrents, err := showEpisodeLinks(ctx.Params.ByName("showId"), seasonNumber, episodeNumber)
 	if err != nil {
-		ctx.Error(err, nil)
+		ctx.Error(err)
 		return
 	}
 
