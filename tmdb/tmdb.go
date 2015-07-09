@@ -131,8 +131,8 @@ const (
 	tmdbEndpoint            = "http://api.themoviedb.org/3/"
 	imageEndpoint           = "http://image.tmdb.org/t/p/"
 	apiKey                  = "57983e31fb435df4df77afb854740ea9"
-	burstRate               = 30
-	burstTime               = 1 * time.Second
+	burstRate               = 40
+	burstTime               = 10 * time.Second
 	simultaneousConnections = 20
 	cacheTime               = 60 * 24 * time.Hour
 )
