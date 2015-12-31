@@ -200,7 +200,6 @@ func PopularMoviesComplete(genre string, language string) Movies {
 		"language":                 language,
 		"sort_by":                  "popularity.desc",
 		"primary_release_date.lte": time.Now().UTC().Format("2006-01-02"),
-		"with_genres":              genre,
 	})
 }
 
@@ -213,7 +212,6 @@ func MostVotedMoviesComplete(genre string, language string) Movies {
 		"language":                 language,
 		"sort_by":                  "vote_count.desc",
 		"primary_release_date.lte": time.Now().UTC().Format("2006-01-02"),
-		"with_genres":              genre,
 	})
 }
 
