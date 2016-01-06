@@ -3,7 +3,7 @@ package xbmc
 import (
 	"net"
 
-	"github.com/steeve/pulsar/jsonrpc"
+	"github.com/i96751414/pulsar/jsonrpc"
 )
 
 type Args []interface{}

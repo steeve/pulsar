@@ -2,7 +2,7 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/steeve/pulsar/youtube"
+	"github.com/i96751414/pulsar/youtube"
 )
 
 func PlayYoutubeVideo(ctx *gin.Context) {

@@ -17,7 +17,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/go-github/github"
 	"github.com/op/go-logging"
-	"github.com/steeve/pulsar/xbmc"
+	"github.com/i96751414/pulsar/xbmc"
 )
 
 const (

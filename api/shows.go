@@ -7,12 +7,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/op/go-logging"
-	"github.com/steeve/pulsar/bittorrent"
-	"github.com/steeve/pulsar/config"
-	"github.com/steeve/pulsar/providers"
-	"github.com/steeve/pulsar/tmdb"
-	"github.com/steeve/pulsar/tvdb"
-	"github.com/steeve/pulsar/xbmc"
+	"github.com/i96751414/pulsar/bittorrent"
+	"github.com/i96751414/pulsar/config"
+	"github.com/i96751414/pulsar/providers"
+	"github.com/i96751414/pulsar/tmdb"
+	"github.com/i96751414/pulsar/tvdb"
+	"github.com/i96751414/pulsar/xbmc"
 )
 
 var (
@@ -124,11 +124,12 @@ func ShowEpisodes(ctx *gin.Context) {
 			item.Info.Episode,
 		)
 		item.ContextMenu = [][]string{
-			[]string{"Choose stream...", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/show/%d/season/%d/episode/%d/links",
+			[]string{"Choose Stream...", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/show/%d/season/%d/episode/%d/links",
 				show.Id,
 				season.Season,
 				item.Info.Episode,
 			))},
+			[]string{"Movie Information", "XBMC.Action(Info)"},
 		}
 		item.IsPlayable = true
 	}

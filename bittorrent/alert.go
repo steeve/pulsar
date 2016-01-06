@@ -1,6 +1,6 @@
 package bittorrent
 
-import "github.com/steeve/libtorrent-go"
+import "github.com/i96751414/libtorrent-go"
 
 type Alert struct {
 	libtorrent.Alert

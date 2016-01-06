@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/op/go-logging"
-	"github.com/steeve/pulsar/xbmc"
+	"github.com/i96751414/pulsar/xbmc"
 )
 
 var log = logging.MustGetLogger("config")

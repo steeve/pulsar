@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/steeve/pulsar/config"
+	"github.com/i96751414/pulsar/config"
 )
 
 func LocalIP() (net.IP, error) {

@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/jmcvetta/napping"
-	"github.com/steeve/pulsar/cache"
-	"github.com/steeve/pulsar/config"
-	"github.com/steeve/pulsar/xbmc"
+	"github.com/i96751414/pulsar/cache"
+	"github.com/i96751414/pulsar/config"
+	"github.com/i96751414/pulsar/xbmc"
 )
 
 type Show struct {
@@ -52,9 +52,10 @@ func GetShow(showId int, language string) *Show {
 	key := fmt.Sprintf("com.tmdb.show.%d.%s", showId, language)
 	if err := cacheStore.Get(key, &show); err != nil {
 		rateLimiter.Call(func() {
+            p := napping.Params{"api_key": apiKey, "append_to_response": "credits,images,alternative_titles,translations,external_ids", "language": language}.AsUrlValues()
 			napping.Get(
 				tmdbEndpoint+"tv/"+strconv.Itoa(showId),
-				&napping.Params{"api_key": apiKey, "append_to_response": "credits,images,alternative_titles,translations,external_ids", "language": language},
+				&p,
 				&show,
 				nil,
 			)
@@ -94,12 +95,10 @@ func GetShows(showIds []int, language string) Shows {
 func SearchShows(query string, language string) Shows {
 	var results EntityList
 	rateLimiter.Call(func() {
+        p := napping.Params{"api_key": apiKey,"query":query}.AsUrlValues()
 		napping.Get(
 			tmdbEndpoint+"search/tv",
-			&napping.Params{
-				"api_key": apiKey,
-				"query":   query,
-			},
+			&p,
 			&results,
 			nil,
 		)
@@ -128,10 +127,11 @@ func ListShowsComplete(endpoint string, params napping.Params) Shows {
 			for k, v := range params {
 				tmpParams[k] = v
 			}
+            p := tmpParams.AsUrlValues()
 			rateLimiter.Call(func() {
 				napping.Get(
 					tmdbEndpoint+endpoint,
-					&tmpParams,
+					&p,
 					&tmp,
 					nil,
 				)
@@ -147,12 +147,22 @@ func ListShowsComplete(endpoint string, params napping.Params) Shows {
 }
 
 func PopularShowsComplete(genre string, language string) Shows {
-	return ListShowsComplete("discover/tv", napping.Params{
-		"language":           language,
-		"sort_by":            "popularity.desc",
-		"first_air_date.lte": time.Now().UTC().Format("2006-01-02"),
-		"with_genres":        genre,
-	})
+	var p napping.Params
+	if genre == "" {
+		p = napping.Params{
+			"language":           language,
+			"sort_by":            "popularity.desc",
+			"first_air_date.lte": time.Now().UTC().Format("2006-01-02"),
+		}
+	} else {
+		p = napping.Params{
+			"language":           language,
+			"sort_by":            "popularity.desc",
+			"first_air_date.lte": time.Now().UTC().Format("2006-01-02"),
+			"with_genres":        genre,
+		}
+	}
+	return ListShowsComplete("discover/tv", p)
 }
 
 func TopRatedShowsComplete(genre string, language string) Shows {
@@ -171,9 +181,10 @@ func MostVotedShowsComplete(genre string, language string) Movies {
 func GetTVGenres(language string) []*Genre {
 	genres := GenreList{}
 	rateLimiter.Call(func() {
+        p := napping.Params{"api_key": apiKey, "language": language}.AsUrlValues()
 		napping.Get(
 			tmdbEndpoint+"genre/tv/list",
-			&napping.Params{"api_key": apiKey, "language": language},
+			&p,
 			&genres,
 			nil,
 		)

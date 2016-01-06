@@ -1,9 +1,9 @@
 package providers
 
 import (
-	"github.com/steeve/pulsar/bittorrent"
-	"github.com/steeve/pulsar/tmdb"
-	"github.com/steeve/pulsar/tvdb"
+	"github.com/i96751414/pulsar/bittorrent"
+	"github.com/i96751414/pulsar/tmdb"
+	"github.com/i96751414/pulsar/tvdb"
 )
 
 type Searcher interface {

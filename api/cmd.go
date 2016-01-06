@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 
 	"github.com/gin-gonic/gin"
-	"github.com/steeve/pulsar/config"
-	"github.com/steeve/pulsar/xbmc"
+	"github.com/i96751414/pulsar/config"
+	"github.com/i96751414/pulsar/xbmc"
 )
 
 func ClearCache(ctx *gin.Context) {

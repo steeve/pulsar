@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/op/go-logging"
-	"github.com/steeve/libtorrent-go"
-	"github.com/steeve/pulsar/broadcast"
-	"github.com/steeve/pulsar/util"
+	"github.com/i96751414/libtorrent-go"
+	"github.com/i96751414/pulsar/broadcast"
+	"github.com/i96751414/pulsar/util"
 )
 
 const (

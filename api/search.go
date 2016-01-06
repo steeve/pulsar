@@ -5,8 +5,8 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
-	"github.com/steeve/pulsar/providers"
-	"github.com/steeve/pulsar/xbmc"
+	"github.com/i96751414/pulsar/providers"
+	"github.com/i96751414/pulsar/xbmc"
 )
 
 func Search(c *gin.Context) {

@@ -11,12 +11,12 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/op/go-logging"
-	"github.com/steeve/libtorrent-go"
-	"github.com/steeve/pulsar/broadcast"
-	"github.com/steeve/pulsar/config"
-	"github.com/steeve/pulsar/diskusage"
-	"github.com/steeve/pulsar/ga"
-	"github.com/steeve/pulsar/xbmc"
+	"github.com/i96751414/libtorrent-go"
+	"github.com/i96751414/pulsar/broadcast"
+	"github.com/i96751414/pulsar/config"
+	"github.com/i96751414/pulsar/diskusage"
+	"github.com/i96751414/pulsar/ga"
+	"github.com/i96751414/pulsar/xbmc"
 )
 
 const (

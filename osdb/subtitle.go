@@ -34,7 +34,11 @@ type Subtitle struct {
 	MovieTimeMS        string `xmlrpc:"MovieTimeMS"`
 	MovieYear          string `xmlrpc:"MovieYear"`
 	MovieFileName      string `xmlrpc:"MovieName"`
-	QueryNumber        string `xmlrpc:"QueryNumber"`
+	QueryNumber        int `xmlrpc:"QueryNumber"`
+	QueryParameters    struct {
+	                       query          string `xmlrpc:"query"`
+	                       sublanguageid  string `xmlrpc:"sublanguageid"`
+	                   } `xmlrpc:"QueryParameters"`
 	SeriesEpisode      string `xmlrpc:"SeriesEpisode"`
 	SeriesIMDBParent   string `xmlrpc:"SeriesIMDBParent"`
 	SeriesSeason       string `xmlrpc:"SeriesSeason"`
@@ -45,6 +49,7 @@ type Subtitle struct {
 	SubComments        string `xmlrpc:"SubComments"`
 	SubDownloadLink    string `xmlrpc:"SubDownloadLink"`
 	SubDownloadsCnt    string `xmlrpc:"SubDownloadsCnt"`
+	SubEncoding        string `xmlrpc:"SubEncoding"`
 	SubFeatured        string `xmlrpc:"SubFeatured"`
 	SubFileName        string `xmlrpc:"SubFileName"`
 	SubFormat          string `xmlrpc:"SubFormat"`
@@ -52,6 +57,7 @@ type Subtitle struct {
 	SubHD              string `xmlrpc:"SubHD"`
 	SubHearingImpaired string `xmlrpc:"SubHearingImpaired"`
 	SubLanguageID      string `xmlrpc:"SubLanguageID"`
+	SubLastTS          string `xmlrpc:"SubLastTS"`
 	SubRating          string `xmlrpc:"SubRating"`
 	SubSize            string `xmlrpc:"SubSize"`
 	SubSumCD           string `xmlrpc:"SubSumCD"`

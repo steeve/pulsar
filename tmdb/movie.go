@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/jmcvetta/napping"
-	"github.com/steeve/pulsar/cache"
-	"github.com/steeve/pulsar/config"
-	"github.com/steeve/pulsar/xbmc"
+	"github.com/i96751414/pulsar/cache"
+	"github.com/i96751414/pulsar/config"
+	"github.com/i96751414/pulsar/xbmc"
 )
 
 const (
@@ -65,9 +65,10 @@ func getMovieById(movieId string, language string) *Movie {
 	key := fmt.Sprintf("com.tmdb.movie.%s.%s", movieId, language)
 	if err := cacheStore.Get(key, &movie); err != nil {
 		rateLimiter.Call(func() {
+            p := napping.Params{"api_key": apiKey, "append_to_response": "credits,images,alternative_titles,translations,external_ids,trailers", "language": language}.AsUrlValues()
 			napping.Get(
 				tmdbEndpoint+"movie/"+movieId,
-				&napping.Params{"api_key": apiKey, "append_to_response": "credits,images,alternative_titles,translations,external_ids,trailers", "language": language},
+				&p,
 				&movie,
 				nil,
 			)
@@ -106,9 +107,10 @@ func GetMovies(tmdbIds []int, language string) Movies {
 func GetMovieGenres(language string) []*Genre {
 	genres := GenreList{}
 	rateLimiter.Call(func() {
+        p := napping.Params{"api_key": apiKey, "language": language}.AsUrlValues()
 		napping.Get(
 			tmdbEndpoint+"genre/movie/list",
-			&napping.Params{"api_key": apiKey, "language": language},
+			&p,
 			&genres,
 			nil,
 		)
@@ -119,12 +121,10 @@ func GetMovieGenres(language string) []*Genre {
 func SearchMovies(query string, language string) Movies {
 	var results EntityList
 	rateLimiter.Call(func() {
+        p := napping.Params{"api_key": apiKey,"query":query}.AsUrlValues()
 		napping.Get(
 			tmdbEndpoint+"search/movie",
-			&napping.Params{
-				"api_key": apiKey,
-				"query":   query,
-			},
+			&p,
 			&results,
 			nil,
 		)
@@ -139,11 +139,10 @@ func SearchMovies(query string, language string) Movies {
 func GetList(listId string, language string) Movies {
 	var results *List
 	rateLimiter.Call(func() {
+        p := napping.Params{"api_key": apiKey}.AsUrlValues()
 		napping.Get(
 			tmdbEndpoint+"list/"+listId,
-			&napping.Params{
-				"api_key": apiKey,
-			},
+			&p,
 			&results,
 			nil,
 		)
@@ -177,10 +176,11 @@ func ListMoviesComplete(endpoint string, params napping.Params) Movies {
 			for k, v := range params {
 				tmpParams[k] = v
 			}
+            p := tmpParams.AsUrlValues()
 			rateLimiter.Call(func() {
 				napping.Get(
 					tmdbEndpoint+endpoint,
-					&tmpParams,
+					&p,
 					&tmp,
 					nil,
 				)
@@ -196,12 +196,22 @@ func ListMoviesComplete(endpoint string, params napping.Params) Movies {
 }
 
 func PopularMoviesComplete(genre string, language string) Movies {
-	return ListMoviesComplete("discover/movie", napping.Params{
-		"language":                 language,
-		"sort_by":                  "popularity.desc",
-		"primary_release_date.lte": time.Now().UTC().Format("2006-01-02"),
-		"with_genres":              genre,
-	})
+	var p napping.Params
+	if genre == "" {
+		p = napping.Params{
+			"language":                 language,
+			"sort_by":                  "popularity.desc",
+			"primary_release_date.lte": time.Now().UTC().Format("2006-01-02"),
+		}
+	} else {
+		p = napping.Params{
+			"language":                 language,
+			"sort_by":                  "popularity.desc",
+			"primary_release_date.lte": time.Now().UTC().Format("2006-01-02"),
+			"with_genres":              genre,
+		}
+	}
+	return ListMoviesComplete("discover/movie", p)
 }
 
 func TopRatedMoviesComplete(genre string, language string) Movies {
@@ -209,12 +219,22 @@ func TopRatedMoviesComplete(genre string, language string) Movies {
 }
 
 func MostVotedMoviesComplete(genre string, language string) Movies {
-	return ListMoviesComplete("discover/movie", napping.Params{
-		"language":                 language,
-		"sort_by":                  "vote_count.desc",
-		"primary_release_date.lte": time.Now().UTC().Format("2006-01-02"),
-		"with_genres":              genre,
-	})
+	var p napping.Params
+	if genre == "" {
+		p = napping.Params{
+			"language":                 language,
+			"sort_by":                  "vote_count.desc",
+			"primary_release_date.lte": time.Now().UTC().Format("2006-01-02"),
+		}
+	} else {
+		p = napping.Params{
+			"language":                 language,
+			"sort_by":                  "vote_count.desc",
+			"primary_release_date.lte": time.Now().UTC().Format("2006-01-02"),
+			"with_genres":              genre,
+		}
+	}
+	return ListMoviesComplete("discover/movie", p)
 }
 
 func (movie *Movie) ToListItem() *xbmc.ListItem {

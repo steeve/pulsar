@@ -8,11 +8,11 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/steeve/pulsar/bittorrent"
-	"github.com/steeve/pulsar/config"
-	"github.com/steeve/pulsar/providers"
-	"github.com/steeve/pulsar/tmdb"
-	"github.com/steeve/pulsar/xbmc"
+	"github.com/i96751414/pulsar/bittorrent"
+	"github.com/i96751414/pulsar/config"
+	"github.com/i96751414/pulsar/providers"
+	"github.com/i96751414/pulsar/tmdb"
+	"github.com/i96751414/pulsar/xbmc"
 )
 
 // Maps TMDB movie genre ids to slugs for images
@@ -78,7 +78,8 @@ func renderMovies(movies tmdb.Movies, ctx *gin.Context) {
 		item.Info.Trailer = UrlForHTTP("/youtube/%s", item.Info.Trailer)
 		item.IsPlayable = true
 		item.ContextMenu = [][]string{
-			[]string{"Choose stream...", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/movie/%s/links", movie.IMDBId))},
+			[]string{"Choose Stream...", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/movie/%s/links", movie.IMDBId))},
+			[]string{"Movie Information", "XBMC.Action(Info)"},
 		}
 		items = append(items, item)
 	}

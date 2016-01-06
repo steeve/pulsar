@@ -7,9 +7,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/steeve/pulsar/config"
-	"github.com/steeve/pulsar/util"
-	"github.com/steeve/pulsar/xbmc"
+	"github.com/i96751414/pulsar/config"
+	"github.com/i96751414/pulsar/util"
+	"github.com/i96751414/pulsar/xbmc"
 )
 
 func copyFile(from string, to string) error {

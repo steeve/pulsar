@@ -4,7 +4,7 @@ package util
 // 	"net/http"
 // 	"net/url"
 
-// 	"github.com/steeve/pulsar/providers"
+// 	"github.com/i96751414/pulsar/providers"
 // )
 
 // func MakeProviderURL(p providers.TorrentProvider, path string) string {
