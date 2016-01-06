@@ -3,13 +3,13 @@ pulsar
 ##### Compilar:
 1. Install Docker, Golang e mercurial
 
-2. Set o GOPATH
+2. Set GOPATH
 
     ``` 
     export GOPATH="/home/user/Go"
     ```
     
-3. Fazer go gets
+3. go gets
 
     ```
     go get github.com/op/go-logging
