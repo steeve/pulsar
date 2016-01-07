@@ -149,7 +149,7 @@ func (btp *BTPlayer) onMetadataReceived() {
 		torrentSize := btp.torrentInfo.Total_size()
 		if btp.diskStatus.Free < torrentSize {
 			btp.log.Info("Unsufficient free space on %s. Has %d, needs %d.", btp.bts.config.DownloadPath, btp.diskStatus.Free, torrentSize)
-			xbmc.Notify("Pulsar", "Not enough space available on the download path.", config.AddonIcon())
+			xbmc.Notify("Pulsar", xbmc.GetLocalizedString(32007), config.AddonIcon())
 			btp.bufferEvents.Broadcast(errors.New("Not enough space on download destination."))
 			return
 		}

@@ -21,8 +21,8 @@ var (
 
 func TVIndex(ctx *gin.Context) {
 	items := xbmc.ListItems{
-		{Label: "Search", Path: UrlForXBMC("/shows/search"), Thumbnail: config.AddonResource("img", "search.png")},
-		{Label: "Most Popular", Path: UrlForXBMC("/shows/popular"), Thumbnail: config.AddonResource("img", "popular.png")},
+		{Label: xbmc.GetLocalizedString(32009), Path: UrlForXBMC("/shows/search"), Thumbnail: config.AddonResource("img", "search.png")},
+		{Label: xbmc.GetLocalizedString(32010), Path: UrlForXBMC("/shows/popular"), Thumbnail: config.AddonResource("img", "popular.png")},
 	}
 	for _, genre := range tmdb.GetTVGenres(config.Get().Language) {
 		slug, _ := genreSlugs[genre.Id]
@@ -82,7 +82,7 @@ func TVMostVoted(ctx *gin.Context) {
 func SearchShows(ctx *gin.Context) {
 	query := ctx.Request.URL.Query().Get("q")
 	if query == "" {
-		query = xbmc.Keyboard("", "Search TV Shows")
+		query = xbmc.Keyboard("", xbmc.GetLocalizedString(32001))
 	}
 	renderShows(tmdb.SearchShows(query, config.Get().Language), ctx)
 }
@@ -124,12 +124,12 @@ func ShowEpisodes(ctx *gin.Context) {
 			item.Info.Episode,
 		)
 		item.ContextMenu = [][]string{
-			[]string{"Choose Stream...", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/show/%d/season/%d/episode/%d/links",
+			[]string{xbmc.GetLocalizedString(32002), fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/show/%d/season/%d/episode/%d/links",
 				show.Id,
 				season.Season,
 				item.Info.Episode,
 			))},
-			[]string{"Movie Information", "XBMC.Action(Info)"},
+			[]string{xbmc.GetLocalizedString(32003), "XBMC.Action(Info)"},
 		}
 		item.IsPlayable = true
 	}
@@ -151,7 +151,7 @@ func showEpisodeLinks(showId string, seasonNumber, episodeNumber int) ([]*bittor
 
 	searchers := providers.GetEpisodeSearchers()
 	if len(searchers) == 0 {
-		xbmc.Notify("Pulsar", "Unable to find any providers", config.AddonIcon())
+		xbmc.Notify("Pulsar", xbmc.GetLocalizedString(32004), config.AddonIcon())
 	}
 
 	return providers.SearchEpisode(searchers, show, episode), nil
@@ -167,7 +167,7 @@ func ShowEpisodeLinks(ctx *gin.Context) {
 	}
 
 	if len(torrents) == 0 {
-		xbmc.Notify("Pulsar", "No links were found", config.AddonIcon())
+		xbmc.Notify("Pulsar", xbmc.GetLocalizedString(32005), config.AddonIcon())
 		return
 	}
 
@@ -181,7 +181,7 @@ func ShowEpisodeLinks(ctx *gin.Context) {
 		choices = append(choices, label)
 	}
 
-	choice := xbmc.ListDialog("Choose stream", choices...)
+	choice := xbmc.ListDialog(xbmc.GetLocalizedString(32002), choices...)
 	if choice >= 0 {
 		rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[choice].Magnet())
 		ctx.Redirect(302, rUrl)
@@ -198,7 +198,7 @@ func ShowEpisodePlay(ctx *gin.Context) {
 	}
 
 	if len(torrents) == 0 {
-		xbmc.Notify("Pulsar", "No links were found", config.AddonIcon())
+		xbmc.Notify("Pulsar", xbmc.GetLocalizedString(32005), config.AddonIcon())
 		return
 	}
 

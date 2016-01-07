@@ -11,5 +11,5 @@ import (
 
 func ClearCache(ctx *gin.Context) {
 	os.RemoveAll(filepath.Join(config.Get().Info.Profile, "cache"))
-	xbmc.Notify("Pulsar", "Cache cleared", config.AddonIcon())
+	xbmc.Notify("Pulsar", xbmc.GetLocalizedString(32000), config.AddonIcon())
 }

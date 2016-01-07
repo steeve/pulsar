@@ -25,6 +25,11 @@ func GetAddonInfo() *AddonInfo {
 	return &retVal
 }
 
+func GetLocalizedString(id int) (retVal string) {
+	executeJSONRPCEx("GetLocalizedString", &retVal, Args{id})
+	return
+}
+
 func GetSettingString(id string) (retVal string) {
 	executeJSONRPCEx("GetSetting", &retVal, Args{id})
 	return

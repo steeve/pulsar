@@ -50,11 +50,11 @@ var genreSlugs = map[int]string{
 
 func MoviesIndex(ctx *gin.Context) {
 	items := xbmc.ListItems{
-		{Label: "Search", Path: UrlForXBMC("/movies/search"), Thumbnail: config.AddonResource("img", "search.png")},
-		{Label: "Most Popular", Path: UrlForXBMC("/movies/popular"), Thumbnail: config.AddonResource("img", "popular.png")},
-		{Label: "Top Rated", Path: UrlForXBMC("/movies/top"), Thumbnail: config.AddonResource("img", "top_rated.png")},
-		{Label: "Most Voted", Path: UrlForXBMC("/movies/mostvoted"), Thumbnail: config.AddonResource("img", "most_voted.png")},
-		{Label: "IMDB Top 250", Path: UrlForXBMC("/movies/imdb250"), Thumbnail: config.AddonResource("img", "imdb.png")},
+		{Label: xbmc.GetLocalizedString(32009), Path: UrlForXBMC("/movies/search"), Thumbnail: config.AddonResource("img", "search.png")},
+		{Label: xbmc.GetLocalizedString(32010), Path: UrlForXBMC("/movies/popular"), Thumbnail: config.AddonResource("img", "popular.png")},
+		{Label: xbmc.GetLocalizedString(32011), Path: UrlForXBMC("/movies/top"), Thumbnail: config.AddonResource("img", "top_rated.png")},
+		{Label: xbmc.GetLocalizedString(32012), Path: UrlForXBMC("/movies/mostvoted"), Thumbnail: config.AddonResource("img", "most_voted.png")},
+		{Label: xbmc.GetLocalizedString(32013), Path: UrlForXBMC("/movies/imdb250"), Thumbnail: config.AddonResource("img", "imdb.png")},
 	}
 	for _, genre := range tmdb.GetMovieGenres(config.Get().Language) {
 		slug, _ := genreSlugs[genre.Id]
@@ -78,8 +78,8 @@ func renderMovies(movies tmdb.Movies, ctx *gin.Context) {
 		item.Info.Trailer = UrlForHTTP("/youtube/%s", item.Info.Trailer)
 		item.IsPlayable = true
 		item.ContextMenu = [][]string{
-			[]string{"Choose Stream...", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/movie/%s/links", movie.IMDBId))},
-			[]string{"Movie Information", "XBMC.Action(Info)"},
+			[]string{xbmc.GetLocalizedString(32002), fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/movie/%s/links", movie.IMDBId))},
+			[]string{xbmc.GetLocalizedString(32003), "XBMC.Action(Info)"},
 		}
 		items = append(items, item)
 	}
@@ -114,7 +114,7 @@ func MoviesMostVoted(ctx *gin.Context) {
 func SearchMovies(ctx *gin.Context) {
 	query := ctx.Request.URL.Query().Get("q")
 	if query == "" {
-		query = xbmc.Keyboard("", "Search Movies")
+		query = xbmc.Keyboard("", xbmc.GetLocalizedString(32006))
 	}
 	renderMovies(tmdb.SearchMovies(query, config.Get().Language), ctx)
 }
@@ -141,7 +141,7 @@ func movieLinks(imdbId string) []*bittorrent.Torrent {
 
 	searchers := providers.GetMovieSearchers()
 	if len(searchers) == 0 {
-		xbmc.Notify("Pulsar", "Unable to find any providers", config.AddonIcon())
+		xbmc.Notify("Pulsar", xbmc.GetLocalizedString(32004), config.AddonIcon())
 	}
 
 	return providers.SearchMovie(searchers, movie)
@@ -151,7 +151,7 @@ func MovieLinks(ctx *gin.Context) {
 	torrents := movieLinks(ctx.Params.ByName("imdbId"))
 
 	if len(torrents) == 0 {
-		xbmc.Notify("Pulsar", "No links were found", config.AddonIcon())
+		xbmc.Notify("Pulsar", xbmc.GetLocalizedString(32005), config.AddonIcon())
 		return
 	}
 
@@ -180,7 +180,7 @@ func MovieLinks(ctx *gin.Context) {
 		choices = append(choices, label)
 	}
 
-	choice := xbmc.ListDialog("Choose stream", choices...)
+	choice := xbmc.ListDialog(xbmc.GetLocalizedString(32002), choices...)
 	if choice >= 0 {
 		rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[choice].Magnet())
 		ctx.Redirect(302, rUrl)
@@ -190,7 +190,7 @@ func MovieLinks(ctx *gin.Context) {
 func MoviePlay(ctx *gin.Context) {
 	torrents := movieLinks(ctx.Params.ByName("imdbId"))
 	if len(torrents) == 0 {
-		xbmc.Notify("Pulsar", "No links were found", config.AddonIcon())
+		xbmc.Notify("Pulsar", xbmc.GetLocalizedString(32005), config.AddonIcon())
 		return
 	}
 	sort.Sort(sort.Reverse(providers.ByQuality(torrents)))

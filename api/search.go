@@ -10,7 +10,7 @@ import (
 )
 
 func Search(c *gin.Context) {
-	query := xbmc.Keyboard("", "Search")
+	query := xbmc.Keyboard("", xbmc.GetLocalizedString(32009))
 	if query == "" {
 		return
 	}
