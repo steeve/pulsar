@@ -25,6 +25,8 @@ pulsar
 
 4. Build environments:
 
+    Once I could not upload the images to hub, you should do this for all dependencies, that is, cross-compiler and libtorrent-go. Be aware that this will take time.
+    
     ```
     make build-envs
     ```
@@ -32,15 +34,15 @@ pulsar
 5. Make (Examples):
 
     ```
-    make build TARGET_OS=linux TARGET_ARCH=x64 PKGCP=/usr/x86_64-linux-gnu/lib/pkgconfig MARGS="dist"
+    make build TARGET_OS=linux TARGET_ARCH=x64 MARGS="dist"
     ```
     
     ```
-    make build TARGET_OS=darwin TARGET_ARCH=x64 PKGCP=/usr/x86_64-apple-darwin14/lib/pkgconfig MARGS="dist"
+    make build TARGET_OS=darwin TARGET_ARCH=x64 MARGS="dist"
     ```
     
     ```
-    make build TARGET_OS=windows TARGET_ARCH=x86 PKGCP=/usr/x86_64-w64-mingw32/lib/pkgconfig MARGS="dist"
+    make build TARGET_OS=windows TARGET_ARCH=x86 MARGS="dist"
     ```
 
 ##### Note - MARGS:
