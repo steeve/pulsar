@@ -39,6 +39,7 @@ func makeBTConfiguration(conf *config.Configuration) *bittorrent.BTConfiguration
 		LowerListenPort: conf.BTListenPortMin,
 		UpperListenPort: conf.BTListenPortMax,
 		DownloadPath:    conf.DownloadPath,
+		BufferSize:      conf.BufferSize,
 		MaxUploadRate:   conf.UploadRateLimit,
 		MaxDownloadRate: conf.DownloadRateLimit,
 	}

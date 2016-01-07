@@ -4,6 +4,11 @@ type DialogProgress struct {
 	hWnd int64
 }
 
+type OverlayStatus struct {
+	hWnd int64
+}
+
+
 func NewDialogProgress(title, line1, line2, line3 string) *DialogProgress {
 	retVal := int64(-1)
 	executeJSONRPCEx("DialogProgress_Create", &retVal, Args{title, line1, line2, line3})
@@ -30,6 +35,39 @@ func (dp *DialogProgress) Close() {
 	retVal := -1
 	executeJSONRPCEx("DialogProgress_Close", &retVal, Args{dp.hWnd})
 }
+
+
+func NewOverlayStatus() *OverlayStatus {
+	retVal := int64(-1)
+	executeJSONRPCEx("OverlayStatus_Create", &retVal, Args{})
+	if retVal < 0 {
+		return nil
+	}
+	return &OverlayStatus{
+		hWnd: retVal,
+	}
+}
+
+func (ov *OverlayStatus) Update(percent int, line1, line2, line3 string) {
+	retVal := -1
+	executeJSONRPCEx("OverlayStatus_Update", &retVal, Args{ov.hWnd, percent, line1, line2, line3})
+}
+
+func (ov *OverlayStatus) Show() {
+	retVal := -1
+	executeJSONRPCEx("OverlayStatus_Show", &retVal, Args{ov.hWnd})
+}
+
+func (ov *OverlayStatus) Hide() {
+	retVal := -1
+	executeJSONRPCEx("OverlayStatus_Hide", &retVal, Args{ov.hWnd})
+}
+
+func (ov *OverlayStatus) Close() {
+	retVal := -1
+	executeJSONRPCEx("OverlayStatus_Close", &retVal, Args{ov.hWnd})
+}
+
 
 func Notify(args ...interface{}) {
 	var retVal string
@@ -68,6 +106,12 @@ func PlayerGetPlayingFile() string {
 func PlayerIsPlaying() bool {
 	retVal := 0
 	executeJSONRPCEx("Player_IsPlaying", &retVal, nil)
+	return retVal != 0
+}
+
+func PlayerIsPaused() bool {
+	retVal := 0
+	executeJSONRPCEx("Player_IsPaused", &retVal, nil)
 	return retVal != 0
 }
 

@@ -18,6 +18,7 @@ type Configuration struct {
 	Language           string
 	ProfilePath        string
 	KeepFilesAfterStop bool
+	BufferSize         int
 	UploadRateLimit    int
 	DownloadRateLimit  int
 	BTListenPortMin    int
@@ -62,6 +63,7 @@ func Reload() *Configuration {
 		Platform:           xbmc.GetPlatform(),
 		Language:           xbmc.GetLanguage(xbmc.ISO_639_1),
 		ProfilePath:        info.Profile,
+		BufferSize:         xbmc.GetSettingInt("buffer_size") * 1024 * 1024,
 		UploadRateLimit:    xbmc.GetSettingInt("max_upload_rate") * 1024,
 		DownloadRateLimit:  xbmc.GetSettingInt("max_download_rate") * 1024,
 		KeepFilesAfterStop: xbmc.GetSettingBool("keep_files"),

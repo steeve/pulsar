@@ -51,6 +51,7 @@ type ProxySettings struct {
 }
 
 type BTConfiguration struct {
+	BufferSize      int
 	MaxUploadRate   int
 	MaxDownloadRate int
 	LowerListenPort int
