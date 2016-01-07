@@ -11,7 +11,7 @@ import (
 	"github.com/i96751414/pulsar/bittorrent"
 	"github.com/i96751414/pulsar/cache"
 	"github.com/i96751414/pulsar/config"
-	"github.com/i96751414/pulsar/ga"
+	//"github.com/i96751414/pulsar/ga"
 	"github.com/i96751414/pulsar/providers"
 	"github.com/i96751414/pulsar/util"
 )
@@ -28,7 +28,7 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 
 	gin.SetMode(gin.ReleaseMode)
 
-	r.Use(ga.GATracker())
+	//r.Use(ga.GATracker())
 
 	store := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
 

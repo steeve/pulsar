@@ -15,7 +15,7 @@ import (
 	"github.com/i96751414/pulsar/broadcast"
 	"github.com/i96751414/pulsar/config"
 	"github.com/i96751414/pulsar/diskusage"
-//	"github.com/i96751414/pulsar/ga"
+	//"github.com/i96751414/pulsar/ga"
 	"github.com/i96751414/pulsar/xbmc"
 )
 
@@ -140,7 +140,7 @@ func (btp *BTPlayer) onMetadataReceived() {
 	defer btp.torrentHandle.Resume()
 
 	btp.torrentName = btp.torrentHandle.Status(uint(0)).GetName()
-//	go ga.TrackEvent("player", "metadata_received", btp.torrentName, -1)
+	//go ga.TrackEvent("player", "metadata_received", btp.torrentName, -1)
 
 	btp.torrentInfo = btp.torrentHandle.Torrent_file()
 
@@ -351,7 +351,7 @@ func (btp *BTPlayer) bufferDialog() {
 		case <-halfSecond.C:
 			if btp.dialogProgress.IsCanceled() {
 				btp.log.Info("User cancelled the buffering")
-//				go ga.TrackEvent("player", "buffer_canceled", btp.torrentName, -1)
+				//go ga.TrackEvent("player", "buffer_canceled", btp.torrentName, -1)
 				btp.bufferEvents.Broadcast(errors.New("user canceled the buffering"))
 				return
 			}
@@ -389,7 +389,7 @@ func (btp *BTPlayer) bufferDialog() {
 func (btp *BTPlayer) playerLoop() {
 	defer btp.Close()
 
-//	start := time.Now()
+	//start := time.Now()
 
 	btp.log.Info("Buffer loop")
 
@@ -402,7 +402,7 @@ func (btp *BTPlayer) playerLoop() {
 		return
 	}
 
-//	ga.TrackTiming("player", "buffer_time_real", int(time.Now().Sub(start).Seconds()*1000), "")
+	//ga.TrackTiming("player", "buffer_time_real", int(time.Now().Sub(start).Seconds()*1000), "")
 
 	btp.log.Info("Waiting for playback...")
 	oneSecond := time.NewTicker(1 * time.Second)
@@ -416,20 +416,20 @@ playbackWaitLoop:
 		}
 		select {
 		case <-playbackTimeout:
-			btp.log.Info("Playback was unable to start after %d seconds. Aborting...", playbackMaxWait)
+			btp.log.Info("Playback was unable to start after %d seconds. Aborting...", playbackMaxWait/time.Second)
 			btp.bufferEvents.Broadcast(errors.New("Playback was unable to start before timeout."))
-		// 	return
-		// case <-oneSecond.C:
+		 	return
+		case <-oneSecond.C:
 		// 	ga.TrackEvent("player", "waiting_playback", btp.torrentName, -1)
 		}
 	}
 
-//	ga.TrackTiming("player", "buffer_time_perceived", int(time.Now().Sub(start).Seconds()*1000), "")
+	//ga.TrackTiming("player", "buffer_time_perceived", int(time.Now().Sub(start).Seconds()*1000), "")
 
 	btp.log.Info("Playback loop")
-	// playingTicker := time.NewTicker(60 * time.Second)
-	// defer playingTicker.Stop()
-	// btp.overlayStatus.Show()
+	//playingTicker := time.NewTicker(60 * time.Second)
+	//defer playingTicker.Stop()
+	//btp.overlayStatus.Show()
 playbackLoop:
 	for {
 		if xbmc.PlayerIsPlaying() == false {
@@ -437,7 +437,7 @@ playbackLoop:
 			break playbackLoop
 		}
 		select {
-		// case <-playingTicker.C:
+		//case <-playingTicker.C:
 		// 	ga.TrackEvent("player", "playing", btp.torrentName, -1)
 		case <-oneSecond.C:
 			if xbmc.PlayerIsPaused() {
@@ -452,6 +452,6 @@ playbackLoop:
 		}
 	}
 
-//	ga.TrackEvent("player", "stop", btp.torrentName, -1)
-//	ga.TrackTiming("player", "watched_time", int(time.Now().Sub(start).Seconds()*1000), "")
+	//ga.TrackEvent("player", "stop", btp.torrentName, -1)
+	//ga.TrackTiming("player", "watched_time", int(time.Now().Sub(start).Seconds()*1000), "")
 }
