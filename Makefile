@@ -47,7 +47,7 @@ GO_PKG = github.com/i96751414/pulsar
 GO = go
 GIT = git
 DOCKER = docker
-DOCKER_IMAGE = steeve/pulsar
+DOCKER_IMAGE = pulsar
 UPX = upx
 GIT_VERSION = $(shell $(GIT) describe --always)
 VERSION = $(shell cat VERSION)
@@ -108,10 +108,10 @@ build-envs:
 	done
 
 build: force
-	$(DOCKER) run --rm -v $(HOME):$(HOME) -e GOPATH=$(shell go env GOPATH) -e PKG_CONFIG_PATH=$(PKGCP) -w $(shell pwd) $(DOCKER_IMAGE):$(TARGET_OS)-$(TARGET_ARCH) make $(MARGS) TARGET_OS=$(TARGET_OS) TARGET_ARCH=$(TARGET_ARCH) GIT_VERSION=$(GIT_VERSION)
+	$(DOCKER) run --rm -v $(HOME):$(HOME) -e GOPATH=$(shell go env GOPATH) -w $(shell pwd) $(DOCKER_IMAGE):$(TARGET_OS)-$(TARGET_ARCH) make $(MARGS) TARGET_OS=$(TARGET_OS) TARGET_ARCH=$(TARGET_ARCH) GIT_VERSION=$(GIT_VERSION)
 
 docker: force
-	$(DOCKER) run --rm -v $(HOME):$(HOME) -e GOPATH=$(shell go env GOPATH) -e PKG_CONFIG_PATH=$(PKGCP) -w $(shell pwd) $(DOCKER_IMAGE):$(TARGET_OS)-$(TARGET_ARCH)
+	$(DOCKER) run --rm -v $(HOME):$(HOME) -e GOPATH=$(shell go env GOPATH) -w $(shell pwd) $(DOCKER_IMAGE):$(TARGET_OS)-$(TARGET_ARCH)
 
 strip: force
 	@find $(BUILD_PATH) -type f ! -name "*.exe" -exec $(STRIP) {} \;
@@ -133,17 +133,17 @@ dist: pulsar vendor_$(TARGET_OS) strip upx checksum
 endif
 
 alldist: force
-	$(MAKE) build TARGET_OS=darwin TARGET_ARCH=x64 PKGCP=/usr/x86_64-apple-darwin14/lib/pkgconfig MARGS="dist"
-	$(MAKE) build TARGET_OS=linux TARGET_ARCH=x86 PKGCP=/usr/i686-linux-gnu/lib/pkgconfig MARGS="dist"
-	$(MAKE) build TARGET_OS=linux TARGET_ARCH=x64 PKGCP=/usr/x86_64-linux-gnu/lib/pkgconfig MARGS="dist"
-	$(MAKE) build TARGET_OS=linux TARGET_ARCH=arm PKGCP=/usr/arm-linux-gnueabihf/lib/pkgconfig MARGS="dist"
-	$(MAKE) build TARGET_OS=windows TARGET_ARCH=x86 PKGCP=/usr/x86_64-w64-mingw32/lib/pkgconfig MARGS="dist"
-	$(MAKE) build TARGET_OS=android TARGET_ARCH=arm PKGCP=/usr/arm-linux-androideabi/lib/pkgconfig MARGS="dist"
+	$(MAKE) build TARGET_OS=darwin TARGET_ARCH=x64 MARGS="dist"
+	$(MAKE) build TARGET_OS=linux TARGET_ARCH=x86 MARGS="dist"
+	$(MAKE) build TARGET_OS=linux TARGET_ARCH=x64 MARGS="dist"
+	$(MAKE) build TARGET_OS=linux TARGET_ARCH=arm MARGS="dist"
+	$(MAKE) build TARGET_OS=windows TARGET_ARCH=x86 MARGS="dist"
+	$(MAKE) build TARGET_OS=android TARGET_ARCH=arm MARGS="dist"
 	
 libs: force
-	$(MAKE) build TARGET_OS=darwin TARGET_ARCH=x64 PKGCP=/usr/x86_64-apple-darwin14/lib/pkgconfig MARGS="libtorrent-go"
-	$(MAKE) build TARGET_OS=linux TARGET_ARCH=x86 PKGCP=/usr/i686-linux-gnu/lib/pkgconfig MARGS="libtorrent-go"
-	$(MAKE) build TARGET_OS=linux TARGET_ARCH=x64 PKGCP=/usr/x86_64-linux-gnu/lib/pkgconfig MARGS="libtorrent-go"
-	$(MAKE) build TARGET_OS=linux TARGET_ARCH=arm PKGCP=/usr/arm-linux-gnueabihf/lib/pkgconfig MARGS="libtorrent-go"
-	$(MAKE) build TARGET_OS=windows TARGET_ARCH=x86 PKGCP=/usr/x86_64-w64-mingw32/lib/pkgconfig MARGS="libtorrent-go"
-	$(MAKE) build TARGET_OS=android TARGET_ARCH=arm PKGCP=/usr/arm-linux-androideabi/lib/pkgconfig MARGS="libtorrent-go"
+	$(MAKE) build TARGET_OS=darwin TARGET_ARCH=x64 MARGS="libtorrent-go"
+	$(MAKE) build TARGET_OS=linux TARGET_ARCH=x86 MARGS="libtorrent-go"
+	$(MAKE) build TARGET_OS=linux TARGET_ARCH=x64 MARGS="libtorrent-go"
+	$(MAKE) build TARGET_OS=linux TARGET_ARCH=arm MARGS="libtorrent-go"
+	$(MAKE) build TARGET_OS=windows TARGET_ARCH=x86 MARGS="libtorrent-go"
+	$(MAKE) build TARGET_OS=android TARGET_ARCH=arm MARGS="libtorrent-go"
