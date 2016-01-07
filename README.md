@@ -32,24 +32,34 @@ pulsar
     ```
     
 5. Make (Examples):
-
+    
+    Linux-x64
+    
     ```
     make build TARGET_OS=linux TARGET_ARCH=x64 MARGS="dist"
     ```
+    
+    Darwin-x64
     
     ```
     make build TARGET_OS=darwin TARGET_ARCH=x64 MARGS="dist"
     ```
     
+    Windows
+    
     ```
     make build TARGET_OS=windows TARGET_ARCH=x86 MARGS="dist"
     ```
+    
+    All platforms:
+    
+    ```
+    make alldist
+    ```
+    
+    Libtorrent-go (all platforms)
+    
+    ```
+    make libs
+    ```
 
-##### Note - MARGS:
-
-You should compile libtorrent-go at least one time. For that, just set MARGS="libtorrent-go"
-
-```bash
-MARGS="libtorrent-go"   # libtorrent
-MARGS="dist"            # Pulsar
-```
