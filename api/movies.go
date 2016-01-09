@@ -115,6 +115,9 @@ func SearchMovies(ctx *gin.Context) {
 	query := ctx.Request.URL.Query().Get("q")
 	if query == "" {
 		query = xbmc.Keyboard("", xbmc.GetLocalizedString(32006))
+		if query == "" {
+			return
+		}
 	}
 	renderMovies(tmdb.SearchMovies(query, config.Get().Language), ctx)
 }

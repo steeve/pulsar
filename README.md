@@ -1,7 +1,6 @@
-pulsar
+Pulsar Daemon
 ======
-##### Compilar:
-1. Install Docker, Golang e mercurial
+1. Install Docker, Golang and hg
 
 2. Set GOPATH
 
@@ -12,12 +11,10 @@ pulsar
 3. go gets
 
     ```
-    go get github.com/op/go-logging
-    ```
-    
-    ```
     go get github.com/i96751414/pulsar
     ```
+    
+    For windows you also need:
     
     ```
     go get github.com/mattn/go-isatty
@@ -51,7 +48,7 @@ pulsar
     make build TARGET_OS=windows TARGET_ARCH=x86 MARGS="dist"
     ```
     
-    All platforms:
+    All platforms
     
     ```
     make alldist
