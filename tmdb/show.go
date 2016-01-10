@@ -110,14 +110,23 @@ func SearchShows(query string, language string) Shows {
 	return GetShows(tmdbIds, language)
 }
 
-func ListShowsComplete(endpoint string, params napping.Params) Shows {
-	shows := make(Shows, popularMoviesMaxPages*moviesPerPage)
+func ListShowsComplete(endpoint string, params napping.Params, page int) Shows {
+	MaxPages := popularMoviesMaxPages
+	if page >= 0 {
+		MaxPages = 1
+	}
+	shows := make(Shows, MaxPages*moviesPerPage)
 
 	params["api_key"] = apiKey
 
 	wg := sync.WaitGroup{}
-	for i := 0; i < popularMoviesMaxPages; i++ {
+	for i := 0; i < MaxPages; i++ {
 		wg.Add(1)
+		currentpage := i
+		startMoviesIndex := i*moviesPerPage
+		if page >= 0 {
+			currentpage = page
+		}
 		go func(page int) {
 			defer wg.Done()
 			var tmp *EntityList
@@ -137,16 +146,16 @@ func ListShowsComplete(endpoint string, params napping.Params) Shows {
 				)
 			})
 			for i, entity := range tmp.Results {
-				shows[page*moviesPerPage+i] = GetShow(entity.Id, params["language"])
+				shows[startMoviesIndex+i] = GetShow(entity.Id, params["language"])
 			}
-		}(i)
+		}(currentpage)
 	}
 	wg.Wait()
 
 	return shows
 }
 
-func PopularShowsComplete(genre string, language string) Shows {
+func PopularShowsComplete(genre string, language string, page int) Shows {
 	var p napping.Params
 	if genre == "" {
 		p = napping.Params{
@@ -162,20 +171,20 @@ func PopularShowsComplete(genre string, language string) Shows {
 			"with_genres":        genre,
 		}
 	}
-	return ListShowsComplete("discover/tv", p)
+	return ListShowsComplete("discover/tv", p, page)
 }
 
-func TopRatedShowsComplete(genre string, language string) Shows {
-	return ListShowsComplete("tv/top_rated", napping.Params{"language": language})
+func TopRatedShowsComplete(genre string, language string, page int) Shows {
+	return ListShowsComplete("tv/top_rated", napping.Params{"language": language}, page)
 }
 
-func MostVotedShowsComplete(genre string, language string) Movies {
+func MostVotedShowsComplete(genre string, language string, page int) Movies {
 	return ListMoviesComplete("discover/tv", napping.Params{
 		"language":           language,
 		"sort_by":            "vote_count.desc",
 		"first_air_date.lte": time.Now().UTC().Format("2006-01-02"),
 		"with_genres":        genre,
-	})
+	}, page)
 }
 
 func GetTVGenres(language string) []*Genre {

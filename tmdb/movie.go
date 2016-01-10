@@ -160,13 +160,22 @@ func (a ByPopularity) Len() int           { return len(a) }
 func (a ByPopularity) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByPopularity) Less(i, j int) bool { return a[i].Popularity < a[j].Popularity }
 
-func ListMoviesComplete(endpoint string, params napping.Params) Movies {
-	movies := make(Movies, popularMoviesMaxPages*moviesPerPage)
+func ListMoviesComplete(endpoint string, params napping.Params, page int) Movies {
+	MaxPages := popularMoviesMaxPages
+	if page >= 0 {
+		MaxPages = 1
+	}
+	movies := make(Movies, MaxPages*moviesPerPage)
 	params["api_key"] = apiKey
 
 	wg := sync.WaitGroup{}
-	for i := 0; i < popularMoviesMaxPages; i++ {
+	for i := 0; i < MaxPages; i++ {
 		wg.Add(1)
+		currentpage := i
+		startMoviesIndex := i*moviesPerPage
+		if page >= 0 {
+			currentpage = page
+		}
 		go func(page int) {
 			defer wg.Done()
 			var tmp *EntityList
@@ -186,16 +195,15 @@ func ListMoviesComplete(endpoint string, params napping.Params) Movies {
 				)
 			})
 			for i, movie := range tmp.Results {
-				movies[page*moviesPerPage+i] = GetMovie(movie.Id, params["language"])
+				movies[startMoviesIndex+i] = GetMovie(movie.Id, params["language"])
 			}
-		}(i)
+		}(currentpage)
 	}
 	wg.Wait()
-
 	return movies
 }
 
-func PopularMoviesComplete(genre string, language string) Movies {
+func PopularMoviesComplete(genre string, language string, page int) Movies {
 	var p napping.Params
 	if genre == "" {
 		p = napping.Params{
@@ -211,14 +219,14 @@ func PopularMoviesComplete(genre string, language string) Movies {
 			"with_genres":              genre,
 		}
 	}
-	return ListMoviesComplete("discover/movie", p)
+	return ListMoviesComplete("discover/movie", p, page)
 }
 
-func TopRatedMoviesComplete(genre string, language string) Movies {
-	return ListMoviesComplete("movie/top_rated", napping.Params{"language": language})
+func TopRatedMoviesComplete(genre string, language string, page int) Movies {
+	return ListMoviesComplete("movie/top_rated", napping.Params{"language": language}, page)
 }
 
-func MostVotedMoviesComplete(genre string, language string) Movies {
+func MostVotedMoviesComplete(genre string, language string, page int) Movies {
 	var p napping.Params
 	if genre == "" {
 		p = napping.Params{
@@ -234,7 +242,7 @@ func MostVotedMoviesComplete(genre string, language string) Movies {
 			"with_genres":              genre,
 		}
 	}
-	return ListMoviesComplete("discover/movie", p)
+	return ListMoviesComplete("discover/movie", p, page)
 }
 
 func (movie *Movie) ToListItem() *xbmc.ListItem {
