@@ -38,7 +38,7 @@ func Play(btService *bittorrent.BTService) gin.HandlerFunc {
 }
 
 func PasteURL(ctx *gin.Context) {
-	magnet := xbmc.Keyboard("", xbmc.GetLocalizedString(32017))
+	magnet := xbmc.Keyboard("", "LOCALIZE[30217]")
 	if magnet == "" {
 		return
 	}

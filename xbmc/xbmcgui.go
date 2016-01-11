@@ -69,9 +69,10 @@ func (ov *OverlayStatus) Close() {
 }
 
 
-func Notify(args ...interface{}) {
+func Notify(header string, message string, image string) {
 	var retVal string
-	executeJSONRPC("GUI.ShowNotification", &retVal, args)
+	//executeJSONRPC("GUI.ShowNotification", &retVal, args)
+	executeJSONRPCEx("Notify", &retVal, Args{header, message, image})
 }
 
 func InfoLabels(labels ...string) map[string]string {

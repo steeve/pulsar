@@ -112,7 +112,7 @@ func main() {
 		shutdown()
 	}))
 
-	xbmc.Notify("Pulsar", xbmc.GetLocalizedString(32008), config.AddonIcon())
+	xbmc.Notify("Pulsar", "LOCALIZE[30208]", config.AddonIcon())
 
 	http.ListenAndServe(":"+strconv.Itoa(config.ListenPort), nil)
 }

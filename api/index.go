@@ -18,10 +18,10 @@ func Index(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, xbmc.NewView("", xbmc.ListItems{
-		{Label: xbmc.GetLocalizedString(32014), Path: UrlForXBMC("/movies/"), Thumbnail: config.AddonResource("img", "movies.png")},
-		{Label: xbmc.GetLocalizedString(32015), Path: UrlForXBMC("/shows/"), Thumbnail: config.AddonResource("img", "tv.png")},
+		{Label: "LOCALIZE[30214]", Path: UrlForXBMC("/movies/"), Thumbnail: config.AddonResource("img", "movies.png")},
+		{Label: "LOCALIZE[30215]", Path: UrlForXBMC("/shows/"), Thumbnail: config.AddonResource("img", "tv.png")},
 
-		{Label: xbmc.GetLocalizedString(32009), Path: UrlForXBMC("/search"), Thumbnail: config.AddonResource("img", "search.png")},
-		{Label: xbmc.GetLocalizedString(32016), Path: UrlForXBMC("/pasted"), Thumbnail: config.AddonResource("img", "magnet.png")},
+		{Label: "LOCALIZE[30209]", Path: UrlForXBMC("/search"), Thumbnail: config.AddonResource("img", "search.png")},
+		{Label: "LOCALIZE[30216]", Path: UrlForXBMC("/pasted"), Thumbnail: config.AddonResource("img", "magnet.png")},
 	}))
 }

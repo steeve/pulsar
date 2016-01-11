@@ -21,8 +21,8 @@ var (
 
 func TVIndex(ctx *gin.Context) {
 	items := xbmc.ListItems{
-		{Label: xbmc.GetLocalizedString(32009), Path: UrlForXBMC("/shows/search"), Thumbnail: config.AddonResource("img", "search.png")},
-		{Label: xbmc.GetLocalizedString(32010), Path: UrlForXBMC("/shows/popular"), Thumbnail: config.AddonResource("img", "popular.png")},
+		{Label: "LOCALIZE[30209]", Path: UrlForXBMC("/shows/search"), Thumbnail: config.AddonResource("img", "search.png")},
+		{Label: "LOCALIZE[30210]", Path: UrlForXBMC("/shows/popular"), Thumbnail: config.AddonResource("img", "popular.png")},
 	}
 	for _, genre := range tmdb.GetTVGenres(config.Get().Language) {
 		slug, _ := genreSlugs[genre.Id]
@@ -65,7 +65,7 @@ func renderShows(shows tmdb.Shows, ctx *gin.Context, page int) {
 	}
 	if page >= 0 {
 		path := ctx.Request.URL.Path 
-		nextpage := &xbmc.ListItem{Label: xbmc.GetLocalizedString(32018), Path: UrlForXBMC(fmt.Sprintf("%s?page=%d", path, page + 1)), Thumbnail: config.AddonResource("img", "nextpage.png")}
+		nextpage := &xbmc.ListItem{Label: "LOCALIZE[30218]", Path: UrlForXBMC(fmt.Sprintf("%s?page=%d", path, page + 1)), Thumbnail: config.AddonResource("img", "nextpage.png")}
 		items = append(items, nextpage)
 	}
 	ctx.JSON(200, xbmc.NewView("tvshows", items))
@@ -111,7 +111,7 @@ func TVMostVoted(ctx *gin.Context) {
 func SearchShows(ctx *gin.Context) {
 	query := ctx.Request.URL.Query().Get("q")
 	if query == "" {
-		query = xbmc.Keyboard("", xbmc.GetLocalizedString(32001))
+		query = xbmc.Keyboard("", "LOCALIZE[30201]")
 		if query == "" {
 			return
 		}
@@ -156,12 +156,12 @@ func ShowEpisodes(ctx *gin.Context) {
 			item.Info.Episode,
 		)
 		item.ContextMenu = [][]string{
-			[]string{xbmc.GetLocalizedString(32002), fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/show/%d/season/%d/episode/%d/links",
+			[]string{"LOCALIZE[30202]", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/show/%d/season/%d/episode/%d/links",
 				show.Id,
 				season.Season,
 				item.Info.Episode,
 			))},
-			[]string{xbmc.GetLocalizedString(32003), "XBMC.Action(Info)"},
+			[]string{"LOCALIZE[30203]", "XBMC.Action(Info)"},
 		}
 		item.IsPlayable = true
 	}
@@ -183,7 +183,7 @@ func showEpisodeLinks(showId string, seasonNumber, episodeNumber int) ([]*bittor
 
 	searchers := providers.GetEpisodeSearchers()
 	if len(searchers) == 0 {
-		xbmc.Notify("Pulsar", xbmc.GetLocalizedString(32004), config.AddonIcon())
+		xbmc.Notify("Pulsar", "LOCALIZE[30204]", config.AddonIcon())
 	}
 
 	return providers.SearchEpisode(searchers, show, episode), nil
@@ -199,7 +199,7 @@ func ShowEpisodeLinks(ctx *gin.Context) {
 	}
 
 	if len(torrents) == 0 {
-		xbmc.Notify("Pulsar", xbmc.GetLocalizedString(32005), config.AddonIcon())
+		xbmc.Notify("Pulsar", "LOCALIZE[30205]", config.AddonIcon())
 		return
 	}
 
@@ -213,7 +213,7 @@ func ShowEpisodeLinks(ctx *gin.Context) {
 		choices = append(choices, label)
 	}
 
-	choice := xbmc.ListDialog(xbmc.GetLocalizedString(32002), choices...)
+	choice := xbmc.ListDialog("LOCALIZE[30202]", choices...)
 	if choice >= 0 {
 		rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[choice].Magnet())
 		ctx.Redirect(302, rUrl)
@@ -230,7 +230,7 @@ func ShowEpisodePlay(ctx *gin.Context) {
 	}
 
 	if len(torrents) == 0 {
-		xbmc.Notify("Pulsar", xbmc.GetLocalizedString(32005), config.AddonIcon())
+		xbmc.Notify("Pulsar", "LOCALIZE[30205]", config.AddonIcon())
 		return
 	}
 
