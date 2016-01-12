@@ -429,7 +429,6 @@ playbackWaitLoop:
 	btp.log.Info("Playback loop")
 	//playingTicker := time.NewTicker(60 * time.Second)
 	//defer playingTicker.Stop()
-	//btp.overlayStatus.Show()
 playbackLoop:
 	for {
 		if xbmc.PlayerIsPlaying() == false {
@@ -440,7 +439,7 @@ playbackLoop:
 		//case <-playingTicker.C:
 		// 	ga.TrackEvent("player", "playing", btp.torrentName, -1)
 		case <-oneSecond.C:
-			if xbmc.PlayerIsPaused() {
+			if xbmc.PlayerIsPaused() && config.Get().EnableOverlayStatus == true {
 				status := btp.torrentHandle.Status(uint(libtorrent.Torrent_handleQuery_name))
 				progress := float64(status.GetProgress())
 				line1, line2, line3 := btp.statusStrings(progress, status)

@@ -12,18 +12,19 @@ import (
 var log = logging.MustGetLogger("config")
 
 type Configuration struct {
-	DownloadPath       string
-	Info               *xbmc.AddonInfo
-	Platform           *xbmc.Platform
-	Language           string
-	ProfilePath        string
-	KeepFilesAfterStop bool
-	EnablePaging       bool
-	BufferSize         int
-	UploadRateLimit    int
-	DownloadRateLimit  int
-	BTListenPortMin    int
-	BTListenPortMax    int
+	DownloadPath        string
+	Info                *xbmc.AddonInfo
+	Platform            *xbmc.Platform
+	Language            string
+	ProfilePath         string
+	KeepFilesAfterStop  bool
+	EnablePaging        bool
+	EnableOverlayStatus bool
+	BufferSize          int
+	UploadRateLimit     int
+	DownloadRateLimit   int
+	BTListenPortMin     int
+	BTListenPortMax     int
 
 	CustomProviderTimeoutEnabled bool
 	CustomProviderTimeout        int
@@ -59,18 +60,19 @@ func Reload() *Configuration {
 	info.Profile = strings.Replace(info.Profile, "/storage/emulated/0", "/storage/emulated/legacy", 1)
 
 	newConfig := Configuration{
-		DownloadPath:       filepath.Dir(xbmc.GetSettingString("download_path")),
-		Info:               info,
-		Platform:           xbmc.GetPlatform(),
-		Language:           xbmc.GetLanguage(xbmc.ISO_639_1),
-		ProfilePath:        info.Profile,
-		BufferSize:         xbmc.GetSettingInt("buffer_size") * 1024 * 1024,
-		UploadRateLimit:    xbmc.GetSettingInt("max_upload_rate") * 1024,
-		DownloadRateLimit:  xbmc.GetSettingInt("max_download_rate") * 1024,
-		KeepFilesAfterStop: xbmc.GetSettingBool("keep_files"),
-		EnablePaging:       xbmc.GetSettingBool("enable_paging"),
-		BTListenPortMin:    xbmc.GetSettingInt("listen_port_min"),
-		BTListenPortMax:    xbmc.GetSettingInt("listen_port_max"),
+		DownloadPath:        filepath.Dir(xbmc.GetSettingString("download_path")),
+		Info:                info,
+		Platform:            xbmc.GetPlatform(),
+		Language:            xbmc.GetLanguage(xbmc.ISO_639_1),
+		ProfilePath:         info.Profile,
+		BufferSize:          xbmc.GetSettingInt("buffer_size") * 1024 * 1024,
+		UploadRateLimit:     xbmc.GetSettingInt("max_upload_rate") * 1024,
+		DownloadRateLimit:   xbmc.GetSettingInt("max_download_rate") * 1024,
+		KeepFilesAfterStop:  xbmc.GetSettingBool("keep_files"),
+		EnablePaging:        xbmc.GetSettingBool("enable_paging"),
+		EnableOverlayStatus: xbmc.GetSettingBool("enable_overlay_status"),
+		BTListenPortMin:     xbmc.GetSettingInt("listen_port_min"),
+		BTListenPortMax:     xbmc.GetSettingInt("listen_port_max"),
 
 		CustomProviderTimeoutEnabled: xbmc.GetSettingBool("custom_provider_timeout_enabled"),
 		CustomProviderTimeout:        xbmc.GetSettingInt("custom_provider_timeout"),
