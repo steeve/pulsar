@@ -427,6 +427,7 @@ playbackWaitLoop:
 	//ga.TrackTiming("player", "buffer_time_perceived", int(time.Now().Sub(start).Seconds()*1000), "")
 
 	btp.log.Info("Playback loop")
+	overlayStatusActive := false
 	//playingTicker := time.NewTicker(60 * time.Second)
 	//defer playingTicker.Stop()
 playbackLoop:
@@ -444,9 +445,15 @@ playbackLoop:
 				progress := float64(status.GetProgress())
 				line1, line2, line3 := btp.statusStrings(progress, status)
 				btp.overlayStatus.Update(int(progress), line1, line2, line3)
-				btp.overlayStatus.Show()
+				if overlayStatusActive == false {
+					btp.overlayStatus.Show()
+					overlayStatusActive = true
+				}
 			} else {
-				btp.overlayStatus.Hide()
+				if overlayStatusActive == true {
+					btp.overlayStatus.Hide()
+					overlayStatusActive = false
+				}
 			}
 		}
 	}
