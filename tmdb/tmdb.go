@@ -66,6 +66,7 @@ type Entity struct {
 	Genres        []*IdName `json:"genres"`
 	OriginalTitle string    `json:"original_title,omitempty"`
 	ReleaseDate   string    `json:"release_date"`
+	FirstAirDate  string    `json:"first_air_date"`
 	PosterPath    string    `json:"poster_path"`
 	Title         string    `json:"title,omitempty"`
 	VoteAverage   float32   `json:"vote_average"`

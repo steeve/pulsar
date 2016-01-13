@@ -118,6 +118,7 @@ func (episode *Episode) ToListItem(show *Show) *xbmc.ListItem {
 			TVShowTitle:   show.SeriesName,
 			Plot:          episode.Overview,
 			PlotOutline:   episode.Overview,
+			Aired:         episode.FirstAired,
 		},
 		Art: &xbmc.ListItemArt{
 			Thumbnail: imageURL(episode.FileName),
