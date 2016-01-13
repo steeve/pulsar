@@ -58,12 +58,12 @@ func Reload() *Configuration {
 
 	info.Path = strings.Replace(info.Path, "/storage/emulated/0", "/storage/emulated/legacy", 1)
 	info.Profile = strings.Replace(info.Profile, "/storage/emulated/0", "/storage/emulated/legacy", 1)
-
+	
 	newConfig := Configuration{
 		DownloadPath:        filepath.Dir(xbmc.GetSettingString("download_path")),
 		Info:                info,
 		Platform:            xbmc.GetPlatform(),
-		Language:            xbmc.GetLanguage(xbmc.ISO_639_1),
+		Language:            xbmc.GetLanguageISO_639_1(),
 		ProfilePath:         info.Profile,
 		BufferSize:          xbmc.GetSettingInt("buffer_size") * 1024 * 1024,
 		UploadRateLimit:     xbmc.GetSettingInt("max_upload_rate") * 1024,

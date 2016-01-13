@@ -31,3 +31,27 @@ func GetLanguage(format int) string {
 	executeJSONRPCEx("GetLanguage", &retVal, Args{format})
 	return retVal
 }
+
+func GetLanguageISO_639_1() string{
+	language := GetLanguage(ISO_639_1)
+	if language == "" {
+		switch GetLanguage(EnglishName) {
+		case "Chinese (Simple)":      return "zh"
+		case "Chinese (Traditional)": return "zh"
+		case "English (Australia)":   return "en"
+		case "English (New Zealand)": return "en"
+		case "English (US)":          return "en"
+		case "French (Canada)":       return "fr"
+		case "Hindi (Devanagiri)":    return "hi"
+		case "Mongolian (Mongolia)":  return "mn"
+		case "Persian (Iran)":        return "fa"
+		case "Portuguese (Brazil)":   return "pt" 
+		case "Serbian (Cyrillic)":    return "sr"
+		case "Spanish (Argentina)":   return "es"
+		case "Spanish (Mexico)":      return "es"
+		case "Tamil (India)":         return "ta"
+		default:                      return "en"
+		}
+	}
+	return language
+}
