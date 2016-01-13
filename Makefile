@@ -39,7 +39,7 @@ else ifeq ($(TARGET_OS), android)
 	EXT =
 	GOOS = android
 	GOARM = 7
-	GO_LDFLAGS = -linkmode=external -extld=$(CC)
+	GO_LDFLAGS = -linkmode=external -extldflags=-pie -extld=$(CC)
 endif
 
 NAME = pulsar
