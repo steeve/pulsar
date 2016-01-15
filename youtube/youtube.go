@@ -13,6 +13,7 @@ import (
 const (
 	youtubeKey = ""
 	searchLink = "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=5&q=%s&key=%s"
+    watchLink  = "http://www.youtube.com/watch?v=%s&gl=US&hl=en&has_verified=1&bpctr=9999999999"
 )
 
 var (
@@ -55,11 +56,11 @@ func Search(name string) (string, error){
 		}
 	}
 
-    return "", nil
+    return "", fmt.Errorf("Unable to find youtube#video !")
 }
 
 func Resolve(youtubeId string) ([]string, error) {
-	resp, err := http.Get(fmt.Sprintf("http://www.youtube.com/watch?v=%s&gl=US&hl=en&has_verified=1&bpctr=9999999999", youtubeId))
+	resp, err := http.Get(fmt.Sprintf(watchLink, youtubeId))
 	if err != nil {
 		return nil, err
 	}
