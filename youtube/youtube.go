@@ -10,6 +10,11 @@ import (
 	"strings"
 )
 
+const (
+	youtubeKey = ""
+	searchLink = "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=5&q=%s&key=%s"
+)
+
 var (
 	paramsRe = regexp.MustCompile("ytplayer.config = ({.*?});")
 )
@@ -19,6 +24,38 @@ type YTPlayerConfig struct {
 		FmtList                string `json:"fmt_list"`
 		UrlEncodedFmtStreamMap string `json:"url_encoded_fmt_stream_map"`
 	} `json:"args"`
+}
+
+type YTSearchItems struct {
+    Item[] struct{
+    	ID struct{
+    		Kind    string `json:"kind"`
+    		VideoID string `json:"videoId"`
+    	} `json:"id"`
+    } `json:"items"`
+}
+
+func Search(name string) (string, error){
+    url := fmt.Sprintf(searchLink, url.QueryEscape(name + " trailer"), youtubeKey)
+
+ 	r, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer r.Body.Close()
+
+	items := YTSearchItems{}
+	if err = json.NewDecoder(r.Body).Decode(&items); err != nil {
+		return "", err
+	}
+
+	for _, item := range items.Item {
+		if item.ID.VideoID != "" && item.ID.Kind == "youtube#video" {
+			return item.ID.VideoID, nil
+		}
+	}
+
+    return "", nil
 }
 
 func Resolve(youtubeId string) ([]string, error) {

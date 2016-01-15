@@ -43,12 +43,12 @@ func MakePulsarRepositoryAddon() error {
 				Point: "xbmc.addon.repository",
 				Name:  addonName,
 				Info: &xbmc.AddonRepositoryInfo{
-					Text:       pulsarHost + "/repository/steeve/plugin.video.pulsar/addons.xml",
+					Text:       pulsarHost + "/repository/i96751414/plugin.video.pulsar/addons.xml",
 					Compressed: false,
 				},
-				Checksum: pulsarHost + "/repository/steeve/plugin.video.pulsar/addons.xml.md5",
+				Checksum: pulsarHost + "/repository/i96751414/plugin.video.pulsar/addons.xml.md5",
 				Datadir: &xbmc.AddonRepositoryDataDir{
-					Text: pulsarHost + "/repository/steeve/",
+					Text: pulsarHost + "/repository/i96751414/",
 					Zip:  true,
 				},
 			},
