@@ -13,7 +13,7 @@ import (
 const (
 	youtubeKey = ""
 	searchLink = "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=5&q=%s&key=%s"
-    watchLink  = "http://www.youtube.com/watch?v=%s&gl=US&hl=en&has_verified=1&bpctr=9999999999"
+	watchLink  = "http://www.youtube.com/watch?v=%s&gl=US&hl=en&has_verified=1&bpctr=9999999999"
 )
 
 var (
