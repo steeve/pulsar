@@ -284,7 +284,7 @@ func (movie *Movie) ToListItem() *xbmc.ListItem {
 		}
 	}
 
-	if item.Info.Trailer == "" && config.Get().Language != "en"{
+	if item.Info.Trailer == "" && config.Get().Language != "en" && movie.IMDBId != "" {
 		enMovie := getMovieById(movie.IMDBId, "en")
 		if enMovie.Trailers != nil {
 			for _, trailer := range enMovie.Trailers.Youtube {
