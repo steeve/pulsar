@@ -149,8 +149,8 @@ func (btp *BTPlayer) onMetadataReceived() {
 		if btp.diskStatus.Free < torrentSize {
 			btp.log.Info("Unsufficient free space on %s. Has %d, needs %d.", btp.bts.config.DownloadPath, btp.diskStatus.Free, torrentSize)
 			xbmc.Notify("Pulsar", "LOCALIZE[30207]", config.AddonIcon())
-			btp.bufferEvents.Broadcast(errors.New("Not enough space on download destination."))
-			return
+			// btp.bufferEvents.Broadcast(errors.New("Not enough space on download destination."))
+			// return
 		}
 	}
 
@@ -209,8 +209,14 @@ func (btp *BTPlayer) statusStrings(progress float64, status libtorrent.Torrent_s
 	if btp.torrentInfo != nil && btp.torrentInfo.Swigcptr() != 0 {
 		line1 += " - " + humanize.Bytes(uint64(btp.torrentInfo.Total_size()))
 	}
+	rate := float64(0)
+	if status.GetState() == 5 {
+		rate = float64(status.GetUpload_rate())/1024
+	} else {
+		rate = float64(status.GetDownload_rate())/1024
+	}
 	line2 := fmt.Sprintf("%.0fkb/s S:%d/%d P:%d/%d",
-		float64(status.GetDownload_rate())/1024,
+		rate,
 		status.GetNum_seeds(),
 		status.GetNum_complete(),
 		status.GetNum_peers(),
