@@ -59,7 +59,7 @@ LIBTORRENT_GO = github.com/i96751414/libtorrent-go
 LIBTORRENT_GO_HOME = $(shell go env GOPATH)/src/$(LIBTORRENT_GO)
 GO_BUILD_TAGS =
 GO_LDFLAGS += -w -X $(GO_PKG)/util.Version "$(VERSION)" -X $(GO_PKG)/util.GitCommit "$(GIT_VERSION)"
-PLATFORMS = darwin-x64 windows-x86 linux-x86 linux-x64 linux-arm android-arm
+PLATFORMS = darwin-x64 windows-x86 windows-x64 linux-x86 linux-x64 linux-arm android-arm
 
 force:
 	@true
@@ -108,10 +108,10 @@ build-envs:
 	done
 
 build: force
-	$(DOCKER) run --rm -v $(HOME):$(HOME) -e GOPATH=$(shell go env GOPATH) -w $(shell pwd) $(DOCKER_IMAGE):$(TARGET_OS)-$(TARGET_ARCH) make $(MARGS) TARGET_OS=$(TARGET_OS) TARGET_ARCH=$(TARGET_ARCH) GIT_VERSION=$(GIT_VERSION)
+	$(DOCKER) run --rm -v $(GOPATH):/go -e GOPATH=/go -v $(shell pwd):/go/src/$(GO_PKG) -w /go/src/$(GO_PKG) $(DOCKER_IMAGE):$(TARGET_OS)-$(TARGET_ARCH) make $(MARGS) TARGET_OS=$(TARGET_OS) TARGET_ARCH=$(TARGET_ARCH) GIT_VERSION=$(GIT_VERSION)
 
 docker: force
-	$(DOCKER) run --rm -v $(HOME):$(HOME) -e GOPATH=$(shell go env GOPATH) -w $(shell pwd) $(DOCKER_IMAGE):$(TARGET_OS)-$(TARGET_ARCH)
+	$(DOCKER) run --rm -v $(GOPATH):/go -e GOPATH=/go -v $(shell pwd):/go/src/$(GO_PKG) -w /go/src/$(GO_PKG) $(DOCKER_IMAGE):$(TARGET_OS)-$(TARGET_ARCH)
 
 strip: force
 	@find $(BUILD_PATH) -type f ! -name "*.exe" -exec $(STRIP) {} \;
@@ -138,8 +138,9 @@ alldist: force
 	$(MAKE) build TARGET_OS=linux TARGET_ARCH=x64 MARGS="dist"
 	$(MAKE) build TARGET_OS=linux TARGET_ARCH=arm MARGS="dist"
 	$(MAKE) build TARGET_OS=windows TARGET_ARCH=x86 MARGS="dist"
+	$(MAKE) build TARGET_OS=windows TARGET_ARCH=x64 MARGS="dist"
 	$(MAKE) build TARGET_OS=android TARGET_ARCH=arm MARGS="dist"
-	
+
 libs: force
 	$(MAKE) build TARGET_OS=darwin TARGET_ARCH=x64 MARGS="libtorrent-go"
 	$(MAKE) build TARGET_OS=linux TARGET_ARCH=x86 MARGS="libtorrent-go"
