@@ -209,14 +209,9 @@ func (btp *BTPlayer) statusStrings(progress float64, status libtorrent.Torrent_s
 	if btp.torrentInfo != nil && btp.torrentInfo.Swigcptr() != 0 {
 		line1 += " - " + humanize.Bytes(uint64(btp.torrentInfo.Total_size()))
 	}
-	rate := float64(0)
-	if status.GetState() == 5 {
-		rate = float64(status.GetUpload_rate())/1024
-	} else {
-		rate = float64(status.GetDownload_rate())/1024
-	}
-	line2 := fmt.Sprintf("%.0fkb/s S:%d/%d P:%d/%d",
-		rate,
+	line2 := fmt.Sprintf("D:%.0fkb/s U:%.0fkb/s S:%d/%d P:%d/%d",
+		float64(status.GetDownload_rate())/1024,
+		float64(status.GetUpload_rate())/1024,
 		status.GetNum_seeds(),
 		status.GetNum_complete(),
 		status.GetNum_peers(),
