@@ -10,11 +10,11 @@ import (
 	"time"
 
 	"github.com/op/go-logging"
-	"github.com/i96751414/pulsar/api"
-	"github.com/i96751414/pulsar/bittorrent"
-	"github.com/i96751414/pulsar/config"
-	"github.com/i96751414/pulsar/util"
-	"github.com/i96751414/pulsar/xbmc"
+	"github.com/scakemyer/pulsar/api"
+	"github.com/scakemyer/pulsar/bittorrent"
+	"github.com/scakemyer/pulsar/config"
+	"github.com/scakemyer/pulsar/util"
+	"github.com/scakemyer/pulsar/xbmc"
 )
 
 var log = logging.MustGetLogger("main")

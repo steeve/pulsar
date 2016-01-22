@@ -12,7 +12,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/i96751414/pulsar/xbmc"
+	"github.com/scakemyer/pulsar/xbmc"
 	"github.com/zeebo/bencode"
 )
 

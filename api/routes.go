@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/i96751414/pulsar/api/repository"
-	"github.com/i96751414/pulsar/bittorrent"
-	"github.com/i96751414/pulsar/cache"
-	"github.com/i96751414/pulsar/config"
-	"github.com/i96751414/pulsar/providers"
-	"github.com/i96751414/pulsar/util"
+	"github.com/scakemyer/pulsar/api/repository"
+	"github.com/scakemyer/pulsar/bittorrent"
+	"github.com/scakemyer/pulsar/cache"
+	"github.com/scakemyer/pulsar/config"
+	"github.com/scakemyer/pulsar/providers"
+	"github.com/scakemyer/pulsar/util"
 )
 
 const (

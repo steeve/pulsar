@@ -43,7 +43,7 @@ else ifeq ($(TARGET_OS), android)
 endif
 
 NAME = pulsar
-GO_PKG = github.com/i96751414/pulsar
+GO_PKG = github.com/scakemyer/pulsar
 GO = go
 GIT = git
 DOCKER = docker
@@ -55,7 +55,7 @@ ZIP_FILE = $(ADDON_NAME)-$(VERSION).zip
 CGO_ENABLED = 1
 OUTPUT_NAME = $(NAME)$(EXT)
 BUILD_PATH = build/$(TARGET_OS)_$(TARGET_ARCH)
-LIBTORRENT_GO = github.com/i96751414/libtorrent-go
+LIBTORRENT_GO = github.com/scakemyer/libtorrent-go
 LIBTORRENT_GO_HOME = $(shell go env GOPATH)/src/$(LIBTORRENT_GO)
 GO_BUILD_TAGS =
 GO_LDFLAGS += -w -X $(GO_PKG)/util.Version "$(VERSION)" -X $(GO_PKG)/util.GitCommit "$(GIT_VERSION)"

@@ -5,7 +5,7 @@ package bittorrent
 import (
 	"runtime"
 
-	"github.com/i96751414/libtorrent-go"
+	"github.com/scakemyer/libtorrent-go"
 )
 
 const (

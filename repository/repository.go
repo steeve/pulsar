@@ -7,9 +7,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/i96751414/pulsar/config"
-	"github.com/i96751414/pulsar/util"
-	"github.com/i96751414/pulsar/xbmc"
+	"github.com/scakemyer/pulsar/config"
+	"github.com/scakemyer/pulsar/util"
+	"github.com/scakemyer/pulsar/xbmc"
 )
 
 func copyFile(from string, to string) error {
@@ -43,12 +43,12 @@ func MakePulsarRepositoryAddon() error {
 				Point: "xbmc.addon.repository",
 				Name:  addonName,
 				Info: &xbmc.AddonRepositoryInfo{
-					Text:       pulsarHost + "/repository/i96751414/plugin.video.pulsar/addons.xml",
+					Text:       pulsarHost + "/repository/scakemyer/plugin.video.pulsar/addons.xml",
 					Compressed: false,
 				},
-				Checksum: pulsarHost + "/repository/i96751414/plugin.video.pulsar/addons.xml.md5",
+				Checksum: pulsarHost + "/repository/scakemyer/plugin.video.pulsar/addons.xml.md5",
 				Datadir: &xbmc.AddonRepositoryDataDir{
-					Text: pulsarHost + "/repository/i96751414/",
+					Text: pulsarHost + "/repository/scakemyer/",
 					Zip:  true,
 				},
 			},

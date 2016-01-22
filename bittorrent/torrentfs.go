@@ -10,8 +10,8 @@ import (
 	"unsafe"
 
 	"github.com/op/go-logging"
-	"github.com/i96751414/libtorrent-go"
-	"github.com/i96751414/pulsar/broadcast"
+	"github.com/scakemyer/libtorrent-go"
+	"github.com/scakemyer/pulsar/broadcast"
 )
 
 const (

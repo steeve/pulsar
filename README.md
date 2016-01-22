@@ -11,7 +11,7 @@ Pulsar Daemon
 3. go gets
 
     ```
-    go get github.com/i96751414/pulsar
+    go get github.com/scakemyer/pulsar
     ```
     
     For windows you also need:

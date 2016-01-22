@@ -13,10 +13,10 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/i96751414/pulsar/config"
-	"github.com/i96751414/pulsar/osdb"
-	"github.com/i96751414/pulsar/util"
-	"github.com/i96751414/pulsar/xbmc"
+	"github.com/scakemyer/pulsar/config"
+	"github.com/scakemyer/pulsar/osdb"
+	"github.com/scakemyer/pulsar/util"
+	"github.com/scakemyer/pulsar/xbmc"
 )
 
 func appendLocalFilePayloads(playingFile string, payloads *[]osdb.SearchPayload) error {
