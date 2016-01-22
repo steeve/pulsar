@@ -65,10 +65,14 @@ func getMovieById(movieId string, language string) *Movie {
 	key := fmt.Sprintf("com.tmdb.movie.%s.%s", movieId, language)
 	if err := cacheStore.Get(key, &movie); err != nil {
 		rateLimiter.Call(func() {
-            p := napping.Params{"api_key": apiKey, "append_to_response": "credits,images,alternative_titles,translations,external_ids,trailers", "language": language}.AsUrlValues()
+      urlValues := napping.Params{
+				"api_key": apiKey,
+				"append_to_response": "credits,images,alternative_titles,translations,external_ids,trailers",
+				"language": language,
+			}.AsUrlValues()
 			napping.Get(
 				tmdbEndpoint+"movie/"+movieId,
-				&p,
+				&urlValues,
 				&movie,
 				nil,
 			)
@@ -107,10 +111,13 @@ func GetMovies(tmdbIds []int, language string) Movies {
 func GetMovieGenres(language string) []*Genre {
 	genres := GenreList{}
 	rateLimiter.Call(func() {
-        p := napping.Params{"api_key": apiKey, "language": language}.AsUrlValues()
+    urlValues := napping.Params{
+			"api_key": apiKey,
+			"language": language,
+		}.AsUrlValues()
 		napping.Get(
 			tmdbEndpoint+"genre/movie/list",
-			&p,
+			&urlValues,
 			&genres,
 			nil,
 		)
@@ -121,10 +128,13 @@ func GetMovieGenres(language string) []*Genre {
 func SearchMovies(query string, language string) Movies {
 	var results EntityList
 	rateLimiter.Call(func() {
-        p := napping.Params{"api_key": apiKey,"query":query}.AsUrlValues()
+    urlValues := napping.Params{
+			"api_key": apiKey,
+			"query": query,
+		}.AsUrlValues()
 		napping.Get(
 			tmdbEndpoint+"search/movie",
-			&p,
+			&urlValues,
 			&results,
 			nil,
 		)
@@ -139,10 +149,12 @@ func SearchMovies(query string, language string) Movies {
 func GetList(listId string, language string) Movies {
 	var results *List
 	rateLimiter.Call(func() {
-        p := napping.Params{"api_key": apiKey}.AsUrlValues()
+    urlValues := napping.Params{
+			"api_key": apiKey,
+		}.AsUrlValues()
 		napping.Get(
 			tmdbEndpoint+"list/"+listId,
-			&p,
+			&urlValues,
 			&results,
 			nil,
 		)
@@ -185,11 +197,11 @@ func ListMoviesComplete(endpoint string, params napping.Params, page int) Movies
 			for k, v := range params {
 				tmpParams[k] = v
 			}
-            p := tmpParams.AsUrlValues()
+      urlValues := tmpParams.AsUrlValues()
 			rateLimiter.Call(func() {
 				napping.Get(
 					tmdbEndpoint+endpoint,
-					&p,
+					&urlValues,
 					&tmp,
 					nil,
 				)
