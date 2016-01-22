@@ -161,11 +161,11 @@ func ListEntities(endpoint string, params napping.Params) []*Entity {
 			for k, v := range params {
 				tmpParams[k] = v
 			}
-            p := tmpParams.AsUrlValues()
+      urlValues := tmpParams.AsUrlValues()
 			rateLimiter.Call(func() {
 				napping.Get(
 					tmdbEndpoint+endpoint,
-					&p,
+					&urlValues,
 					&tmp,
 					nil,
 				)
@@ -187,10 +187,13 @@ func Find(externalId string, externalSource string) *FindResult {
 	key := fmt.Sprintf("com.tmdb.find.%s.%s", externalSource, externalId)
 	if err := cacheStore.Get(key, &result); err != nil {
 		rateLimiter.Call(func() {
-            p := napping.Params{"api_key": apiKey, "external_source": externalSource}.AsUrlValues()
+      urlValues := napping.Params{
+				"api_key": apiKey,
+				"external_source": externalSource,
+			}.AsUrlValues()
 			napping.Get(
 				tmdbEndpoint+"find/"+externalId,
-				&p,
+				&urlValues,
 				&result,
 				nil,
 			)
