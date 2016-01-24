@@ -18,6 +18,7 @@ import (
 	"github.com/google/go-github/github"
 	"github.com/op/go-logging"
 	"github.com/scakemyer/pulsar/xbmc"
+	"github.com/scakemyer/pulsar/config"
 )
 
 const (
@@ -26,8 +27,9 @@ const (
 )
 
 var (
-	addonZipRE       = regexp.MustCompile(`[\w]+\.[\w]+(\.[\w]+)?-\d+\.\d+\.\d+\.zip`)
-	addonChangelogRE = regexp.MustCompile(`changelog-\d+.\d+.\d+.txt`)
+	mainReleaseRE    = regexp.MustCompile(`^v\d+\.\d+\.\d+$`)
+	addonZipRE       = regexp.MustCompile(`[\w]+\.[\w]+(\.[\w]+)?-\d+\.\d+\.\d+(-[\w]+\.\d+)?\.zip`)
+	addonChangelogRE = regexp.MustCompile(`changelog-\d+.\d+.\d+(-[\w]+\.\d+)?.txt`)
 	log              = logging.MustGetLogger("repository")
 )
 
@@ -36,6 +38,16 @@ func getLastTag(user string, repository string) (string, string) {
 	tags, _, _ := client.Repositories.ListTags(user, repository, nil)
 	if len(tags) > 0 {
 		lastTag := tags[0]
+		if config.Get().PreReleaseUpdates == false {
+			log.Info("Looking for last main release...")
+			for _, tag := range tags {
+				if mainReleaseRE.MatchString(*tag.Name) {
+					log.Info("%s matches", *tag.Name)
+					lastTag = tag
+					break
+				}
+			}
+		}
 		log.Info("Last tag: %s - %s", *lastTag.Name, *lastTag.Commit.SHA)
 		return *lastTag.Name, *lastTag.Commit.SHA
 	}

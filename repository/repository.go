@@ -55,7 +55,7 @@ func MakePulsarRepositoryAddon() error {
 			&xbmc.AddonExtension{
 				Point: "xbmc.addon.metadata",
 				Summaries: []*xbmc.AddonText{
-					&xbmc.AddonText{"Virtual repository for Pulsar Updates", "en"},
+					&xbmc.AddonText{"GitHub repository for Pulsar Updates", "en"},
 				},
 				Platform: "all",
 			},
