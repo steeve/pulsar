@@ -270,7 +270,7 @@ func (movie *Movie) ToListItem() *xbmc.ListItem {
 			Plot:          movie.Overview,
 			PlotOutline:   movie.Overview,
 			TagLine:       movie.TagLine,
-			Duration:      movie.Runtime,
+			Duration:      movie.Runtime * 60,
 			Code:          movie.IMDBId,
 			Date:          movie.ReleaseDate,
 			Votes:         strconv.Itoa(movie.VoteCount),
