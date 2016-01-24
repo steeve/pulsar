@@ -64,7 +64,7 @@ func renderShows(shows tmdb.Shows, ctx *gin.Context, page int) {
 		items = append(items, item)
 	}
 	if page >= 0 {
-		path := ctx.Request.URL.Path 
+		path := ctx.Request.URL.Path
 		nextpage := &xbmc.ListItem{Label: "LOCALIZE[30218]", Path: UrlForXBMC(fmt.Sprintf("%s?page=%d", path, page + 1)), Thumbnail: config.AddonResource("img", "nextpage.png")}
 		items = append(items, nextpage)
 	}
@@ -150,17 +150,22 @@ func ShowEpisodes(ctx *gin.Context) {
 	season := show.Seasons[seasonNumber]
 	items := season.Episodes.ToListItems(show)
 	for _, item := range items {
-		item.Path = UrlForXBMC("/show/%d/season/%d/episode/%d/play",
+		showLinksUrl := UrlForXBMC("/show/%d/season/%d/episode/%d/links",
 			show.Id,
 			season.Season,
 			item.Info.Episode,
 		)
-		item.ContextMenu = [][]string{
-			[]string{"LOCALIZE[30202]", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/show/%d/season/%d/episode/%d/links",
+		if config.Get().EnableChooseStream == true {
+			item.Path = showLinksUrl
+		} else {
+			item.Path = UrlForXBMC("/show/%d/season/%d/episode/%d/play",
 				show.Id,
 				season.Season,
 				item.Info.Episode,
-			))},
+			)
+		}
+		item.ContextMenu = [][]string{
+			[]string{"LOCALIZE[30202]", fmt.Sprintf("XBMC.PlayMedia(%s)", showLinksUrl)},
 			[]string{"LOCALIZE[30203]", "XBMC.Action(Info)"},
 		}
 		item.IsPlayable = true

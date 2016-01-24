@@ -20,6 +20,7 @@ type Configuration struct {
 	KeepFilesAfterStop  bool
 	EnablePaging        bool
 	EnableOverlayStatus bool
+	EnableChooseStream  bool
 	BufferSize          int
 	UploadRateLimit     int
 	DownloadRateLimit   int
@@ -58,7 +59,7 @@ func Reload() *Configuration {
 
 	info.Path = strings.Replace(info.Path, "/storage/emulated/0", "/storage/emulated/legacy", 1)
 	info.Profile = strings.Replace(info.Profile, "/storage/emulated/0", "/storage/emulated/legacy", 1)
-	
+
 	newConfig := Configuration{
 		DownloadPath:        filepath.Dir(xbmc.GetSettingString("download_path")),
 		Info:                info,
@@ -71,6 +72,7 @@ func Reload() *Configuration {
 		KeepFilesAfterStop:  xbmc.GetSettingBool("keep_files"),
 		EnablePaging:        xbmc.GetSettingBool("enable_paging"),
 		EnableOverlayStatus: xbmc.GetSettingBool("enable_overlay_status"),
+		EnableChooseStream:  xbmc.GetSettingBool("enable_choose_stream"),
 		BTListenPortMin:     xbmc.GetSettingInt("listen_port_min"),
 		BTListenPortMax:     xbmc.GetSettingInt("listen_port_max"),
 
