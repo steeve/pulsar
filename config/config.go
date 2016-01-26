@@ -25,6 +25,7 @@ type Configuration struct {
 	BufferSize          int
 	UploadRateLimit     int
 	DownloadRateLimit   int
+	LimitAfterBuffering bool
 	BTListenPortMin     int
 	BTListenPortMax     int
 
@@ -70,6 +71,7 @@ func Reload() *Configuration {
 		BufferSize:          xbmc.GetSettingInt("buffer_size") * 1024 * 1024,
 		UploadRateLimit:     xbmc.GetSettingInt("max_upload_rate") * 1024,
 		DownloadRateLimit:   xbmc.GetSettingInt("max_download_rate") * 1024,
+		LimitAfterBuffering: xbmc.GetSettingBool("limit_after_buffering"),
 		KeepFilesAfterStop:  xbmc.GetSettingBool("keep_files"),
 		EnablePaging:        xbmc.GetSettingBool("enable_paging"),
 		EnableOverlayStatus: xbmc.GetSettingBool("enable_overlay_status"),

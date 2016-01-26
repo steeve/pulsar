@@ -42,6 +42,7 @@ func makeBTConfiguration(conf *config.Configuration) *bittorrent.BTConfiguration
 		BufferSize:      conf.BufferSize,
 		MaxUploadRate:   conf.UploadRateLimit,
 		MaxDownloadRate: conf.DownloadRateLimit,
+		LimitAfterBuffering: conf.LimitAfterBuffering,
 	}
 
 	if conf.SocksEnabled == true {

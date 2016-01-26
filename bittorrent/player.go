@@ -378,11 +378,34 @@ func (btp *BTPlayer) bufferDialog() {
 				line1, line2, line3 := btp.statusStrings(bufferProgress, status)
 				btp.dialogProgress.Update(int(bufferProgress*100.0), line1, line2, line3)
 				if bufferProgress >= 1 {
+					btp.setRateLimiting(true)
 					btp.bufferEvents.Signal()
 					return
 				}
 			}
 		}
+	}
+}
+
+func (btp *BTPlayer) setRateLimiting(enable bool) {
+	if btp.bts.config.LimitAfterBuffering == true {
+		settings := btp.bts.Session.Settings()
+		if enable == true {
+			if btp.bts.config.MaxDownloadRate > 0 {
+				btp.log.Info("Buffer filled, rate limiting download to %dkb/s", btp.bts.config.MaxDownloadRate/1024)
+				settings.SetDownloadRateLimit(btp.bts.config.MaxDownloadRate)
+			}
+			if btp.bts.config.MaxUploadRate > 0 {
+				// If we have an upload rate, use the nicer bittyrant choker
+				btp.log.Info("Buffer filled, rate limiting upload to %dkb/s", btp.bts.config.MaxUploadRate/1024)
+				settings.SetUploadRateLimit(btp.bts.config.MaxUploadRate)
+			}
+		} else {
+			btp.log.Info("Resetting rate limiting")
+			settings.SetDownloadRateLimit(0)
+			settings.SetUploadRateLimit(0)
+		}
+		btp.bts.Session.SetSettings(settings)
 	}
 }
 
@@ -425,7 +448,6 @@ playbackWaitLoop:
 playbackLoop:
 	for {
 		if xbmc.PlayerIsPlaying() == false {
-			btp.overlayStatus.Close()
 			break playbackLoop
 		}
 		select {
@@ -447,4 +469,6 @@ playbackLoop:
 			}
 		}
 	}
+	btp.overlayStatus.Close()
+	btp.setRateLimiting(false)
 }
