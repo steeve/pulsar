@@ -27,9 +27,9 @@ type TorrentFS struct {
 type TorrentFile struct {
 	*os.File
 	tfs               *TorrentFS
-	torrentHandle     libtorrent.Torrent_handle
-	torrentInfo       libtorrent.Torrent_info
-	fileEntry         libtorrent.File_entry
+	torrentHandle     libtorrent.TorrentHandle
+	torrentInfo       libtorrent.TorrentInfo
+	fileEntry         libtorrent.FileEntry
 	fileEntryIdx      int
 	pieceLength       int
 	fileOffset        int64
@@ -37,7 +37,7 @@ type TorrentFile struct {
 	piecesMx          sync.RWMutex
 	pieces            Bitfield
 	piecesLastUpdated time.Time
-	lastStatus        libtorrent.Torrent_status
+	lastStatus        libtorrent.TorrentStatus
 	removed           *broadcast.Broadcaster
 }
 
@@ -62,28 +62,28 @@ func (tfs *TorrentFS) Open(name string) (http.File, error) {
 
 	tfs.log.Info("Opening %s", name)
 	// NB: this does NOT return a pointer to vector, no need to free!
-	torrentsVector := tfs.service.Session.Get_torrents()
+	torrentsVector := tfs.service.Session.GetTorrents()
 	torrentsVectorSize := int(torrentsVector.Size())
 	for i := 0; i < torrentsVectorSize; i++ {
 		torrentHandle := torrentsVector.Get(i)
-		if torrentHandle.Is_valid() == false {
+		if torrentHandle.IsValid() == false {
 			continue
 		}
-		torrentInfo := torrentHandle.Torrent_file()
-		numFiles := torrentInfo.Num_files()
+		torrentInfo := torrentHandle.TorrentFile()
+		numFiles := torrentInfo.NumFiles()
 		for j := 0; j < numFiles; j++ {
-			fe := torrentInfo.File_at(j)
+			fe := torrentInfo.FileAt(j)
 			if name[1:] == fe.GetPath() {
-				tfs.log.Info("%s belongs to torrent %s", name, torrentHandle.Status(uint(libtorrent.Torrent_handleQuery_name)).GetName())
+				tfs.log.Info("%s belongs to torrent %s", name, torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName)).GetName())
 				return NewTorrentFile(file, tfs, torrentHandle, torrentInfo, fe, j)
 			}
 		}
-		defer libtorrent.DeleteTorrent_info(torrentInfo)
+		defer libtorrent.DeleteTorrentInfo(torrentInfo)
 	}
 	return file, err
 }
 
-func NewTorrentFile(file *os.File, tfs *TorrentFS, torrentHandle libtorrent.Torrent_handle, torrentInfo libtorrent.Torrent_info, fileEntry libtorrent.File_entry, fileEntryIdx int) (*TorrentFile, error) {
+func NewTorrentFile(file *os.File, tfs *TorrentFS, torrentHandle libtorrent.TorrentHandle, torrentInfo libtorrent.TorrentInfo, fileEntry libtorrent.FileEntry, fileEntryIdx int) (*TorrentFile, error) {
 	tf := &TorrentFile{
 		File:          file,
 		tfs:           tfs,
@@ -91,7 +91,7 @@ func NewTorrentFile(file *os.File, tfs *TorrentFS, torrentHandle libtorrent.Torr
 		torrentInfo:   torrentInfo,
 		fileEntry:     fileEntry,
 		fileEntryIdx:  fileEntryIdx,
-		pieceLength:   torrentInfo.Piece_length(),
+		pieceLength:   torrentInfo.PieceLength(),
 		fileOffset:    fileEntry.GetOffset(),
 		fileSize:      fileEntry.GetSize(),
 		removed:       broadcast.NewBroadcaster(),
@@ -105,9 +105,9 @@ func (tf *TorrentFile) consumeAlerts() {
 	alerts, done := tf.tfs.service.Alerts()
 	defer close(done)
 	for alert := range alerts {
-		switch alert.Xtype() {
-		case libtorrent.Torrent_removed_alertAlert_type:
-			removedAlert := libtorrent.SwigcptrTorrent_alert(alert.Swigcptr())
+		switch alert.Type() {
+		case libtorrent.TorrentRemovedAlertAlertType:
+			removedAlert := libtorrent.SwigcptrTorrentAlert(alert.Swigcptr())
 			if removedAlert.GetHandle().Equal(tf.torrentHandle) {
 				tf.removed.Signal()
 				return
@@ -123,8 +123,8 @@ func (tf *TorrentFile) updatePieces() error {
 	if time.Now().After(tf.piecesLastUpdated.Add(piecesRefreshDuration)) {
 		// need to keep a reference to the status or else the pieces bitfield
 		// is at risk of being collected
-		tf.lastStatus = tf.torrentHandle.Status(uint(libtorrent.Torrent_handleQuery_pieces))
-		if tf.lastStatus.GetState() > libtorrent.Torrent_statusSeeding {
+		tf.lastStatus = tf.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryPieces))
+		if tf.lastStatus.GetState() > libtorrent.TorrentStatusSeeding {
 			return errors.New("Torrent file has invalid state.")
 		}
 		piecesBits := tf.lastStatus.GetPieces()
@@ -153,7 +153,7 @@ func (tf *TorrentFile) hasPiece(idx int) bool {
 func (tf *TorrentFile) Close() error {
 	tf.tfs.log.Info("Closing file...")
 	tf.removed.Signal()
-	libtorrent.DeleteTorrent_info(tf.torrentInfo)
+	libtorrent.DeleteTorrentInfo(tf.torrentInfo)
 	return tf.File.Close()
 }
 
@@ -191,17 +191,17 @@ func (tf *TorrentFile) Seek(offset int64, whence int) (int64, error) {
 	piece, _ := tf.pieceFromOffset(seekingOffset)
 	if tf.hasPiece(piece) == false {
 		tf.tfs.log.Info("We don't have piece %d, setting piece priorities", piece)
-		piecesPriorities := libtorrent.NewStd_vector_int()
-		defer libtorrent.DeleteStd_vector_int(piecesPriorities)
+		piecesPriorities := libtorrent.NewStdVectorInt()
+		defer libtorrent.DeleteStdVectorInt(piecesPriorities)
 		curPiece := 0
-		numPieces := tf.torrentInfo.Num_pieces()
+		numPieces := tf.torrentInfo.NumPieces()
 		for _ = 0; curPiece < piece; curPiece++ {
-			piecesPriorities.Add(0)
+			piecesPriorities.PushBack(0)
 		}
 		for _ = 0; curPiece < numPieces; curPiece++ {
-			piecesPriorities.Add(1)
+			piecesPriorities.PushBack(1)
 		}
-		tf.torrentHandle.Prioritize_pieces(piecesPriorities)
+		tf.torrentHandle.PrioritizePieces(piecesPriorities)
 	}
 
 	return tf.File.Seek(offset, whence)

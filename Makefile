@@ -58,7 +58,7 @@ BUILD_PATH = build/$(TARGET_OS)_$(TARGET_ARCH)
 LIBTORRENT_GO = github.com/scakemyer/libtorrent-go
 LIBTORRENT_GO_HOME = $(shell go env GOPATH)/src/$(LIBTORRENT_GO)
 GO_BUILD_TAGS =
-GO_LDFLAGS += -w -X $(GO_PKG)/util.Version "$(VERSION)" -X $(GO_PKG)/util.GitCommit "$(GIT_VERSION)"
+GO_LDFLAGS += -w -X $(GO_PKG)/util.Version="$(VERSION)" -X $(GO_PKG)/util.GitCommit="$(GIT_VERSION)"
 PLATFORMS = darwin-x64 windows-x86 windows-x64 linux-x86 linux-x64 linux-arm android-arm
 
 force:
@@ -102,9 +102,12 @@ clean:
 distclean:
 	rm -rf build
 
-build-envs:
+env:
+	cat Dockerfile | sed -e s/TAG/$(PLATFORM)/ | $(DOCKER) build -t $(DOCKER_IMAGE):$(PLATFORM) -
+
+envs:
 	for i in $(PLATFORMS); do \
-		cat Dockerfile | sed -e s/TAG/$$i/ | $(DOCKER) build -t $(DOCKER_IMAGE):$$i - ;\
+		$(MAKE) env PLATFORM=$$i;\
 	done
 
 build: force

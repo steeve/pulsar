@@ -135,96 +135,96 @@ func (s *BTService) configure() {
 
 	s.log.Info("Setting Session settings...")
 
-	settings.SetUser_agent(util.UserAgent())
+	settings.SetUserAgent(util.UserAgent())
 
-	settings.SetRequest_timeout(2)
-	settings.SetPeer_connect_timeout(2)
-	settings.SetStrict_end_game_mode(true)
-	settings.SetAnnounce_to_all_trackers(true)
-	settings.SetAnnounce_to_all_tiers(true)
-	settings.SetConnection_speed(500)
+	settings.SetRequestTimeout(2)
+	settings.SetPeerConnectTimeout(2)
+	settings.SetStrictEndGameMode(true)
+	settings.SetAnnounceToAllTrackers(true)
+	settings.SetAnnounceToAllTiers(true)
+	settings.SetConnectionSpeed(500)
 
 	if s.config.MaxDownloadRate > 0 {
 		s.log.Info("Rate limiting download to %dkb/s", s.config.MaxDownloadRate/1024)
-		settings.SetDownload_rate_limit(s.config.MaxDownloadRate)
+		settings.SetDownloadRateLimit(s.config.MaxDownloadRate)
 	}
 	if s.config.MaxUploadRate > 0 {
 		s.log.Info("Rate limiting upload to %dkb/s", s.config.MaxUploadRate/1024)
 		// If we have an upload rate, use the nicer bittyrant choker
-		settings.SetChoking_algorithm(int(libtorrent.Session_settingsBittyrant_choker))
-		settings.SetUpload_rate_limit(s.config.MaxUploadRate)
+		settings.SetChokingAlgorithm(int(libtorrent.SessionSettingsBittyrantChoker))
+		settings.SetUploadRateLimit(s.config.MaxUploadRate)
 	}
 
-	settings.SetPeer_tos(ipToSLowCost)
-	settings.SetTorrent_connect_boost(500)
-	settings.SetRate_limit_ip_overhead(true)
-	settings.SetNo_atime_storage(true)
-	settings.SetAnnounce_double_nat(true)
-	settings.SetPrioritize_partial_pieces(false)
-	settings.SetFree_torrent_hashes(true)
-	settings.SetUse_parole_mode(true)
+	settings.SetPeerTos(ipToSLowCost)
+	settings.SetTorrentConnectBoost(500)
+	settings.SetRateLimitIpOverhead(true)
+	settings.SetNoAtimeStorage(true)
+	settings.SetAnnounceDoubleNat(true)
+	settings.SetPrioritizePartialPieces(false)
+	settings.SetFreeTorrentHashes(true)
+	settings.SetUseParoleMode(true)
 
 	// Make sure the disk cache is not swapped out (useful for slower devices)
-	settings.SetLock_disk_cache(true)
-	settings.SetDisk_cache_algorithm(libtorrent.Session_settingsLargest_contiguous)
+	settings.SetLockDiskCache(true)
+	settings.SetDiskCacheAlgorithm(libtorrent.SessionSettingsLargestContiguous)
 
 	// Prioritize people starting downloads
-	settings.SetSeed_choking_algorithm(int(libtorrent.Session_settingsFastest_upload))
+	settings.SetSeedChokingAlgorithm(int(libtorrent.SessionSettingsFastestUpload))
 
 	// copied from qBitorrent at
 	// https://github.com/qbittorrent/qBittorrent/blob/master/src/qtlibtorrent/qbtsession.cpp
-	settings.SetUpnp_ignore_nonrouters(true)
-	settings.SetLazy_bitfields(true)
-	settings.SetStop_tracker_timeout(1)
-	settings.SetAuto_scrape_interval(1200)    // 20 minutes
-	settings.SetAuto_scrape_min_interval(900) // 15 minutes
-	settings.SetIgnore_limits_on_local_network(true)
-	settings.SetRate_limit_utp(true)
-	settings.SetMixed_mode_algorithm(int(libtorrent.Session_settingsPrefer_tcp))
+	settings.SetUpnpIgnoreNonrouters(true)
+	settings.SetLazyBitfields(true)
+	settings.SetStopTrackerTimeout(1)
+	settings.SetAutoScrapeInterval(1200)    // 20 minutes
+	settings.SetAutoScrapeMinInterval(900) // 15 minutes
+	settings.SetIgnoreLimitsOnLocalNetwork(true)
+	settings.SetRateLimitUtp(true)
+	settings.SetMixedModeAlgorithm(int(libtorrent.SessionSettingsPreferTcp))
 
 	setPlatformSpecificSettings(settings)
 
-	s.Session.Set_settings(settings)
+	s.Session.SetSettings(settings)
 
 	// Add all the libtorrent extensions
-	s.Session.Add_extensions()
+	s.Session.AddExtensions()
 
 	s.log.Info("Setting Encryption settings...")
-	encryptionSettings := libtorrent.NewPe_settings()
-	defer libtorrent.DeletePe_settings(encryptionSettings)
-	encryptionSettings.SetOut_enc_policy(byte(libtorrent.Pe_settingsForced))
-	encryptionSettings.SetIn_enc_policy(byte(libtorrent.Pe_settingsForced))
-	encryptionSettings.SetAllowed_enc_level(byte(libtorrent.Pe_settingsBoth))
-	encryptionSettings.SetPrefer_rc4(true)
-	s.Session.Set_pe_settings(encryptionSettings)
+	encryptionSettings := libtorrent.NewPeSettings()
+	defer libtorrent.DeletePeSettings(encryptionSettings)
+	encryptionSettings.SetOutEncPolicy(byte(libtorrent.PeSettingsForced))
+	encryptionSettings.SetInEncPolicy(byte(libtorrent.PeSettingsForced))
+	encryptionSettings.SetAllowedEncLevel(byte(libtorrent.PeSettingsBoth))
+	encryptionSettings.SetPreferRc4(true)
+	s.Session.SetPeSettings(encryptionSettings)
 
 	if s.config.Proxy != nil {
 		s.log.Info("Setting Proxy settings...")
-		proxy := libtorrent.NewProxy_settings()
-		defer libtorrent.DeleteProxy_settings(proxy)
+		proxy := libtorrent.NewProxySettings()
+		defer libtorrent.DeleteProxySettings(proxy)
 		proxy.SetHostname(s.config.Proxy.Hostname)
 		proxy.SetPort(uint16(s.config.Proxy.Port))
 		proxy.SetUsername(s.config.Proxy.Username)
 		proxy.SetPassword(s.config.Proxy.Password)
-		proxy.SetXtype(byte(s.config.Proxy.Type))
-		proxy.SetProxy_hostnames(true)
-		proxy.SetProxy_peer_connections(true)
-		s.Session.Set_proxy(proxy)
+		proxy.SetType(byte(s.config.Proxy.Type))
+		proxy.SetProxyHostnames(true)
+		proxy.SetProxyPeerConnections(true)
+		s.Session.SetProxy(proxy)
 	}
 }
 
 func (s *BTService) Listen() {
-	errCode := libtorrent.NewError_code()
-	defer libtorrent.DeleteError_code(errCode)
-	ports := libtorrent.NewStd_pair_int_int(s.config.LowerListenPort, s.config.UpperListenPort)
-	defer libtorrent.DeleteStd_pair_int_int(ports)
-	s.Session.Listen_on(ports, errCode)
+	errCode := libtorrent.NewErrorCode()
+	defer libtorrent.DeleteErrorCode(errCode)
+	ports := libtorrent.NewStdPairIntInt(s.config.LowerListenPort, s.config.UpperListenPort)
+	defer libtorrent.DeleteStdPairIntInt(ports)
+	s.Session.ListenOn(ports, errCode)
 }
 
 func (s *BTService) WriteState(f io.Writer) error {
 	entry := libtorrent.NewEntry()
 	defer libtorrent.DeleteEntry(entry)
-	s.Session.Save_state(entry, 0xFFFF)
+	s.Session.SaveState(entry, 0xFFFF)
 	_, err := f.Write([]byte(libtorrent.Bencode(entry)))
 	return err
 }
@@ -234,49 +234,49 @@ func (s *BTService) LoadState(f io.Reader) error {
 	if err != nil {
 		return err
 	}
-	entry := libtorrent.NewLazy_entry()
-	defer libtorrent.DeleteLazy_entry(entry)
-	libtorrent.Lazy_bdecode(string(data), entry)
-	s.Session.Load_state(entry)
+	entry := libtorrent.NewLazyEntry()
+	defer libtorrent.DeleteLazyEntry(entry)
+	libtorrent.LazyBdecode(string(data), entry)
+	s.Session.LoadState(entry)
 	return nil
 }
 
 func (s *BTService) startServices() {
 	s.log.Info("Starting DHT...")
 	for _, node := range dhtBootstrapNodes {
-		pair := libtorrent.NewStd_pair_string_int(node, 6881)
-		defer libtorrent.DeleteStd_pair_string_int(pair)
-		s.Session.Add_dht_router(pair)
+		pair := libtorrent.NewStdPairStringInt(node, 6881)
+		defer libtorrent.DeleteStdPairStringInt(pair)
+		s.Session.AddDhtRouter(pair)
 	}
-	s.Session.Start_dht()
+	s.Session.StartDht()
 
 	s.log.Info("Starting LSD...")
-	s.Session.Start_lsd()
+	s.Session.StartLsd()
 
 	s.log.Info("Starting UPNP...")
-	s.Session.Start_upnp()
+	s.Session.StartUpnp()
 
 	s.log.Info("Starting NATPMP...")
-	s.Session.Start_natpmp()
+	s.Session.StartNatpmp()
 }
 
 func (s *BTService) stopServices() {
 	s.log.Info("Stopping DHT...")
-	s.Session.Stop_dht()
+	s.Session.StopDht()
 
 	s.log.Info("Stopping LSD...")
-	s.Session.Stop_lsd()
+	s.Session.StopLsd()
 
 	s.log.Info("Stopping UPNP...")
-	s.Session.Stop_upnp()
+	s.Session.StopUpnp()
 
 	s.log.Info("Stopping NATPMP...")
-	s.Session.Stop_natpmp()
+	s.Session.StopNatpmp()
 }
 
 func (s *BTService) alertsConsumer() {
-	s.Session.Set_alert_mask(uint(libtorrent.AlertStatus_notification |
-		libtorrent.AlertStorage_notification))
+	s.Session.SetAlertMask(uint(libtorrent.AlertStatusNotification |
+		libtorrent.AlertStorageNotification))
 
 	defer s.alertsBroadcaster.Close()
 
@@ -288,10 +288,10 @@ func (s *BTService) alertsConsumer() {
 			s.log.Info("Closing all alert channels...")
 			return
 		default:
-			if s.Session.Wait_for_alert(ltOneSecond).Swigcptr() == 0 {
+			if s.Session.WaitForAlert(ltOneSecond).Swigcptr() == 0 {
 				continue
 			}
-			alert := &Alert{s.Session.Pop_alert()}
+			alert := &Alert{s.Session.PopAlert()}
 			runtime.SetFinalizer(alert, func(alert *Alert) {
 				libtorrent.DeleteAlert(*alert)
 			})
@@ -315,11 +315,11 @@ func (s *BTService) logAlerts() {
 	alerts, _ := s.Alerts()
 	for alert := range alerts {
 		alertCategory := alert.Category()
-		if alertCategory&int(libtorrent.AlertError_notification) != 0 {
+		if alertCategory&int(libtorrent.AlertErrorNotification) != 0 {
 			s.libtorrentLog.Error("%s: %s", alert.What(), alert.Message())
-		} else if alertCategory&int(libtorrent.AlertDebug_notification) != 0 {
+		} else if alertCategory&int(libtorrent.AlertDebugNotification) != 0 {
 			s.libtorrentLog.Debug("%s: %s", alert.What(), alert.Message())
-		} else if alertCategory&int(libtorrent.AlertPerformance_warning) != 0 {
+		} else if alertCategory&int(libtorrent.AlertPerformanceWarning) != 0 {
 			s.libtorrentLog.Warning("%s: %s", alert.What(), alert.Message())
 		} else {
 			s.libtorrentLog.Notice("%s: %s", alert.What(), alert.Message())
