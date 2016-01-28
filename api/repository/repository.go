@@ -29,7 +29,7 @@ const (
 var (
 	mainReleaseRE    = regexp.MustCompile(`^v\d+\.\d+\.\d+$`)
 	addonZipRE       = regexp.MustCompile(`[\w]+\.[\w]+(\.[\w]+)?-\d+\.\d+\.\d+(-[\w]+\.\d+)?\.zip`)
-	addonChangelogRE = regexp.MustCompile(`changelog-\d+.\d+.\d+(-[\w]+\.\d+)?.txt`)
+	addonChangelogRE = regexp.MustCompile(`changelog-\d+\.\d+\.\d+(-[\w]+\.\d+)?\.txt`)
 	log              = logging.MustGetLogger("repository")
 )
 
@@ -177,5 +177,11 @@ func addonZip(ctx *gin.Context, user string, repository string, lastTagName stri
 }
 
 func addonChangelog(ctx *gin.Context, user string, repository string, lastTagName string, lastTagCommit string) {
-	ctx.String(200, "Quasar Repository Changelog will go here.")
+	client := github.NewClient(nil)
+	releases, _, _ := client.Repositories.ListReleases(user, repository, nil)
+	changelog := "Quasar changelog\n======\n\n"
+	for _, release := range releases {
+		changelog += "[B]" + *release.TagName + "[/B]\n" + *release.Body + "\n\n"
+	}
+	ctx.String(200, changelog)
 }
