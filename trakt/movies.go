@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/jmcvetta/napping"
-	"github.com/scakemyer/pulsar/xbmc"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
 type MovieList []*Movie

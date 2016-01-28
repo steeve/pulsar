@@ -7,9 +7,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/scakemyer/pulsar/config"
-	"github.com/scakemyer/pulsar/util"
-	"github.com/scakemyer/pulsar/xbmc"
+	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/util"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
 func copyFile(from string, to string) error {
@@ -28,11 +28,11 @@ func copyFile(from string, to string) error {
 	return nil
 }
 
-func MakePulsarRepositoryAddon() error {
-	addonId := "repository.pulsar"
-	addonName := "Pulsar Repository"
+func MakeQuasarRepositoryAddon() error {
+	addonId := "repository.quasar"
+	addonName := "Quasar Repository"
 
-	pulsarHost := fmt.Sprintf("http://localhost:%d", config.ListenPort)
+	quasarHost := fmt.Sprintf("http://localhost:%d", config.ListenPort)
 	addon := &xbmc.Addon{
 		Id:           addonId,
 		Name:         addonName,
@@ -43,19 +43,19 @@ func MakePulsarRepositoryAddon() error {
 				Point: "xbmc.addon.repository",
 				Name:  addonName,
 				Info: &xbmc.AddonRepositoryInfo{
-					Text:       pulsarHost + "/repository/scakemyer/plugin.video.pulsar/addons.xml",
+					Text:       quasarHost + "/repository/scakemyer/plugin.video.quasar/addons.xml",
 					Compressed: false,
 				},
-				Checksum: pulsarHost + "/repository/scakemyer/plugin.video.pulsar/addons.xml.md5",
+				Checksum: quasarHost + "/repository/scakemyer/plugin.video.quasar/addons.xml.md5",
 				Datadir: &xbmc.AddonRepositoryDataDir{
-					Text: pulsarHost + "/repository/scakemyer/",
+					Text: quasarHost + "/repository/scakemyer/",
 					Zip:  true,
 				},
 			},
 			&xbmc.AddonExtension{
 				Point: "xbmc.addon.metadata",
 				Summaries: []*xbmc.AddonText{
-					&xbmc.AddonText{"GitHub repository for Pulsar Updates", "en"},
+					&xbmc.AddonText{"GitHub repository for Quasar Updates", "en"},
 				},
 				Platform: "all",
 			},

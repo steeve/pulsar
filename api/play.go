@@ -5,11 +5,11 @@ import (
 	"net/url"
 
 	"github.com/gin-gonic/gin"
-	"github.com/scakemyer/pulsar/bittorrent"
-	"github.com/scakemyer/pulsar/config"
-	"github.com/scakemyer/pulsar/providers"
-	"github.com/scakemyer/pulsar/util"
-	"github.com/scakemyer/pulsar/xbmc"
+	"github.com/scakemyer/quasar/bittorrent"
+	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/providers"
+	"github.com/scakemyer/quasar/util"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
 func Play(btService *bittorrent.BTService) gin.HandlerFunc {

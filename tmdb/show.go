@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/jmcvetta/napping"
-	"github.com/scakemyer/pulsar/cache"
-	"github.com/scakemyer/pulsar/config"
-	"github.com/scakemyer/pulsar/xbmc"
+	"github.com/scakemyer/quasar/cache"
+	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
 type Show struct {

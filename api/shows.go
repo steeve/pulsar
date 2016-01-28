@@ -7,12 +7,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/op/go-logging"
-	"github.com/scakemyer/pulsar/bittorrent"
-	"github.com/scakemyer/pulsar/config"
-	"github.com/scakemyer/pulsar/providers"
-	"github.com/scakemyer/pulsar/tmdb"
-	"github.com/scakemyer/pulsar/tvdb"
-	"github.com/scakemyer/pulsar/xbmc"
+	"github.com/scakemyer/quasar/bittorrent"
+	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/providers"
+	"github.com/scakemyer/quasar/tmdb"
+	"github.com/scakemyer/quasar/tvdb"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
 var (
@@ -188,7 +188,7 @@ func showEpisodeLinks(showId string, seasonNumber, episodeNumber int) ([]*bittor
 
 	searchers := providers.GetEpisodeSearchers()
 	if len(searchers) == 0 {
-		xbmc.Notify("Pulsar", "LOCALIZE[30204]", config.AddonIcon())
+		xbmc.Notify("Quasar", "LOCALIZE[30204]", config.AddonIcon())
 	}
 
 	return providers.SearchEpisode(searchers, show, episode), nil
@@ -204,7 +204,7 @@ func ShowEpisodeLinks(ctx *gin.Context) {
 	}
 
 	if len(torrents) == 0 {
-		xbmc.Notify("Pulsar", "LOCALIZE[30205]", config.AddonIcon())
+		xbmc.Notify("Quasar", "LOCALIZE[30205]", config.AddonIcon())
 		return
 	}
 
@@ -235,7 +235,7 @@ func ShowEpisodePlay(ctx *gin.Context) {
 	}
 
 	if len(torrents) == 0 {
-		xbmc.Notify("Pulsar", "LOCALIZE[30205]", config.AddonIcon())
+		xbmc.Notify("Quasar", "LOCALIZE[30205]", config.AddonIcon())
 		return
 	}
 

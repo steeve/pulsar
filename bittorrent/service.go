@@ -9,8 +9,8 @@ import (
 
 	"github.com/op/go-logging"
 	"github.com/scakemyer/libtorrent-go"
-	"github.com/scakemyer/pulsar/broadcast"
-	"github.com/scakemyer/pulsar/util"
+	"github.com/scakemyer/quasar/broadcast"
+	"github.com/scakemyer/quasar/util"
 )
 
 const (

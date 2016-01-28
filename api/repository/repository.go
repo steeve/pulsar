@@ -17,8 +17,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/go-github/github"
 	"github.com/op/go-logging"
-	"github.com/scakemyer/pulsar/xbmc"
-	"github.com/scakemyer/pulsar/config"
+	"github.com/scakemyer/quasar/xbmc"
+	"github.com/scakemyer/quasar/config"
 )
 
 const (
@@ -177,5 +177,5 @@ func addonZip(ctx *gin.Context, user string, repository string, lastTagName stri
 }
 
 func addonChangelog(ctx *gin.Context, user string, repository string, lastTagName string, lastTagCommit string) {
-	ctx.String(200, "Pulsar Repository Changelog will go here.")
+	ctx.String(200, "Quasar Repository Changelog will go here.")
 }

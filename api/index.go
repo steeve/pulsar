@@ -2,8 +2,8 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/scakemyer/pulsar/config"
-	"github.com/scakemyer/pulsar/xbmc"
+	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
 func init() {

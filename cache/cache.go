@@ -19,7 +19,7 @@ const (
 )
 
 var (
-	PageCachePrefix = "io.steeve.pulsar.page.cache"
+	PageCachePrefix = "io.scakemyer.quasar.page.cache"
 	ErrCacheMiss    = errors.New("cache: key not found.")
 	ErrNotStored    = errors.New("cache: not stored.")
 	ErrNotSupport   = errors.New("cache: not support.")

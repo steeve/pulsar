@@ -6,9 +6,9 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/scakemyer/pulsar/providers"
-	"github.com/scakemyer/pulsar/tmdb"
-	"github.com/scakemyer/pulsar/tvdb"
+	"github.com/scakemyer/quasar/providers"
+	"github.com/scakemyer/quasar/tmdb"
+	"github.com/scakemyer/quasar/tvdb"
 )
 
 type providerDebugResponse struct {

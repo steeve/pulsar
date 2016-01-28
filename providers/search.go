@@ -5,9 +5,9 @@ import (
 	"sync"
 
 	"github.com/op/go-logging"
-	"github.com/scakemyer/pulsar/bittorrent"
-	"github.com/scakemyer/pulsar/tmdb"
-	"github.com/scakemyer/pulsar/tvdb"
+	"github.com/scakemyer/quasar/bittorrent"
+	"github.com/scakemyer/quasar/tmdb"
+	"github.com/scakemyer/quasar/tvdb"
 )
 
 var DefaultTrackers = []string{

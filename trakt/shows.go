@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/jmcvetta/napping"
-	"github.com/scakemyer/pulsar/xbmc"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
 type ShowList []*Show

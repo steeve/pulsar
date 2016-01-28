@@ -13,10 +13,10 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/scakemyer/pulsar/config"
-	"github.com/scakemyer/pulsar/osdb"
-	"github.com/scakemyer/pulsar/util"
-	"github.com/scakemyer/pulsar/xbmc"
+	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/osdb"
+	"github.com/scakemyer/quasar/util"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
 func appendLocalFilePayloads(playingFile string, payloads *[]osdb.SearchPayload) error {
@@ -90,7 +90,7 @@ func SubtitlesIndex(ctx *gin.Context) {
 	)
 	playingFile := xbmc.PlayerGetPlayingFile()
 
-	// are we reading a file from Pulsar?
+	// are we reading a file from Quasar?
 	if strings.HasPrefix(playingFile, util.GetHTTPHost()) {
 		playingFile = strings.Replace(playingFile, util.GetHTTPHost()+"/files", config.Get().DownloadPath, 1)
 		playingFile, _ = url.QueryUnescape(playingFile)

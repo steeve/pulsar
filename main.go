@@ -10,17 +10,17 @@ import (
 	"time"
 
 	"github.com/op/go-logging"
-	"github.com/scakemyer/pulsar/api"
-	"github.com/scakemyer/pulsar/bittorrent"
-	"github.com/scakemyer/pulsar/config"
-	"github.com/scakemyer/pulsar/util"
-	"github.com/scakemyer/pulsar/xbmc"
+	"github.com/scakemyer/quasar/api"
+	"github.com/scakemyer/quasar/bittorrent"
+	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/util"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
 var log = logging.MustGetLogger("main")
 
 const (
-	PulsarLogo = `
+	QuasarLogo = `
              .__
 ______  __ __|  |   ___________ _______
 \____ \|  |  \  |  /  ___/\__  \\_  __ \
@@ -65,7 +65,7 @@ func main() {
 	logging.SetFormatter(logging.MustStringFormatter("%{time:2006-01-02 15:04:05}  %{level:.4s}  %{module:-15s}  %{message}"))
 	logging.SetBackend(logging.NewLogBackend(os.Stdout, "", 0))
 
-	for _, line := range strings.Split(PulsarLogo, "\n") {
+	for _, line := range strings.Split(QuasarLogo, "\n") {
 		log.Info(line)
 	}
 	log.Info("Version: %s Git: %s Go: %s", util.Version, util.GitCommit, runtime.Version())
@@ -113,7 +113,7 @@ func main() {
 		shutdown()
 	}))
 
-	xbmc.Notify("Pulsar", "LOCALIZE[30208]", config.AddonIcon())
+	xbmc.Notify("Quasar", "LOCALIZE[30208]", config.AddonIcon())
 
 	http.ListenAndServe(":"+strconv.Itoa(config.ListenPort), nil)
 }

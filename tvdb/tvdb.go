@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/scakemyer/pulsar/cache"
-	"github.com/scakemyer/pulsar/config"
+	"github.com/scakemyer/quasar/cache"
+	"github.com/scakemyer/quasar/config"
 )
 
 const (

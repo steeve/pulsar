@@ -46,12 +46,12 @@ else ifeq ($(TARGET_OS), android)
 	GO_LDFLAGS = -linkmode=external -extldflags=-pie -extld=$(CC)
 endif
 
-NAME = pulsar
-GO_PKG = github.com/scakemyer/pulsar
+NAME = quasar
+GO_PKG = github.com/scakemyer/quasar
 GO = go
 GIT = git
 DOCKER = docker
-DOCKER_IMAGE = pulsar
+DOCKER_IMAGE = quasar
 UPX = upx
 GIT_VERSION = $(shell $(GIT) describe --tags)
 VERSION = $(shell cat VERSION)
@@ -105,7 +105,7 @@ vendor_libs_windows:
 vendor_libs_android:
 	$(CROSS_ROOT)/arm-linux-androideabi/lib/libgnustl_shared.so
 
-pulsar: $(BUILD_PATH)/$(OUTPUT_NAME)
+quasar: $(BUILD_PATH)/$(OUTPUT_NAME)
 
 clean:
 	rm -rf $(BUILD_PATH)
@@ -141,12 +141,12 @@ checksum: $(BUILD_PATH)/$(OUTPUT_NAME)
 
 
 ifeq ($(TARGET_ARCH), arm)
-dist: pulsar vendor_$(TARGET_OS) strip checksum
+dist: quasar vendor_$(TARGET_OS) strip checksum
 else
-dist: pulsar vendor_$(TARGET_OS) strip upx checksum
+dist: quasar vendor_$(TARGET_OS) strip upx checksum
 endif
 
-alldist: force
+all: force
 	$(MAKE) build TARGET_OS=darwin TARGET_ARCH=x64 MARGS="dist"
 	$(MAKE) build TARGET_OS=linux TARGET_ARCH=x86 MARGS="dist"
 	$(MAKE) build TARGET_OS=linux TARGET_ARCH=x64 MARGS="dist"

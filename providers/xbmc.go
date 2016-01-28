@@ -13,12 +13,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/op/go-logging"
-	"github.com/scakemyer/pulsar/bittorrent"
-	"github.com/scakemyer/pulsar/config"
-	"github.com/scakemyer/pulsar/tmdb"
-	"github.com/scakemyer/pulsar/tvdb"
-	"github.com/scakemyer/pulsar/util"
-	"github.com/scakemyer/pulsar/xbmc"
+	"github.com/scakemyer/quasar/bittorrent"
+	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/tmdb"
+	"github.com/scakemyer/quasar/tvdb"
+	"github.com/scakemyer/quasar/util"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
 const (
@@ -72,7 +72,7 @@ func CallbackHandler(ctx *gin.Context) {
 func getSearchers() []interface{} {
 	list := make([]interface{}, 0)
 	for _, addon := range xbmc.GetAddons("xbmc.python.script", "executable", true).Addons {
-		if strings.HasPrefix(addon.ID, "script.pulsar.") {
+		if strings.HasPrefix(addon.ID, "script.quasar.") {
 			list = append(list, NewAddonSearcher(addon.ID))
 		}
 	}

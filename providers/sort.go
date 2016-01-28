@@ -3,7 +3,7 @@ package providers
 import (
 	"math"
 
-	"github.com/scakemyer/pulsar/bittorrent"
+	"github.com/scakemyer/quasar/bittorrent"
 )
 
 type ByResolution []*bittorrent.Torrent

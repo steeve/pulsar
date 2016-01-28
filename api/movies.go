@@ -8,11 +8,11 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/scakemyer/pulsar/bittorrent"
-	"github.com/scakemyer/pulsar/config"
-	"github.com/scakemyer/pulsar/providers"
-	"github.com/scakemyer/pulsar/tmdb"
-	"github.com/scakemyer/pulsar/xbmc"
+	"github.com/scakemyer/quasar/bittorrent"
+	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/providers"
+	"github.com/scakemyer/quasar/tmdb"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
 // Maps TMDB movie genre ids to slugs for images
@@ -178,7 +178,7 @@ func movieLinks(imdbId string) []*bittorrent.Torrent {
 
 	searchers := providers.GetMovieSearchers()
 	if len(searchers) == 0 {
-		xbmc.Notify("Pulsar", "LOCALIZE[30204]", config.AddonIcon())
+		xbmc.Notify("Quasar", "LOCALIZE[30204]", config.AddonIcon())
 	}
 
 	return providers.SearchMovie(searchers, movie)
@@ -188,7 +188,7 @@ func MovieLinks(ctx *gin.Context) {
 	torrents := movieLinks(ctx.Params.ByName("imdbId"))
 
 	if len(torrents) == 0 {
-		xbmc.Notify("Pulsar", "LOCALIZE[30205]", config.AddonIcon())
+		xbmc.Notify("Quasar", "LOCALIZE[30205]", config.AddonIcon())
 		return
 	}
 
@@ -227,7 +227,7 @@ func MovieLinks(ctx *gin.Context) {
 func MoviePlay(ctx *gin.Context) {
 	torrents := movieLinks(ctx.Params.ByName("imdbId"))
 	if len(torrents) == 0 {
-		xbmc.Notify("Pulsar", "LOCALIZE[30205]", config.AddonIcon())
+		xbmc.Notify("Quasar", "LOCALIZE[30205]", config.AddonIcon())
 		return
 	}
 	sort.Sort(sort.Reverse(providers.ByQuality(torrents)))

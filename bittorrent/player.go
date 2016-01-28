@@ -12,10 +12,10 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/op/go-logging"
 	"github.com/scakemyer/libtorrent-go"
-	"github.com/scakemyer/pulsar/broadcast"
-	"github.com/scakemyer/pulsar/config"
-	"github.com/scakemyer/pulsar/diskusage"
-	"github.com/scakemyer/pulsar/xbmc"
+	"github.com/scakemyer/quasar/broadcast"
+	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/diskusage"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
 const (
@@ -115,7 +115,7 @@ func (btp *BTPlayer) Buffer() error {
 	buffered, done := btp.bufferEvents.Listen()
 	defer close(done)
 
-	btp.dialogProgress = xbmc.NewDialogProgress("Pulsar", "", "", "")
+	btp.dialogProgress = xbmc.NewDialogProgress("Quasar", "", "", "")
 	defer btp.dialogProgress.Close()
 
 	btp.overlayStatus = xbmc.NewOverlayStatus()
@@ -148,7 +148,7 @@ func (btp *BTPlayer) onMetadataReceived() {
 		torrentSize := btp.torrentInfo.TotalSize()
 		if btp.diskStatus.Free < torrentSize {
 			btp.log.Info("Unsufficient free space on %s. Has %d, needs %d.", btp.bts.config.DownloadPath, btp.diskStatus.Free, torrentSize)
-			xbmc.Notify("Pulsar", "LOCALIZE[30207]", config.AddonIcon())
+			xbmc.Notify("Quasar", "LOCALIZE[30207]", config.AddonIcon())
 			// btp.bufferEvents.Broadcast(errors.New("Not enough space on download destination."))
 			// return
 		}

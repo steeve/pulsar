@@ -8,5 +8,5 @@ var (
 )
 
 func UserAgent() string {
-	return fmt.Sprintf("Pulsar/%s", Version)
+	return fmt.Sprintf("Quasar/%s", Version)
 }
