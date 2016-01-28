@@ -154,6 +154,7 @@ all: force
 	$(MAKE) build TARGET_OS=windows TARGET_ARCH=x86 MARGS="dist"
 	$(MAKE) build TARGET_OS=windows TARGET_ARCH=x64 MARGS="dist"
 	$(MAKE) build TARGET_OS=android TARGET_ARCH=arm MARGS="dist"
+	$(MAKE) build TARGET_OS=android TARGET_ARCH=x64 MARGS="dist"
 
 libs: force
 	$(MAKE) build TARGET_OS=darwin TARGET_ARCH=x64 MARGS="libtorrent-go"
