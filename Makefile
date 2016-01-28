@@ -38,7 +38,11 @@ else ifeq ($(TARGET_OS), linux)
 else ifeq ($(TARGET_OS), android)
 	EXT =
 	GOOS = android
-	GOARM = 7
+	ifeq ($(TARGET_ARCH), arm)
+		GOARM = 7
+	else
+		GOARM =
+	endif
 	GO_LDFLAGS = -linkmode=external -extldflags=-pie -extld=$(CC)
 endif
 
@@ -59,7 +63,15 @@ LIBTORRENT_GO = github.com/scakemyer/libtorrent-go
 LIBTORRENT_GO_HOME = $(shell go env GOPATH)/src/$(LIBTORRENT_GO)
 GO_BUILD_TAGS =
 GO_LDFLAGS += -w -X $(GO_PKG)/util.Version="$(VERSION)" -X $(GO_PKG)/util.GitCommit="$(GIT_VERSION)"
-PLATFORMS = darwin-x64 windows-x86 windows-x64 linux-x86 linux-x64 linux-arm android-arm
+PLATFORMS = \
+	darwin-x64 \
+	windows-x86 \
+	windows-x64 \
+	linux-x86 \
+	linux-x64 \
+	linux-arm \
+	android-arm \
+	android-x64
 
 force:
 	@true
@@ -87,7 +99,6 @@ vendor_windows:
 
 vendor_android:
 	cp $(CROSS_ROOT)/$(CROSS_TRIPLE)/lib/libgnustl_shared.so $(BUILD_PATH)
-
 
 vendor_libs_windows:
 
