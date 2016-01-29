@@ -78,11 +78,12 @@ func renderMovies(movies tmdb.Movies, ctx *gin.Context, page int) {
 			continue
 		}
 		item := movie.ToListItem()
+		item.Path = UrlForXBMC("/movie/%s/play", movie.IMDBId)
 		movieLinksUrl := UrlForXBMC("/movie/%s/links", movie.IMDBId)
-		if config.Get().EnableChooseStream == true {
+		if config.Get().ChooseStreamAuto == false {
+			aux := item.Path
 			item.Path = movieLinksUrl
-		} else {
-			item.Path = UrlForXBMC("/movie/%s/play", movie.IMDBId)
+			movieLinksUrl = aux
 		}
 		item.Info.Trailer = UrlForHTTP("/youtube/%s", item.Info.Trailer)
 		item.IsPlayable = true
@@ -93,7 +94,7 @@ func renderMovies(movies tmdb.Movies, ctx *gin.Context, page int) {
 		items = append(items, item)
 	}
 	if page >= 0 {
-		path := ctx.Request.URL.Path
+		path := ctx.Request.URL.Path 
 		nextpage := &xbmc.ListItem{Label: "LOCALIZE[30218]", Path: UrlForXBMC(fmt.Sprintf("%s?page=%d", path, page + 1)), Thumbnail: config.AddonResource("img", "nextpage.png")}
 		items = append(items, nextpage)
 	}
