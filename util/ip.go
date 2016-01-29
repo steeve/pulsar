@@ -9,25 +9,27 @@ import (
 )
 
 func LocalIP() (net.IP, error) {
-	tt, err := net.Interfaces()
+	ifaces, err := net.Interfaces()
 	if err != nil {
 		return nil, err
 	}
-	for _, t := range tt {
-		aa, err := t.Addrs()
+	for _, i := range ifaces {
+		addrs, err := i.Addrs()
 		if err != nil {
 			return nil, err
 		}
-		for _, a := range aa {
-			ipnet, ok := a.(*net.IPNet)
-			if !ok {
-				continue
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
 			}
-			v4 := ipnet.IP.To4()
-			if v4 == nil || v4[0] == 127 { // loopback address
-				continue
+			v4 := ip.To4()
+			if v4 != nil && (v4[0] == 192 || v4[0] == 172 || v4[0] == 10) {
+				return v4, nil
 			}
-			return v4, nil
 		}
 	}
 	return nil, errors.New("cannot find local IP address")
