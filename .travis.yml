@@ -4,17 +4,10 @@ services:
   - docker
 
 before_install:
-  - docker pull quasarhq/libtorrent-go:android-arm
-  - docker pull quasarhq/libtorrent-go:android-x64
-  - docker pull quasarhq/libtorrent-go:darwin-x64
-  - docker pull quasarhq/libtorrent-go:linux-x86
-  - docker pull quasarhq/libtorrent-go:linux-x64
-  - docker pull quasarhq/libtorrent-go:linux-arm
-  - docker pull quasarhq/libtorrent-go:windows-x86
-  - docker pull quasarhq/libtorrent-go:windows-x64
+  - make pull
 
 install:
-  - make envs
+  - make envs-from-pull
 
 script:
   - make libs

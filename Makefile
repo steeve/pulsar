@@ -166,6 +166,17 @@ libs: force
 	$(MAKE) build TARGET_OS=android TARGET_ARCH=arm MARGS="libtorrent-go"
 	$(MAKE) build TARGET_OS=android TARGET_ARCH=x64 MARGS="libtorrent-go"
 
+pull:
+	for i in $(PLATFORMS); do \
+		docker pull quasarhq/libtorrent-go:$$i; \
+	done
+
+envs-from-pull:
+	for i in $(PLATFORMS); do \
+		docker tag quasarhq/libtorrent-go:$$i libtorrent-go:$$i; \
+		$(MAKE) env PLATFORM=$$i; \
+	done
+
 push:
 	for i in $(PLATFORMS); do \
 	  docker tag quasar:$$i quasarhq/quasar:$$i; \
