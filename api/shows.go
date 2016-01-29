@@ -150,7 +150,7 @@ func ShowEpisodes(ctx *gin.Context) {
 	season := show.Seasons[seasonNumber]
 	items := season.Episodes.ToListItems(show)
 	for _, item := range items {
-		item.Path = UrlForXBMC("/show/%d/season/%d/episode/%d/play",
+		playUrl := UrlForXBMC("/show/%d/season/%d/episode/%d/play",
 			show.Id,
 			season.Season,
 			item.Info.Episode,
@@ -160,12 +160,13 @@ func ShowEpisodes(ctx *gin.Context) {
 			season.Season,
 			item.Info.Episode,
 		)
-		if config.Get().ChooseStreamAuto == false {
-			aux := item.Path
+		if config.Get().ChooseStreamAuto == true {
+			item.Path = playUrl
+		} else {
 			item.Path = episodeLinksUrl
-			episodeLinksUrl = aux
 		}
 		item.ContextMenu = [][]string{
+			[]string{"LOCALIZE[30223]", fmt.Sprintf("XBMC.PlayMedia(%s)", playUrl)},
 			[]string{"LOCALIZE[30202]", fmt.Sprintf("XBMC.PlayMedia(%s)", episodeLinksUrl)},
 			[]string{"LOCALIZE[30203]", "XBMC.Action(Info)"},
 		}
