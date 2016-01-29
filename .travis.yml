@@ -17,8 +17,7 @@ install:
   - make envs
 
 script:
+  - make libs
   - make all
-
-after_script:
   - docker login -e="$DOCKER_EMAIL" -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
   - '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && make push || true'
