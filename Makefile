@@ -164,3 +164,9 @@ libs: force
 	$(MAKE) build TARGET_OS=windows TARGET_ARCH=x86 MARGS="libtorrent-go"
 	$(MAKE) build TARGET_OS=windows TARGET_ARCH=x64 MARGS="libtorrent-go"
 	$(MAKE) build TARGET_OS=android TARGET_ARCH=arm MARGS="libtorrent-go"
+
+push:
+	for i in $(PLATFORMS); do \
+	  docker tag quasar:$$i quasarhq/quasar:$$i; \
+	  docker push quasarhq/quasar:$$i; \
+	done

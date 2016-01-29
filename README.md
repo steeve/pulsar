@@ -1,4 +1,4 @@
-Quasar daemon
+Quasar daemon [![Build Status](https://travis-ci.org/scakemyer/quasar.svg?branch=master)](https://travis-ci.org/scakemyer/quasar)
 ======
 
 Fork of the great [Pulsar daemon](https://github.com/steeve/pulsar)
