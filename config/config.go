@@ -13,6 +13,7 @@ var log = logging.MustGetLogger("config")
 
 type Configuration struct {
 	DownloadPath        string
+	LibraryPath         string
 	Info                *xbmc.AddonInfo
 	Platform            *xbmc.Platform
 	Language            string
@@ -64,6 +65,7 @@ func Reload() *Configuration {
 
 	newConfig := Configuration{
 		DownloadPath:        filepath.Dir(xbmc.GetSettingString("download_path")),
+		LibraryPath:         filepath.Dir(xbmc.GetSettingString("library_path")),
 		Info:                info,
 		Platform:            xbmc.GetPlatform(),
 		Language:            xbmc.GetLanguageISO_639_1(),
