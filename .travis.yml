@@ -11,6 +11,8 @@ before_install:
 
 install:
   - make envs-from-pull
+  - go get -d ./...
+  - go get -d github.com/scakemyer/libtorrent-go
 
 script:
   - make libs
