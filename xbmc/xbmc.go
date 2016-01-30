@@ -1,5 +1,15 @@
 package xbmc
 
+func VideoLibraryScan() {
+	var retVal string
+	executeJSONRPC("VideoLibrary.Scan", &retVal, nil)
+}
+
+func VideoLibraryClean() {
+	var retVal string
+	executeJSONRPC("VideoLibrary.Clean", &retVal, nil)
+}
+
 func TranslatePath(path string) (retVal string) {
 	executeJSONRPCEx("TranslatePath", &retVal, Args{path})
 	return

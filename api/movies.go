@@ -89,6 +89,7 @@ func renderMovies(movies tmdb.Movies, ctx *gin.Context, page int) {
 			[]string{"LOCALIZE[30202]", fmt.Sprintf("XBMC.PlayMedia(%s)", movieLinksUrl)},
 			[]string{"LOCALIZE[30023]", fmt.Sprintf("XBMC.PlayMedia(%s)", playUrl)},
 			[]string{"LOCALIZE[30203]", "XBMC.Action(Info)"},
+			[]string{"LOCALIZE[30219]", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/library/movie/addremove/%s", movie.IMDBId))},
 		}
 		item.Info.Trailer = UrlForHTTP("/youtube/%s", item.Info.Trailer)
 		item.IsPlayable = true
