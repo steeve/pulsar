@@ -20,7 +20,7 @@ type Configuration struct {
 	KeepFilesAfterStop  bool
 	EnablePaging        bool
 	EnableOverlayStatus bool
-	EnableChooseStream  bool
+	ChooseStreamAuto    bool
 	PreReleaseUpdates   bool
 	BufferSize          int
 	UploadRateLimit     int
@@ -75,7 +75,7 @@ func Reload() *Configuration {
 		KeepFilesAfterStop:  xbmc.GetSettingBool("keep_files"),
 		EnablePaging:        xbmc.GetSettingBool("enable_paging"),
 		EnableOverlayStatus: xbmc.GetSettingBool("enable_overlay_status"),
-		EnableChooseStream:  xbmc.GetSettingBool("enable_choose_stream"),
+		ChooseStreamAuto:    xbmc.GetSettingBool("choose_stream_auto"),
 		PreReleaseUpdates:   xbmc.GetSettingBool("pre_release_updates"),
 		BTListenPortMin:     xbmc.GetSettingInt("listen_port_min"),
 		BTListenPortMax:     xbmc.GetSettingInt("listen_port_max"),
