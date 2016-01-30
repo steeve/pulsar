@@ -17,5 +17,10 @@ install:
 script:
   - make libs
   - make all
+  - '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && make binaries || true'
+  - '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && cd binaries && git remote add binaries https://$GH_TOKEN@github.com/scakemyer/quasar-binaries || true'
+  - '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && git push binaries master || true'
+
+after_script:
   - docker login -e="$DOCKER_EMAIL" -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
   - '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && make push || true'

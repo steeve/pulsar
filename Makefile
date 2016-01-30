@@ -159,6 +159,14 @@ all: force
 libs: force
 	$(MAKE) libtorrent-go
 
+binaries:
+	git config user.name "Travis CI binaries"
+	git config user.email "quasar@noreply.email"
+	git config --global push.default simple
+	git clone --depth=1 https://github.com/scakemyer/quasar-binaries binaries
+	cp -Rf build/* binaries/
+	cd binaries && git add * && git commit -m "Update to ${GIT_VERSION}"
+
 pull:
 	for i in $(PLATFORMS); do \
 		docker pull quasarhq/libtorrent-go:$$i; \
