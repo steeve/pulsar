@@ -166,8 +166,8 @@ func ShowEpisodes(ctx *gin.Context) {
 			item.Path = episodeLinksUrl
 		}
 		item.ContextMenu = [][]string{
-			[]string{"LOCALIZE[30223]", fmt.Sprintf("XBMC.PlayMedia(%s)", playUrl)},
 			[]string{"LOCALIZE[30202]", fmt.Sprintf("XBMC.PlayMedia(%s)", episodeLinksUrl)},
+			[]string{"LOCALIZE[30023]", fmt.Sprintf("XBMC.PlayMedia(%s)", playUrl)},
 			[]string{"LOCALIZE[30203]", "XBMC.Action(Info)"},
 		}
 		item.IsPlayable = true

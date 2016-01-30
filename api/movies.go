@@ -85,18 +85,22 @@ func renderMovies(movies tmdb.Movies, ctx *gin.Context, page int) {
 		} else {
 			item.Path = movieLinksUrl
 		}
-		item.Info.Trailer = UrlForHTTP("/youtube/%s", item.Info.Trailer)
-		item.IsPlayable = true
 		item.ContextMenu = [][]string{
-			[]string{"LOCALIZE[30223]", fmt.Sprintf("XBMC.PlayMedia(%s)", playUrl)},
 			[]string{"LOCALIZE[30202]", fmt.Sprintf("XBMC.PlayMedia(%s)", movieLinksUrl)},
+			[]string{"LOCALIZE[30023]", fmt.Sprintf("XBMC.PlayMedia(%s)", playUrl)},
 			[]string{"LOCALIZE[30203]", "XBMC.Action(Info)"},
 		}
+		item.Info.Trailer = UrlForHTTP("/youtube/%s", item.Info.Trailer)
+		item.IsPlayable = true
 		items = append(items, item)
 	}
 	if page >= 0 {
 		path := ctx.Request.URL.Path
-		nextpage := &xbmc.ListItem{Label: "LOCALIZE[30218]", Path: UrlForXBMC(fmt.Sprintf("%s?page=%d", path, page + 1)), Thumbnail: config.AddonResource("img", "nextpage.png")}
+		nextpage := &xbmc.ListItem{
+			Label: "LOCALIZE[30218]",
+			Path: UrlForXBMC(fmt.Sprintf("%s?page=%d", path, page + 1)),
+			Thumbnail: config.AddonResource("img", "nextpage.png"),
+		}
 		items = append(items, nextpage)
 	}
 	ctx.JSON(200, xbmc.NewView("movies", items))
