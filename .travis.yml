@@ -24,11 +24,3 @@ script:
       cd binaries && git remote add binaries https://$GH_TOKEN@github.com/scakemyer/quasar-binaries
       git push binaries master
     fi
-
-after_success:
-  - |
-    if [ "${TRAVIS_PULL_REQUEST}" = "false" ] && [ "${TRAVIS_BRANCH}" = "master" ]; then
-      # Push to Docker Hub
-      docker login -e="$DOCKER_EMAIL" -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
-      make push
-    fi
