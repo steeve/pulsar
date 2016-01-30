@@ -17,10 +17,13 @@ install:
 script:
   - make libs
   - make all
-
-after_script:
-  - '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && make binaries || false'
-  - '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && cd binaries && git remote add binaries https://$GH_TOKEN@github.com/scakemyer/quasar-binaries || false'
-  - '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && git push binaries master || false'
-  - '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && cd .. && docker login -e="$DOCKER_EMAIL" -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" || false'
-  - '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && make push || false'
+  - |
+    if [ "${TRAVIS_PULL_REQUEST}" = "false" ] && [ -n "${TRAVIS_TAG}" ]; then
+      # Push binaries to quasar-binaries repo
+      make binaries
+      cd binaries && git remote add binaries https://$GH_TOKEN@github.com/scakemyer/quasar-binaries
+      git push binaries master
+      # Push to Docker Hub
+      cd .. && docker login -e="$DOCKER_EMAIL" -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+      make push
+    fi
