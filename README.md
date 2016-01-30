@@ -3,7 +3,12 @@ Quasar daemon [![Build Status](https://travis-ci.org/scakemyer/quasar.svg?branch
 
 Fork of the great [Pulsar daemon](https://github.com/steeve/pulsar)
 
-1. Build the [cross-compiler](https://github.com/scakemyer/cross-compiler) and [libtorrent-go](https://github.com/scakemyer/libtorrent-go)
+1. Build the [cross-compiler](https://github.com/scakemyer/cross-compiler) and [libtorrent-go](https://github.com/scakemyer/libtorrent-go) images,
+    or alternatively, pull the libtorrent-go images from [Docker Hub](https://hub.docker.com/r/quasarhq/libtorrent-go):
+
+    ```
+    make pull
+    ```
 
 2. Set GOPATH
 
@@ -29,7 +34,13 @@ Fork of the great [Pulsar daemon](https://github.com/steeve/pulsar)
     make envs
     ```
 
-5. Make specific platforms, or all of them:
+5. Build libtorrent-go libraries:
+
+    ```
+    make libs
+    ```
+
+6. Make specific platforms, or all of them:
 
     Linux-x64
 

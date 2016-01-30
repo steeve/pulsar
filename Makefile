@@ -99,6 +99,7 @@ vendor_windows:
 
 vendor_android:
 	cp $(CROSS_ROOT)/$(CROSS_TRIPLE)/lib/libgnustl_shared.so $(BUILD_PATH)
+	chmod +rx $(BUILD_PATH)/libgnustl_shared.so
 
 vendor_libs_windows:
 
@@ -139,7 +140,6 @@ upx: force
 checksum: $(BUILD_PATH)/$(OUTPUT_NAME)
 	shasum -b $(BUILD_PATH)/$(OUTPUT_NAME) | cut -d' ' -f1 >> $(BUILD_PATH)/$(OUTPUT_NAME)
 
-
 ifeq ($(TARGET_ARCH), arm)
 dist: quasar vendor_$(TARGET_OS) strip checksum
 else
@@ -170,12 +170,7 @@ binaries:
 pull:
 	for i in $(PLATFORMS); do \
 		docker pull quasarhq/libtorrent-go:$$i; \
-	done
-
-envs-from-pull:
-	for i in $(PLATFORMS); do \
 		docker tag quasarhq/libtorrent-go:$$i libtorrent-go:$$i; \
-		$(MAKE) env PLATFORM=$$i; \
 	done
 
 push:
