@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"path/filepath"
 
 	"github.com/dustin/go-humanize"
 	"github.com/op/go-logging"
@@ -22,6 +23,7 @@ const (
 	startBufferPercent = 0.005
 	endBufferSize      = 10 * 1024 * 1024 // 10m
 	playbackMaxWait    = 20 * time.Second
+	minCandidateSize   = 100 * 1024 * 1024
 )
 
 var statusStrings = []string{
@@ -40,7 +42,7 @@ type BTPlayer struct {
 	uri                      string
 	torrentHandle            libtorrent.TorrentHandle
 	torrentInfo              libtorrent.TorrentInfo
-	biggestFile              libtorrent.FileEntry
+	chosenFile               libtorrent.FileEntry
 	lastStatus               libtorrent.TorrentStatus
 	log                      *logging.Logger
 	bufferPiecesProgress     map[int]float64
@@ -129,7 +131,7 @@ func (btp *BTPlayer) Buffer() error {
 }
 
 func (btp *BTPlayer) PlayURL() string {
-	return strings.Join(strings.Split(btp.biggestFile.GetPath(), string(os.PathSeparator)), "/")
+	return strings.Join(strings.Split(btp.chosenFile.GetPath(), string(os.PathSeparator)), "/")
 }
 
 func (btp *BTPlayer) onMetadataReceived() {
@@ -154,14 +156,19 @@ func (btp *BTPlayer) onMetadataReceived() {
 		}
 	}
 
-	btp.biggestFile = btp.findBiggestFile()
-	btp.log.Info("Biggest file: %s", btp.biggestFile.GetPath())
+	var err error
+	btp.chosenFile, err = btp.chooseFile()
+	if err != nil {
+		btp.bufferEvents.Broadcast(errors.New("User cancelled."))
+		return
+	}
+	btp.log.Info("Chosen file: %s", btp.chosenFile.GetPath())
 
 	btp.log.Info("Setting piece priorities")
 
 	pieceLength := float64(btp.torrentInfo.PieceLength())
 
-	startPiece, endPiece, _ := btp.getFilePiecesAndOffset(btp.biggestFile)
+	startPiece, endPiece, _ := btp.getFilePiecesAndOffset(btp.chosenFile)
 
 	startLength := float64(endPiece-startPiece) * float64(pieceLength) * startBufferPercent
 	if startLength < float64(btp.bts.config.BufferSize) {
@@ -234,10 +241,11 @@ func (btp *BTPlayer) getFilePiecesAndOffset(fe libtorrent.FileEntry) (int, int, 
 	return startPiece, endPiece, offset
 }
 
-func (btp *BTPlayer) findBiggestFile() libtorrent.FileEntry {
+func (btp *BTPlayer) chooseFile() (libtorrent.FileEntry, error) {
 	var biggestFile libtorrent.FileEntry
 	maxSize := int64(0)
 	numFiles := btp.torrentInfo.NumFiles()
+	var candidateFiles []int
 
 	for i := 0; i < numFiles; i++ {
 		fe := btp.torrentInfo.FileAt(i)
@@ -246,8 +254,27 @@ func (btp *BTPlayer) findBiggestFile() libtorrent.FileEntry {
 			maxSize = size
 			biggestFile = fe
 		}
+		if size > minCandidateSize {
+			candidateFiles = append(candidateFiles, i)
+		}
 	}
-	return biggestFile
+
+	if len(candidateFiles) > 1 {
+		btp.log.Info(fmt.Sprintf("There are %d candidate files", len(candidateFiles)))
+		choices := make([]string, 0, len(candidateFiles))
+		for _, index := range candidateFiles {
+			fileName := filepath.Base(btp.torrentInfo.FileAt(index).GetPath())
+			choices = append(choices, fileName)
+		}
+		choice := xbmc.ListDialog("LOCALIZE[30223]", choices...)
+		if choice >= 0 {
+			return btp.torrentInfo.FileAt(candidateFiles[choice]), nil
+		} else {
+			return biggestFile, fmt.Errorf("User cancelled")
+		}
+	}
+
+	return biggestFile, nil
 }
 
 func (btp *BTPlayer) onStateChanged(stateAlert libtorrent.StateChangedAlert) {
@@ -469,6 +496,8 @@ playbackLoop:
 			}
 		}
 	}
-	btp.overlayStatus.Close()
+	if overlayStatusActive == true {
+		btp.overlayStatus.Close()
+	}
 	btp.setRateLimiting(false)
 }
