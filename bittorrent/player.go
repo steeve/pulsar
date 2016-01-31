@@ -40,6 +40,7 @@ var statusStrings = []string{
 type BTPlayer struct {
 	bts                      *BTService
 	uri                      string
+	fileIndex                int
 	torrentHandle            libtorrent.TorrentHandle
 	torrentInfo              libtorrent.TorrentInfo
 	chosenFile               libtorrent.FileEntry
@@ -56,9 +57,10 @@ type BTPlayer struct {
 	bufferEvents             *broadcast.Broadcaster
 }
 
-func NewBTPlayer(bts *BTService, uri string, deleteAfter bool) *BTPlayer {
+func NewBTPlayer(bts *BTService, uri string, deleteAfter bool, fileIndex int) *BTPlayer {
 	btp := &BTPlayer{
 		bts:                  bts,
+		fileIndex:            fileIndex,
 		uri:                  uri,
 		log:                  logging.MustGetLogger("btplayer"),
 		deleteAfter:          deleteAfter,
@@ -261,6 +263,9 @@ func (btp *BTPlayer) chooseFile() (libtorrent.FileEntry, error) {
 
 	if len(candidateFiles) > 1 {
 		btp.log.Info(fmt.Sprintf("There are %d candidate files", len(candidateFiles)))
+		if btp.fileIndex >= 0 && btp.fileIndex < len(candidateFiles) {
+			return btp.torrentInfo.FileAt(candidateFiles[btp.fileIndex]), nil
+		}
 		choices := make([]string, 0, len(candidateFiles))
 		for _, index := range candidateFiles {
 			fileName := filepath.Base(btp.torrentInfo.FileAt(index).GetPath())
