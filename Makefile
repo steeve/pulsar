@@ -175,7 +175,7 @@ pull-all:
 
 pull:
 	docker pull quasarhq/libtorrent-go:$(PLATFORM)
-	docker tag quasarhq/libtorrent-go:$(PlATFORM) libtorrent-go:$(PLATFORM)
+	docker tag quasarhq/libtorrent-go:$(PLATFORM) libtorrent-go:$(PLATFORM)
 
 push:
 	for i in $(PLATFORMS); do \
