@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"net/url"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/scakemyer/quasar/bittorrent"
@@ -18,13 +19,21 @@ func Play(btService *bittorrent.BTService) gin.HandlerFunc {
 		if uri == "" {
 			return
 		}
+		fileIndex := -1
+		index := ctx.Request.URL.Query().Get("index")
+		if index != "" {
+			fIndex, err := strconv.Atoi(index)
+			if err == nil {
+				fileIndex = fIndex
+			}
+		}
 		torrent := bittorrent.NewTorrent(uri)
 		magnet := torrent.Magnet()
 		boosters := url.Values{
 			"tr": providers.DefaultTrackers,
 		}
 		magnet += "&" + boosters.Encode()
-		player := bittorrent.NewBTPlayer(btService, magnet, config.Get().KeepFilesAfterStop == false)
+		player := bittorrent.NewBTPlayer(btService, magnet, config.Get().KeepFilesAfterStop == false, fileIndex)
 		if player.Buffer() != nil {
 			return
 		}
