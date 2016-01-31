@@ -3,22 +3,53 @@ language: go
 go:
   - 1.6rc1
 
+env:
+  - PLATFORM=android-arm
+  - PLATFORM=android-x64
+  - PLATFORM=darwin-x64
+  - PLATFORM=linux-x86
+  - PLATFORM=linux-x64
+  - PLATFORM=linux-arm
+  - PLATFORM=windows-x86
+  - PLATFORM=windows-x64
+  - PLATFORM=all
+
 services:
   - docker
 
 before_install:
-  - make pull
+  - |
+    if [ "${TRAVIS_PULL_REQUEST}" = "false" ] && [ -n "${TRAVIS_TAG}" ] && [ "${PLATFORM}" = "all" ]; then
+      make pull-all
+    elif [ "${PLATFORM}" != "all" ]; then
+      make pull
+    fi
+  - |
+    if [ "${TRAVIS_PULL_REQUEST}" = "false" ] && [ -n "${TRAVIS_TAG}" ] && [ "${PLATFORM}" = "all" ]; then
+      make envs
+    elif [ "${PLATFORM}" != "all" ]; then
+      make env
+    fi
 
 install:
-  - make envs
   - go get -d ./...
   - go get -d github.com/scakemyer/libtorrent-go
 
 script:
-  - make libs
-  - make all
   - |
-    if [ "${TRAVIS_PULL_REQUEST}" = "false" ] && [ -n "${TRAVIS_TAG}" ]; then
+    if [ "${TRAVIS_PULL_REQUEST}" = "false" ] && [ -n "${TRAVIS_TAG}" ] && [ "${PLATFORM}" = "all" ]; then
+      make libs
+    elif [ "${PLATFORM}" != "all" ]; then
+      make libs
+    fi
+  - |
+    if [ "${TRAVIS_PULL_REQUEST}" = "false" ] && [ -n "${TRAVIS_TAG}" ] && [ "${PLATFORM}" = "all" ]; then
+      make $PLATFORM
+    elif [ "${PLATFORM}" != "all" ]
+      make $PLATFORM
+    fi
+  - |
+    if [ "${TRAVIS_PULL_REQUEST}" = "false" ] && [ -n "${TRAVIS_TAG}" ] && [ "${PLATFORM}" = "all" ]; then
       # Push binaries to quasar-binaries repo
       make binaries
       cd binaries && git remote add binaries https://$GH_TOKEN@github.com/scakemyer/quasar-binaries

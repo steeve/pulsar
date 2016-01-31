@@ -7,7 +7,12 @@ Fork of the great [Pulsar daemon](https://github.com/steeve/pulsar)
     or alternatively, pull the libtorrent-go images from [Docker Hub](https://hub.docker.com/r/quasarhq/libtorrent-go):
 
     ```
-    make pull
+    make pull-all
+    ```
+
+    Or for a specific platform:
+    ```
+    make pull PLATFORM=android-x64
     ```
 
 2. Set GOPATH
@@ -43,25 +48,21 @@ Fork of the great [Pulsar daemon](https://github.com/steeve/pulsar)
 6. Make specific platforms, or all of them:
 
     Linux-x64
-
     ```
-    make build TARGET_OS=linux TARGET_ARCH=x64 MARGS="dist"
+    make linux-x64
     ```
 
     Darwin-x64
-
     ```
-    make build TARGET_OS=darwin TARGET_ARCH=x64 MARGS="dist"
+    make darwin-x64
     ```
 
     Windows
-
     ```
-    make build TARGET_OS=windows TARGET_ARCH=x86 MARGS="dist"
+    make windows-x86
     ```
 
     All platforms
-
     ```
-    make all
+    make
     ```

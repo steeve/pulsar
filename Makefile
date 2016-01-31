@@ -73,11 +73,21 @@ PLATFORMS = \
 	android-arm \
 	android-x64
 
+.PHONY: $(PLATFORMS)
+
+all:
+	for i in $(PLATFORMS); do \
+		$(MAKE) $$i; \
+	done
+
+$(PLATFORMS):
+	$(MAKE) build TARGET_OS=$(firstword $(subst -, ,$@)) TARGET_ARCH=$(word 2, $(subst -, ,$@))
+
 force:
 	@true
 
 libtorrent-go: force
-	$(MAKE) -C $(LIBTORRENT_GO_HOME)
+	$(MAKE) -C $(LIBTORRENT_GO_HOME) $(PLATFORM)
 
 $(BUILD_PATH):
 	mkdir -p $(BUILD_PATH)
@@ -108,6 +118,8 @@ vendor_libs_android:
 
 quasar: $(BUILD_PATH)/$(OUTPUT_NAME)
 
+re: clean build
+
 clean:
 	rm -rf $(BUILD_PATH)
 
@@ -123,7 +135,7 @@ envs:
 	done
 
 build: force
-	$(DOCKER) run --rm -v $(GOPATH):/go -e GOPATH=/go -v $(shell pwd):/go/src/$(GO_PKG) -w /go/src/$(GO_PKG) $(DOCKER_IMAGE):$(TARGET_OS)-$(TARGET_ARCH) make $(MARGS) TARGET_OS=$(TARGET_OS) TARGET_ARCH=$(TARGET_ARCH) GIT_VERSION=$(GIT_VERSION)
+	$(DOCKER) run --rm -v $(GOPATH):/go -e GOPATH=/go -v $(shell pwd):/go/src/$(GO_PKG) -w /go/src/$(GO_PKG) $(DOCKER_IMAGE):$(TARGET_OS)-$(TARGET_ARCH) make dist TARGET_OS=$(TARGET_OS) TARGET_ARCH=$(TARGET_ARCH) GIT_VERSION=$(GIT_VERSION)
 
 docker: force
 	$(DOCKER) run --rm -v $(GOPATH):/go -e GOPATH=/go -v $(shell pwd):/go/src/$(GO_PKG) -w /go/src/$(GO_PKG) $(DOCKER_IMAGE):$(TARGET_OS)-$(TARGET_ARCH)
@@ -135,7 +147,7 @@ upx: force
 # Do not .exe files, as upx doesn't really work with 8l/6l linked files.
 # It's fine for other platforms, because we link with an external linker, namely
 # GCC or Clang. However, on Windows this feature is not yet supported.
-	@find $(BUILD_PATH) -type f ! -name "*.exe" -a ! -name "*.so"  -exec $(UPX) --lzma {} \;
+	@find $(BUILD_PATH) -type f ! -name "*.exe" -a ! -name "*.so" -exec $(UPX) --lzma {} \;
 
 checksum: $(BUILD_PATH)/$(OUTPUT_NAME)
 	shasum -b $(BUILD_PATH)/$(OUTPUT_NAME) | cut -d' ' -f1 >> $(BUILD_PATH)/$(OUTPUT_NAME)
@@ -146,18 +158,8 @@ else
 dist: quasar vendor_$(TARGET_OS) strip upx checksum
 endif
 
-all: force
-	$(MAKE) build TARGET_OS=darwin TARGET_ARCH=x64 MARGS="dist"
-	$(MAKE) build TARGET_OS=linux TARGET_ARCH=x86 MARGS="dist"
-	$(MAKE) build TARGET_OS=linux TARGET_ARCH=x64 MARGS="dist"
-	$(MAKE) build TARGET_OS=linux TARGET_ARCH=arm MARGS="dist"
-	$(MAKE) build TARGET_OS=windows TARGET_ARCH=x86 MARGS="dist"
-	$(MAKE) build TARGET_OS=windows TARGET_ARCH=x64 MARGS="dist"
-	$(MAKE) build TARGET_OS=android TARGET_ARCH=arm MARGS="dist"
-	$(MAKE) build TARGET_OS=android TARGET_ARCH=x64 MARGS="dist"
-
 libs: force
-	$(MAKE) libtorrent-go
+	$(MAKE) libtorrent-go PLATFORM=$(PLATFORM)
 
 binaries:
 	git config --global push.default simple
@@ -165,11 +167,15 @@ binaries:
 	cp -Rf build/* binaries/
 	cd binaries && git add * && git commit -m "Update to ${GIT_VERSION}"
 
-pull:
+pull-all:
 	for i in $(PLATFORMS); do \
 		docker pull quasarhq/libtorrent-go:$$i; \
 		docker tag quasarhq/libtorrent-go:$$i libtorrent-go:$$i; \
 	done
+
+pull:
+	docker pull quasarhq/libtorrent-go:$(PLATFORM)
+	docker tag quasarhq/libtorrent-go:$(PlATFORM) libtorrent-go:$(PLATFORM)
 
 push:
 	for i in $(PLATFORMS); do \
