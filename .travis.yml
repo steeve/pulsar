@@ -45,7 +45,7 @@ script:
   - |
     if [ "${TRAVIS_PULL_REQUEST}" = "false" ] && [ -n "${TRAVIS_TAG}" ] && [ "${PLATFORM}" = "all" ]; then
       make $PLATFORM
-    elif [ "${PLATFORM}" != "all" ]
+    elif [ "${PLATFORM}" != "all" ]; then
       make $PLATFORM
     fi
   - |
