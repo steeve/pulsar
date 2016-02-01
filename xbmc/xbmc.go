@@ -1,5 +1,10 @@
 package xbmc
 
+func UpdateAddonRepos() (retVal string){
+	executeJSONRPCEx("UpdateAddonRepos", &retVal, nil)
+	return
+}
+
 func VideoLibraryScan() {
 	var retVal string
 	executeJSONRPC("VideoLibrary.Scan", &retVal, nil)
@@ -55,7 +60,7 @@ func GetLanguageISO_639_1() string{
 		case "Hindi (Devanagiri)":    return "hi"
 		case "Mongolian (Mongolia)":  return "mn"
 		case "Persian (Iran)":        return "fa"
-		case "Portuguese (Brazil)":   return "pt" 
+		case "Portuguese (Brazil)":   return "pt"
 		case "Serbian (Cyrillic)":    return "sr"
 		case "Spanish (Argentina)":   return "es"
 		case "Spanish (Mexico)":      return "es"

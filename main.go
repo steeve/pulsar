@@ -75,7 +75,7 @@ func main() {
 	ensureSingleInstance()
 	Migrate()
 
-	xbmc.CloseAllDialogs()
+	// xbmc.CloseAllDialogs()
 
 	log.Info("Addon: %s v%s", conf.Info.Id, conf.Info.Version)
 
@@ -114,6 +114,9 @@ func main() {
 	}))
 
 	xbmc.Notify("Quasar", "LOCALIZE[30208]", config.AddonIcon())
+
+	log.Info("Updating Kodi Addon Repositories")
+	xbmc.UpdateAddonRepos()
 
 	http.ListenAndServe(":"+strconv.Itoa(config.ListenPort), nil)
 }
