@@ -1,7 +1,12 @@
 package xbmc
 
-func UpdateAddonRepos() (retVal string){
+func UpdateAddonRepos() (retVal string) {
 	executeJSONRPCEx("UpdateAddonRepos", &retVal, nil)
+	return
+}
+
+func ResetRPC() (retVal string) {
+	executeJSONRPCEx("Reset", &retVal, nil)
 	return
 }
 

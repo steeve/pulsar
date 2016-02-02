@@ -136,6 +136,27 @@ func (btp *BTPlayer) PlayURL() string {
 	return strings.Join(strings.Split(btp.chosenFile.GetPath(), string(os.PathSeparator)), "/")
 }
 
+func (btp *BTPlayer) CheckAvailableSpace() bool {
+	if btp.diskStatus != nil {
+		status := btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
+		sizeLeft := btp.torrentInfo.TotalSize() - status.GetTotalDone()
+
+		btp.log.Info("Checking for sufficient space on %s...", btp.bts.config.DownloadPath)
+		btp.log.Info("Total size of download: %d", btp.torrentInfo.TotalSize())
+		btp.log.Info("All time download: %d", status.GetAllTimeDownload())
+		btp.log.Info("Size total done: %d", status.GetTotalDone())
+		btp.log.Info("Size left: %d", sizeLeft)
+
+		if btp.diskStatus.Free < sizeLeft {
+			btp.log.Info("Unsufficient free space on %s. Has %d, needs %d.", btp.bts.config.DownloadPath, btp.diskStatus.Free, sizeLeft)
+			xbmc.Notify("Quasar", "LOCALIZE[30207]", config.AddonIcon())
+			btp.bufferEvents.Broadcast(errors.New("Not enough space on download destination."))
+			return false
+		}
+	}
+	return true
+}
+
 func (btp *BTPlayer) onMetadataReceived() {
 	btp.log.Info("Metadata received.")
 
@@ -143,20 +164,8 @@ func (btp *BTPlayer) onMetadataReceived() {
 	defer btp.torrentHandle.Resume()
 
 	btp.torrentName = btp.torrentHandle.Status(uint(0)).GetName()
-	//go ga.TrackEvent("player", "metadata_received", btp.torrentName, -1)
 
 	btp.torrentInfo = btp.torrentHandle.TorrentFile()
-
-	if btp.diskStatus != nil {
-		btp.log.Info("Checking for sufficient space on %s...", btp.bts.config.DownloadPath)
-		torrentSize := btp.torrentInfo.TotalSize()
-		if btp.diskStatus.Free < torrentSize {
-			btp.log.Info("Unsufficient free space on %s. Has %d, needs %d.", btp.bts.config.DownloadPath, btp.diskStatus.Free, torrentSize)
-			xbmc.Notify("Quasar", "LOCALIZE[30207]", config.AddonIcon())
-			// btp.bufferEvents.Broadcast(errors.New("Not enough space on download destination."))
-			// return
-		}
-	}
 
 	var err error
 	btp.chosenFile, err = btp.chooseFile()
@@ -294,6 +303,9 @@ func (btp *BTPlayer) onStateChanged(stateAlert libtorrent.StateChangedAlert) {
 		}
 		btp.torrentHandle.PrioritizePieces(piecesPriorities)
 		break
+	case libtorrent.TorrentStatusDownloading:
+		btp.CheckAvailableSpace()
+		break
 	}
 }
 
@@ -383,7 +395,6 @@ func (btp *BTPlayer) bufferDialog() {
 		case <-halfSecond.C:
 			if btp.dialogProgress.IsCanceled() {
 				btp.log.Info("User cancelled the buffering")
-				//go ga.TrackEvent("player", "buffer_canceled", btp.torrentName, -1)
 				btp.bufferEvents.Broadcast(errors.New("user canceled the buffering"))
 				return
 			}
@@ -467,7 +478,7 @@ playbackWaitLoop:
 		}
 		select {
 		case <-playbackTimeout:
-			btp.log.Info("Playback was unable to start after %d seconds. Aborting...", playbackMaxWait/time.Second)
+			btp.log.Info("Playback was unable to start after %d seconds. Aborting...", playbackMaxWait / time.Second)
 			btp.bufferEvents.Broadcast(errors.New("Playback was unable to start before timeout."))
 		 	return
 		case <-oneSecond.C:

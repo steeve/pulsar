@@ -118,5 +118,7 @@ func main() {
 	log.Info("Updating Kodi Addon Repositories")
 	xbmc.UpdateAddonRepos()
 
+	xbmc.ResetRPC()
+
 	http.ListenAndServe(":"+strconv.Itoa(config.ListenPort), nil)
 }
