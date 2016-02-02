@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -212,26 +211,5 @@ func (as *AddonSearcher) SearchMovieLinks(movie *tmdb.Movie) []*bittorrent.Torre
 }
 
 func (as *AddonSearcher) SearchEpisodeLinks(show *tvdb.Show, episode *tvdb.Episode) []*bittorrent.Torrent {
-	epSearchObject := as.GetEpisodeSearchObject(show, episode)
-	torrents := as.call("search_episode", epSearchObject)
-	epMatch := regexp.MustCompile(fmt.Sprintf("(s%02de%02d|%dx%02d)",
-		epSearchObject.Season, epSearchObject.Episode,
-		epSearchObject.Season, epSearchObject.Episode))
-	if epSearchObject.AbsoluteNumber > 0 {
-		epMatch = regexp.MustCompile(fmt.Sprintf("%02d", epSearchObject.AbsoluteNumber))
-	}
-
-	cleanTorrents := make([]*bittorrent.Torrent, 0)
-	for _, torrent := range torrents {
-		lowerName := strings.ToLower(torrent.Name)
-		if epMatch.MatchString(lowerName) {
-			cleanTorrents = append(cleanTorrents, torrent)
-		}
-	}
-
-	if len(cleanTorrents) < len(torrents) {
-		as.log.Info("Filtered %d irrelevant items", len(torrents)-len(cleanTorrents))
-	}
-
-	return cleanTorrents
+	return as.call("search_episode", as.GetEpisodeSearchObject(show, episode))
 }
