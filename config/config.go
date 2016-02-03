@@ -2,7 +2,9 @@ package config
 
 import (
 	"path/filepath"
+	"strings"
 	"sync"
+	"os"
 
 	"github.com/op/go-logging"
 	"github.com/scakemyer/quasar/xbmc"
@@ -58,6 +60,13 @@ func Reload() *Configuration {
 	info := xbmc.GetAddonInfo()
 	info.Path = xbmc.TranslatePath(info.Path)
 	info.Profile = xbmc.TranslatePath(info.Profile)
+
+	legacyPath := strings.Replace(info.Path, "/storage/emulated/0", "/storage/emulated/legacy", 1)
+	if _, err := os.Stat(legacyPath); err == nil {
+		info.Path = strings.Replace(info.Path, "/storage/emulated/0", "/storage/emulated/legacy", 1)
+		info.Profile = strings.Replace(info.Profile, "/storage/emulated/0", "/storage/emulated/legacy", 1)
+		log.Info("Using /storage/emulated/legacy path.")
+	}
 
 	newConfig := Configuration{
 		DownloadPath:        filepath.Dir(xbmc.GetSettingString("download_path")),
