@@ -30,6 +30,7 @@ type Configuration struct {
 	LimitAfterBuffering bool
 	BTListenPortMin     int
 	BTListenPortMax     int
+	ConnectionsLimit    int
 
 	CustomProviderTimeoutEnabled bool
 	CustomProviderTimeout        int
@@ -86,6 +87,7 @@ func Reload() *Configuration {
 		PreReleaseUpdates:   xbmc.GetSettingBool("pre_release_updates"),
 		BTListenPortMin:     xbmc.GetSettingInt("listen_port_min"),
 		BTListenPortMax:     xbmc.GetSettingInt("listen_port_max"),
+		ConnectionsLimit:    xbmc.GetSettingInt("connections_limit"),
 
 		CustomProviderTimeoutEnabled: xbmc.GetSettingBool("custom_provider_timeout_enabled"),
 		CustomProviderTimeout:        xbmc.GetSettingInt("custom_provider_timeout"),

@@ -51,14 +51,15 @@ type ProxySettings struct {
 }
 
 type BTConfiguration struct {
-	BufferSize      int
-	MaxUploadRate   int
-	MaxDownloadRate int
+	BufferSize          int
+	MaxUploadRate       int
+	MaxDownloadRate     int
 	LimitAfterBuffering bool
-	LowerListenPort int
-	UpperListenPort int
-	DownloadPath    string
-	Proxy           *ProxySettings
+	ConnectionsLimit    int
+	LowerListenPort     int
+	UpperListenPort     int
+	DownloadPath        string
+	Proxy               *ProxySettings
 }
 
 type BTService struct {
@@ -145,13 +146,17 @@ func (s *BTService) configure() {
 	settings.SetAnnounceToAllTiers(true)
 	settings.SetConnectionSpeed(500)
 
+	if s.config.ConnectionsLimit > 0 {
+		settings.SetConnectionsLimit(s.config.ConnectionsLimit)
+	}
+
 	if s.config.LimitAfterBuffering == false {
 		if s.config.MaxDownloadRate > 0 {
-			s.log.Info("Rate limiting download to %dkb/s", s.config.MaxDownloadRate/1024)
+			s.log.Info("Rate limiting download to %dkb/s", s.config.MaxDownloadRate / 1024)
 			settings.SetDownloadRateLimit(s.config.MaxDownloadRate)
 		}
 		if s.config.MaxUploadRate > 0 {
-			s.log.Info("Rate limiting upload to %dkb/s", s.config.MaxUploadRate/1024)
+			s.log.Info("Rate limiting upload to %dkb/s", s.config.MaxUploadRate / 1024)
 			// If we have an upload rate, use the nicer bittyrant choker
 			settings.SetChokingAlgorithm(int(libtorrent.SessionSettingsBittyrantChoker))
 			settings.SetUploadRateLimit(s.config.MaxUploadRate)

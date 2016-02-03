@@ -36,13 +36,14 @@ func ensureSingleInstance() {
 
 func makeBTConfiguration(conf *config.Configuration) *bittorrent.BTConfiguration {
 	btConfig := &bittorrent.BTConfiguration{
-		LowerListenPort: conf.BTListenPortMin,
-		UpperListenPort: conf.BTListenPortMax,
-		DownloadPath:    conf.DownloadPath,
-		BufferSize:      conf.BufferSize,
-		MaxUploadRate:   conf.UploadRateLimit,
-		MaxDownloadRate: conf.DownloadRateLimit,
+		LowerListenPort:     conf.BTListenPortMin,
+		UpperListenPort:     conf.BTListenPortMax,
+		DownloadPath:        conf.DownloadPath,
+		BufferSize:          conf.BufferSize,
+		MaxUploadRate:       conf.UploadRateLimit,
+		MaxDownloadRate:     conf.DownloadRateLimit,
 		LimitAfterBuffering: conf.LimitAfterBuffering,
+		ConnectionsLimit:    conf.ConnectionsLimit,
 	}
 
 	if conf.SocksEnabled == true {
