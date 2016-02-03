@@ -54,15 +54,13 @@ DOCKER = docker
 DOCKER_IMAGE = quasar
 UPX = upx
 GIT_VERSION = $(shell $(GIT) describe --tags)
-VERSION = $(shell cat VERSION)
-ZIP_FILE = $(ADDON_NAME)-$(VERSION).zip
 CGO_ENABLED = 1
 OUTPUT_NAME = $(NAME)$(EXT)
 BUILD_PATH = build/$(TARGET_OS)_$(TARGET_ARCH)
 LIBTORRENT_GO = github.com/scakemyer/libtorrent-go
 LIBTORRENT_GO_HOME = $(shell go env GOPATH)/src/$(LIBTORRENT_GO)
 GO_BUILD_TAGS =
-GO_LDFLAGS += -w -X $(GO_PKG)/util.Version="$(VERSION)" -X $(GO_PKG)/util.GitCommit="$(GIT_VERSION)"
+GO_LDFLAGS += -w -X $(GO_PKG)/util.Version="$(GIT_VERSION)"
 PLATFORMS = \
 	darwin-x64 \
 	windows-x86 \

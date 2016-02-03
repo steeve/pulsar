@@ -3,7 +3,6 @@ package util
 import "fmt"
 
 var (
-	GitCommit string
 	Version   string
 )
 

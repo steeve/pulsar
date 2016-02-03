@@ -68,7 +68,7 @@ func main() {
 	for _, line := range strings.Split(QuasarLogo, "\n") {
 		log.Info(line)
 	}
-	log.Info("Version: %s Git: %s Go: %s", util.Version, util.GitCommit, runtime.Version())
+	log.Info("Version: %s Go: %s", util.Version, runtime.Version())
 
 	conf := config.Reload()
 
