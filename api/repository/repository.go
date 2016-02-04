@@ -131,9 +131,7 @@ func addonZip(ctx *gin.Context, user string, repository string, lastReleaseTag s
 		assets, _, _ := client.Repositories.ListReleaseAssets(user, repository, *release.ID, nil)
 		platformStruct := xbmc.GetPlatform()
 		platform := platformStruct.OS + "_" + platformStruct.Arch
-		var (
-			assetAllPlatforms string
-		)
+		var assetAllPlatforms string
 		for _, asset := range assets {
 			if addonZipRE.MatchString(*asset.Name) {
 				assetAllPlatforms = *asset.BrowserDownloadURL

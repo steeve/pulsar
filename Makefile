@@ -62,14 +62,15 @@ LIBTORRENT_GO_HOME = $(shell go env GOPATH)/src/$(LIBTORRENT_GO)
 GO_BUILD_TAGS =
 GO_LDFLAGS += -w -X $(GO_PKG)/util.Version="$(GIT_VERSION)"
 PLATFORMS = \
-	darwin-x64 \
-	windows-x86 \
-	windows-x64 \
-	linux-x86 \
-	linux-x64 \
-	linux-arm \
 	android-arm \
-	android-x64
+	android-x64 \
+	android-x86 \
+	darwin-x64 \
+	linux-arm \
+	linux-x64 \
+	linux-x86 \
+	windows-x64 \
+	windows-x86
 
 .PHONY: $(PLATFORMS)
 
