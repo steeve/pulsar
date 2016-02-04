@@ -4,11 +4,14 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/xml"
-	"errors"
-	"fmt"
 	"net/http"
+	"errors"
+	"bufio"
+	"fmt"
+	"os"
 	"regexp"
 	"strings"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/go-github/github"
@@ -96,6 +99,7 @@ func GetAddonFiles(ctx *gin.Context) {
 	user := ctx.Params.ByName("user")
 	repository := ctx.Params.ByName("repository")
 	filepath := ctx.Params.ByName("filepath")[1:] // strip the leading "/"
+	log.Info("Request for: " + filepath)
 
 	lastReleaseTag, lastReleaseBranch := getLastRelease(user, repository)
 
@@ -105,6 +109,7 @@ func GetAddonFiles(ctx *gin.Context) {
 		return
 	case "addons.xml.md5":
 		GetAddonsXMLChecksum(ctx)
+		writeChangelog(user, repository)
 		return
 	case "fanart.jpg":
 		fallthrough
@@ -154,7 +159,7 @@ func addonZip(ctx *gin.Context, user string, repository string, lastReleaseTag s
 	ctx.AbortWithError(404, errors.New("Release asset not found."))
 }
 
-func addonChangelog(ctx *gin.Context, user string, repository string) {
+func fetchChangelog(user string, repository string) string {
 	log.Info("Fetching add-on changelog...")
 	client := github.NewClient(nil)
 	releases, _, _ := client.Repositories.ListReleases(user, repository, nil)
@@ -162,5 +167,28 @@ func addonChangelog(ctx *gin.Context, user string, repository string) {
 	for _, release := range releases {
 		changelog += fmt.Sprintf(releaseChangelog, *release.TagName, release.PublishedAt.Format("Jan 2 2006"), *release.Body)
 	}
+	return changelog
+}
+
+func writeChangelog(user string, repository string) error {
+	changelog := fetchChangelog(user, repository)
+	lines := strings.Split(changelog, "\n")
+	path := filepath.Clean(filepath.Join(config.Get().Info.Path, "changelog.txt"))
+
+  file, err := os.Create(path)
+  if err != nil {
+    return err
+  }
+  defer file.Close()
+
+  w := bufio.NewWriter(file)
+  for _, line := range lines {
+    fmt.Fprintln(w, line)
+  }
+  return w.Flush()
+}
+
+func addonChangelog(ctx *gin.Context, user string, repository string) {
+	changelog := fetchChangelog(user, repository)
 	ctx.String(200, changelog)
 }
