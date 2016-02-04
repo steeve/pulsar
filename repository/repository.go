@@ -36,7 +36,7 @@ func MakeQuasarRepositoryAddon() error {
 	addon := &xbmc.Addon{
 		Id:           addonId,
 		Name:         addonName,
-		Version:      util.Version,
+		Version:      util.Version[2:len(util.Version) - 1],
 		ProviderName: config.Get().Info.Author,
 		Extensions: []*xbmc.AddonExtension{
 			&xbmc.AddonExtension{
