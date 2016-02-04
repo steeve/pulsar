@@ -24,7 +24,7 @@ const (
 )
 
 var (
-	addonZipRE       = regexp.MustCompile(`[\w]+\.[\w]+(\.[\w]+)?-\d+\.\d+\.\d+(-[\w]+\.?\d+)?(\.[\w]+)?\.zip`)
+	addonZipRE       = regexp.MustCompile(`[\w]+\.[\w]+(\.[\w]+)?-\d+\.\d+\.\d+(-[\w]+\.?\d+)?\.zip`)
 	addonChangelogRE = regexp.MustCompile(`changelog.*\.txt`)
 	log              = logging.MustGetLogger("repository")
 )
@@ -133,16 +133,16 @@ func addonZip(ctx *gin.Context, user string, repository string, lastReleaseTag s
 		platform := platformStruct.OS + "_" + platformStruct.Arch
 		var assetAllPlatforms string
 		for _, asset := range assets {
-			if addonZipRE.MatchString(*asset.Name) {
-				assetAllPlatforms = *asset.BrowserDownloadURL
-				log.Info("Found all platforms release asset: " + assetAllPlatforms)
-				continue
-			}
 			if strings.HasSuffix(*asset.Name, platform + ".zip") {
 				assetPlatform := *asset.BrowserDownloadURL
 				log.Info("Using release asset for " + platform + ": " + assetPlatform)
 				ctx.Redirect(302, assetPlatform)
 				return
+			}
+			if addonZipRE.MatchString(*asset.Name) {
+				assetAllPlatforms = *asset.BrowserDownloadURL
+				log.Info("Found all platforms release asset: " + assetAllPlatforms)
+				continue
 			}
 		}
 		if assetAllPlatforms != "" {
