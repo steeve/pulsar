@@ -187,7 +187,7 @@ func processLinks(torrentsChan chan *bittorrent.Torrent) []*bittorrent.Torrent {
 	sort.Sort(sort.Reverse(BySeeds(torrents)))
 	log.Info("Sorted torrent candidates:\n")
 	for _, torrent := range torrents {
-		log.Info("%s S:%d P:%d", torrent.Name, torrent.Seeds, torrent.Peers)
+		log.Info("%s - %s S:%d P:%d", torrent.Name, torrent.Provider, torrent.Seeds, torrent.Peers)
 	}
 
 	return torrents

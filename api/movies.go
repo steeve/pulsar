@@ -176,7 +176,7 @@ func MovieGenres(ctx *gin.Context) {
 	ctx.JSON(200, xbmc.NewView("", items))
 }
 
-func movieLinks(imdbId string) []*bittorrent.Torrent {
+func movieLinks(imdbId string) ([]*bittorrent.Torrent, string) {
 	log.Println("Searching links for IMDB:", imdbId)
 
 	movie := tmdb.GetMovieFromIMDB(imdbId, config.Get().Language)
@@ -188,11 +188,11 @@ func movieLinks(imdbId string) []*bittorrent.Torrent {
 		xbmc.Notify("Quasar", "LOCALIZE[30204]", config.AddonIcon())
 	}
 
-	return providers.SearchMovie(searchers, movie)
+	return providers.SearchMovie(searchers, movie), movie.Title
 }
 
 func MovieLinks(ctx *gin.Context) {
-	torrents := movieLinks(ctx.Params.ByName("imdbId"))
+	torrents, movieTitle := movieLinks(ctx.Params.ByName("imdbId"))
 
 	if len(torrents) == 0 {
 		xbmc.Notify("Quasar", "LOCALIZE[30205]", config.AddonIcon())
@@ -202,11 +202,14 @@ func MovieLinks(ctx *gin.Context) {
 	choices := make([]string, 0, len(torrents))
 	for _, torrent := range torrents {
 		info := make([]string, 0)
-		if torrent.RipType > 0 {
-			info = append(info, bittorrent.Rips[torrent.RipType])
-		}
 		if torrent.Resolution > 0 {
 			info = append(info, bittorrent.Resolutions[torrent.Resolution])
+		}
+		if torrent.Size != "" {
+			info = append(info, fmt.Sprintf("[%s]", torrent.Size))
+		}
+		if torrent.RipType > 0 {
+			info = append(info, bittorrent.Rips[torrent.RipType])
 		}
 		if torrent.VideoCodec > 0 {
 			info = append(info, bittorrent.Codecs[torrent.VideoCodec])
@@ -214,8 +217,11 @@ func MovieLinks(ctx *gin.Context) {
 		if torrent.AudioCodec > 0 {
 			info = append(info, bittorrent.Codecs[torrent.AudioCodec])
 		}
+		if torrent.Provider != "" {
+			info = append(info, " - " + torrent.Provider)
+		}
 
-		label := fmt.Sprintf("S:%d P:%d - %s - %s",
+		label := fmt.Sprintf("[B](%d / %d) %s[/B]\n%s",
 			torrent.Seeds,
 			torrent.Peers,
 			strings.Join(info, " "),
@@ -224,7 +230,7 @@ func MovieLinks(ctx *gin.Context) {
 		choices = append(choices, label)
 	}
 
-	choice := xbmc.ListDialogLarge("LOCALIZE[30202]", choices...)
+	choice := xbmc.ListDialogLarge("LOCALIZE[30228]", movieTitle, choices...)
 	if choice >= 0 {
 		rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[choice].Magnet())
 		ctx.Redirect(302, rUrl)
@@ -232,7 +238,7 @@ func MovieLinks(ctx *gin.Context) {
 }
 
 func MoviePlay(ctx *gin.Context) {
-	torrents := movieLinks(ctx.Params.ByName("imdbId"))
+	torrents, _ := movieLinks(ctx.Params.ByName("imdbId"))
 	if len(torrents) == 0 {
 		xbmc.Notify("Quasar", "LOCALIZE[30205]", config.AddonIcon())
 		return

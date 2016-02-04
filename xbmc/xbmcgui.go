@@ -98,9 +98,9 @@ func ListDialog(title string, items ...string) int {
 	return retVal
 }
 
-func ListDialogLarge(title string, items ...string) int {
+func ListDialogLarge(title string, subject string, items ...string) int {
 	retVal := -1
-	executeJSONRPCEx("Dialog_Select_Large", &retVal, Args{title, items})
+	executeJSONRPCEx("Dialog_Select_Large", &retVal, Args{title, subject, items})
 	return retVal
 }
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/op/go-logging"
@@ -179,12 +180,12 @@ func ShowEpisodes(ctx *gin.Context) {
 	ctx.JSON(200, xbmc.NewView("episodes", items))
 }
 
-func showEpisodeLinks(showId string, seasonNumber, episodeNumber int) ([]*bittorrent.Torrent, error) {
+func showEpisodeLinks(showId string, seasonNumber, episodeNumber int) ([]*bittorrent.Torrent, string, error) {
 	log.Println("Searching links for TVDB Id:", showId)
 
 	show, err := tvdb.NewShowCached(showId, config.Get().Language)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	episode := show.Seasons[seasonNumber].Episodes[episodeNumber-1]
@@ -196,13 +197,15 @@ func showEpisodeLinks(showId string, seasonNumber, episodeNumber int) ([]*bittor
 		xbmc.Notify("Quasar", "LOCALIZE[30204]", config.AddonIcon())
 	}
 
-	return providers.SearchEpisode(searchers, show, episode), nil
+	longName := fmt.Sprintf("%s S%02dE%02d", show.SeriesName, seasonNumber, episodeNumber)
+
+	return providers.SearchEpisode(searchers, show, episode), longName, nil
 }
 
 func ShowEpisodeLinks(ctx *gin.Context) {
 	seasonNumber, _ := strconv.Atoi(ctx.Params.ByName("season"))
 	episodeNumber, _ := strconv.Atoi(ctx.Params.ByName("episode"))
-	torrents, err := showEpisodeLinks(ctx.Params.ByName("showId"), seasonNumber, episodeNumber)
+	torrents, longName, err := showEpisodeLinks(ctx.Params.ByName("showId"), seasonNumber, episodeNumber)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -215,15 +218,36 @@ func ShowEpisodeLinks(ctx *gin.Context) {
 
 	choices := make([]string, 0, len(torrents))
 	for _, torrent := range torrents {
-		label := fmt.Sprintf("S:%d P:%d - %s",
+		info := make([]string, 0)
+		if torrent.Resolution > 0 {
+			info = append(info, bittorrent.Resolutions[torrent.Resolution])
+		}
+		if torrent.Size != "" {
+			info = append(info, fmt.Sprintf("[%s]", torrent.Size))
+		}
+		if torrent.RipType > 0 {
+			info = append(info, bittorrent.Rips[torrent.RipType])
+		}
+		if torrent.VideoCodec > 0 {
+			info = append(info, bittorrent.Codecs[torrent.VideoCodec])
+		}
+		if torrent.AudioCodec > 0 {
+			info = append(info, bittorrent.Codecs[torrent.AudioCodec])
+		}
+		if torrent.Provider != "" {
+			info = append(info, " - " + torrent.Provider)
+		}
+
+		label := fmt.Sprintf("[B](%d / %d) %s[/B]\n%s",
 			torrent.Seeds,
 			torrent.Peers,
+			strings.Join(info, " "),
 			torrent.Name,
 		)
 		choices = append(choices, label)
 	}
 
-	choice := xbmc.ListDialogLarge("LOCALIZE[30202]", choices...)
+	choice := xbmc.ListDialogLarge("LOCALIZE[30228]", longName, choices...)
 	if choice >= 0 {
 		rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[choice].Magnet())
 		ctx.Redirect(302, rUrl)
@@ -233,7 +257,7 @@ func ShowEpisodeLinks(ctx *gin.Context) {
 func ShowEpisodePlay(ctx *gin.Context) {
 	seasonNumber, _ := strconv.Atoi(ctx.Params.ByName("season"))
 	episodeNumber, _ := strconv.Atoi(ctx.Params.ByName("episode"))
-	torrents, err := showEpisodeLinks(ctx.Params.ByName("showId"), seasonNumber, episodeNumber)
+	torrents, _, err := showEpisodeLinks(ctx.Params.ByName("showId"), seasonNumber, episodeNumber)
 	if err != nil {
 		ctx.Error(err)
 		return

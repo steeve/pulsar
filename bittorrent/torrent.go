@@ -21,10 +21,11 @@ type Torrent struct {
 	InfoHash  string   `json:"info_hash"`
 	Name      string   `json:"name"`
 	Trackers  []string `json:"trackers"`
-	Size      int64    `json:"size"`
+	Size      string   `json:"size"`
 	Seeds     int64    `json:"seeds"`
 	Peers     int64    `json:"peers"`
 	IsPrivate bool     `json:"is_private"`
+	Provider  string   `json:"provider"`
 
 	Resolution  int    `json:"resolution"`
 	VideoCodec  int    `json:"video_codec"`
