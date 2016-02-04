@@ -98,6 +98,12 @@ func ListDialog(title string, items ...string) int {
 	return retVal
 }
 
+func ListDialogLarge(title string, items ...string) int {
+	retVal := -1
+	executeJSONRPCEx("Dialog_Select_Large", &retVal, Args{title, items})
+	return retVal
+}
+
 func PlayerGetPlayingFile() string {
 	retVal := ""
 	executeJSONRPCEx("Player_GetPlayingFile", &retVal, nil)

@@ -224,7 +224,7 @@ func MovieLinks(ctx *gin.Context) {
 		choices = append(choices, label)
 	}
 
-	choice := xbmc.ListDialog("LOCALIZE[30202]", choices...)
+	choice := xbmc.ListDialogLarge("LOCALIZE[30202]", choices...)
 	if choice >= 0 {
 		rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[choice].Magnet())
 		ctx.Redirect(302, rUrl)
