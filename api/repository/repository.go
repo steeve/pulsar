@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/go-github/github"
@@ -23,7 +24,7 @@ const (
 )
 
 var (
-	addonZipRE       = regexp.MustCompile(`[\w]+\.[\w]+(\.[\w]+)?-\d+\.\d+\.\d+(-[\w]+\.\d+)?\.zip`)
+	addonZipRE       = regexp.MustCompile(`[\w]+\.[\w]+(\.[\w]+)?-\d+\.\d+\.\d+(-[\w]+\.?\d+)?(\.[\w]+)?\.zip`)
 	addonChangelogRE = regexp.MustCompile(`changelog.*\.txt`)
 	log              = logging.MustGetLogger("repository")
 )
@@ -96,7 +97,7 @@ func GetAddonFiles(ctx *gin.Context) {
 	repository := ctx.Params.ByName("repository")
 	filepath := ctx.Params.ByName("filepath")[1:] // strip the leading "/"
 
-	lastReleaseName, lastReleaseBranch := getLastRelease(user, repository)
+	lastReleaseTag, lastReleaseBranch := getLastRelease(user, repository)
 
 	switch filepath {
 	case "addons.xml":
@@ -114,32 +115,48 @@ func GetAddonFiles(ctx *gin.Context) {
 
 	switch {
 	case addonZipRE.MatchString(filepath):
-		addonZip(ctx, user, repository, lastReleaseName)
+		addonZip(ctx, user, repository, lastReleaseTag)
 	case addonChangelogRE.MatchString(filepath):
-		addonChangelog(ctx, user, repository, lastReleaseName)
+		addonChangelog(ctx, user, repository)
 	default:
 		ctx.AbortWithError(404, errors.New(filepath))
 	}
 }
 
-func addonZip(ctx *gin.Context, user string, repository string, lastTagName string) {
-	release := getReleaseByTag(user, repository, lastTagName)
+func addonZip(ctx *gin.Context, user string, repository string, lastReleaseTag string) {
+	release := getReleaseByTag(user, repository, lastReleaseTag)
 	// if there a release with an asset that matches a addon zip, use it
 	if release != nil {
 		client := github.NewClient(nil)
 		assets, _, _ := client.Repositories.ListReleaseAssets(user, repository, *release.ID, nil)
+		platformStruct := xbmc.GetPlatform()
+		platform := platformStruct.OS + "_" + platformStruct.Arch
+		var (
+			assetAllPlatforms string
+		)
 		for _, asset := range assets {
 			if addonZipRE.MatchString(*asset.Name) {
-				ctx.Redirect(302, *asset.BrowserDownloadURL)
+				assetAllPlatforms = *asset.BrowserDownloadURL
+				log.Info("Found all platforms release asset: " + assetAllPlatforms)
+				continue
+			}
+			if strings.HasSuffix(*asset.Name, platform + ".zip") {
+				assetPlatform := *asset.BrowserDownloadURL
+				log.Info("Using release asset for " + platform + ": " + assetPlatform)
+				ctx.Redirect(302, assetPlatform)
 				return
 			}
 		}
-	} else {
-		ctx.AbortWithError(404, errors.New("Release assets not yet available."))
+		if assetAllPlatforms != "" {
+			log.Info("Using release asset for all platforms: " + assetAllPlatforms)
+			ctx.Redirect(302, assetAllPlatforms)
+			return
+		}
 	}
+	ctx.AbortWithError(404, errors.New("Release asset not found."))
 }
 
-func addonChangelog(ctx *gin.Context, user string, repository string, lastTagName string) {
+func addonChangelog(ctx *gin.Context, user string, repository string) {
 	log.Info("Fetching add-on changelog...")
 	client := github.NewClient(nil)
 	releases, _, _ := client.Repositories.ListReleases(user, repository, nil)
