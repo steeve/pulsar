@@ -238,11 +238,16 @@ func ShowEpisodeLinks(ctx *gin.Context) {
 			info = append(info, " - " + torrent.Provider)
 		}
 
+		torrentName := torrent.Name
+		if len(torrentName) > 80 {
+			torrentName = torrentName[:80]
+		}
+
 		label := fmt.Sprintf("[B](%d / %d) %s[/B]\n%s",
 			torrent.Seeds,
 			torrent.Peers,
 			strings.Join(info, " "),
-			torrent.Name,
+			torrentName,
 		)
 		choices = append(choices, label)
 	}
