@@ -1,20 +1,21 @@
 package bittorrent
 
 import (
-	"errors"
+	"os"
 	"fmt"
 	"math"
-	"os"
-	"strings"
 	"sync"
 	"time"
+	"errors"
+	"strings"
+	"io/ioutil"
 	"path/filepath"
 
-	"github.com/dustin/go-humanize"
 	"github.com/op/go-logging"
+	"github.com/dustin/go-humanize"
 	"github.com/scakemyer/libtorrent-go"
-	"github.com/scakemyer/quasar/broadcast"
 	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/broadcast"
 	"github.com/scakemyer/quasar/diskusage"
 	"github.com/scakemyer/quasar/xbmc"
 )
@@ -41,6 +42,7 @@ type BTPlayer struct {
 	bts                      *BTService
 	uri                      string
 	fileIndex                int
+	infoHash                 string
 	torrentHandle            libtorrent.TorrentHandle
 	torrentInfo              libtorrent.TorrentInfo
 	chosenFile               libtorrent.FileEntry
@@ -54,20 +56,25 @@ type BTPlayer struct {
 	deleteAfter              bool
 	backgroundHandling       bool
 	resume                   int
+	fastResuming             bool
+	fastResumeFile           string
 	diskStatus               *diskusage.DiskStatus
 	closing                  chan interface{}
 	bufferEvents             *broadcast.Broadcaster
 }
 
-func NewBTPlayer(bts *BTService, uri string, resume int, fileIndex int) *BTPlayer {
+func NewBTPlayer(bts *BTService, uri string, fileIndex int, resume int, infoHash string) *BTPlayer {
 	btp := &BTPlayer{
 		bts:                  bts,
-		fileIndex:            fileIndex,
 		uri:                  uri,
+		infoHash:             infoHash,
+		fileIndex:            fileIndex,
 		log:                  logging.MustGetLogger("btplayer"),
 		backgroundHandling:   config.Get().BackgroundHandling == true,
 		deleteAfter:          config.Get().KeepFilesAfterStop == false,
 		resume:               resume,
+		fastResuming:         false,
+		fastResumeFile:       "",
 		closing:              make(chan interface{}),
 		bufferEvents:         broadcast.NewBroadcaster(),
 		bufferPiecesProgress: map[int]float64{},
@@ -91,6 +98,23 @@ func (btp *BTPlayer) addTorrent() error {
 
 	btp.log.Info("Setting save path to %s\n", btp.bts.config.DownloadPath)
 	torrentParams.SetSavePath(btp.bts.config.DownloadPath)
+
+	btp.log.Info("Checking for fast resume data in %s.fastresume", btp.infoHash)
+	fastResumeFile := filepath.Join(btp.bts.config.DownloadPath, fmt.Sprintf("%s.fastresume", btp.infoHash))
+	if _, err := os.Stat(fastResumeFile); err == nil {
+		btp.log.Info("Found fast resume data...")
+		btp.fastResuming = true
+		btp.fastResumeFile = fastResumeFile
+		fastResumeData, err := ioutil.ReadFile(fastResumeFile)
+		if err != nil {
+			return err
+		}
+		fastResumeVector := libtorrent.NewStdVectorChar()
+		for _, c := range fastResumeData {
+			fastResumeVector.PushBack(c)
+		}
+		torrentParams.SetResumeData(fastResumeVector)
+	}
 
 	btp.torrentHandle = btp.bts.Session.AddTorrent(torrentParams)
 	go btp.consumeAlerts()
@@ -326,17 +350,21 @@ func (btp *BTPlayer) chooseFile() (libtorrent.FileEntry, error) {
 func (btp *BTPlayer) onStateChanged(stateAlert libtorrent.StateChangedAlert) {
 	switch stateAlert.GetState() {
 	case libtorrent.TorrentStatusFinished:
-		btp.log.Info("Buffer is finished, resetting piece priorities...")
-		piecesPriorities := libtorrent.NewStdVectorInt()
-		defer libtorrent.DeleteStdVectorInt(piecesPriorities)
-		numPieces := btp.torrentInfo.NumPieces()
-		for i := 0; i < numPieces; i++ {
-			piecesPriorities.PushBack(1)
+		if btp.fastResuming == false {
+			btp.log.Info("Buffer is finished, resetting piece priorities...")
+			piecesPriorities := libtorrent.NewStdVectorInt()
+			defer libtorrent.DeleteStdVectorInt(piecesPriorities)
+			numPieces := btp.torrentInfo.NumPieces()
+			for i := 0; i < numPieces; i++ {
+				piecesPriorities.PushBack(1)
+			}
+			btp.torrentHandle.PrioritizePieces(piecesPriorities)
 		}
-		btp.torrentHandle.PrioritizePieces(piecesPriorities)
 		break
 	case libtorrent.TorrentStatusDownloading:
-		btp.CheckAvailableSpace()
+		if btp.fastResuming == false {
+			btp.CheckAvailableSpace()
+		}
 		break
 	}
 }
@@ -347,6 +375,12 @@ func (btp *BTPlayer) Close() {
 	if btp.backgroundHandling == false {
 		if btp.torrentInfo != nil && btp.torrentInfo.Swigcptr() != 0 {
 			libtorrent.DeleteTorrentInfo(btp.torrentInfo)
+		}
+
+		// Delete fast resume data
+		if _, err := os.Stat(btp.fastResumeFile); err == nil {
+			btp.log.Info("Deleting fast resume data at %s", btp.fastResumeFile)
+			defer os.Remove(btp.fastResumeFile)
 		}
 
 		if btp.deleteAfter {

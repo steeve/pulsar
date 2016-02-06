@@ -2,12 +2,17 @@ package bittorrent
 
 import (
 	"io"
-	"io/ioutil"
+	"fmt"
+	"time"
 	"runtime"
+	"io/ioutil"
+	"encoding/hex"
+	"path/filepath"
 
 	"github.com/op/go-logging"
 	"github.com/scakemyer/libtorrent-go"
 	"github.com/scakemyer/quasar/broadcast"
+	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/util"
 )
 
@@ -53,6 +58,7 @@ type BTConfiguration struct {
 	MaxDownloadRate     int
 	LimitAfterBuffering bool
 	ConnectionsLimit    int
+	SessionSave         int
 	LowerListenPort     int
 	UpperListenPort     int
 	DownloadPath        string
@@ -79,6 +85,8 @@ func NewBTService(config BTConfiguration) *BTService {
 	}
 
 	s.configure()
+	go s.saveResumeDataLoop()
+	go s.saveResumeData()
 	go s.alertsConsumer()
 	go s.logAlerts()
 
@@ -247,6 +255,63 @@ func (s *BTService) stopServices() {
 
 	s.log.Info("Stopping NATPMP...")
 	s.Session.StopNatpmp()
+}
+
+func (s *BTService) saveResumeDataLoop() {
+	saveResumeWait := time.NewTicker(time.Duration(s.config.SessionSave) * time.Second)
+	defer saveResumeWait.Stop()
+
+	for {
+		select {
+		case <-saveResumeWait.C:
+			torrentsVector := s.Session.GetTorrents()
+			torrentsVectorSize := int(torrentsVector.Size())
+
+			for i := 0; i < torrentsVectorSize; i++ {
+				torrentHandle := torrentsVector.Get(i)
+				if torrentHandle.IsValid() == false {
+					continue
+				}
+
+				status := torrentHandle.Status()
+				if status.GetHasMetadata() == false || status.GetNeedSaveResume() == false {
+					continue
+				}
+
+				torrentHandle.SaveResumeData()
+			}
+		}
+	}
+}
+
+func (s *BTService) saveResumeData() {
+	alerts, alertsDone := s.Alerts()
+	defer close(alertsDone)
+
+	for {
+		select {
+		case alert, ok := <-alerts:
+			if !ok { // was the alerts channel closed?
+				return
+			}
+			switch alert.Type() {
+			case libtorrent.SaveResumeDataAlertAlertType:
+				saveResumeData := libtorrent.SwigcptrSaveResumeDataAlert(alert.Swigcptr())
+				torrentHandle := saveResumeData.GetHandle()
+				torrentStatus := torrentHandle.Status(uint(libtorrent.TorrentHandleQuerySavePath) | uint(libtorrent.TorrentHandleQueryName))
+				shaHash := torrentStatus.GetInfoHash().ToString()
+				infoHash := hex.EncodeToString([]byte(shaHash))
+				torrentName := torrentStatus.GetName()
+				entry := saveResumeData.ResumeData()
+				bEncoded := []byte(libtorrent.Bencode(entry))
+
+				s.log.Info("Saving resume data for %s to %s.fastresume", torrentName, infoHash)
+				path := filepath.Join(config.Get().DownloadPath, fmt.Sprintf("%s.fastresume", infoHash))
+				ioutil.WriteFile(path, bEncoded, 0644)
+				break
+			}
+		}
+	}
 }
 
 func (s *BTService) alertsConsumer() {

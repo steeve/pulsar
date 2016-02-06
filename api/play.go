@@ -5,7 +5,6 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/op/go-logging"
 	"github.com/gin-gonic/gin"
 	"github.com/scakemyer/quasar/bittorrent"
 	"github.com/scakemyer/quasar/config"
@@ -13,8 +12,6 @@ import (
 	"github.com/scakemyer/quasar/util"
 	"github.com/scakemyer/quasar/xbmc"
 )
-
-var playLog = logging.MustGetLogger("play")
 
 func Play(btService *bittorrent.BTService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
@@ -40,20 +37,21 @@ func Play(btService *bittorrent.BTService) gin.HandlerFunc {
 			if err == nil && rIndex >= 0 {
 				resumeIndex = rIndex
 			}
-			playLog.Info(fmt.Sprintf("Resuming torrent #%d", resumeIndex))
 		}
 
 		magnet := ""
+		infoHash := ""
 		if uri != "" {
 			torrent := bittorrent.NewTorrent(uri)
 			magnet = torrent.Magnet()
+			infoHash = torrent.InfoHash
 			boosters := url.Values{
 				"tr": providers.DefaultTrackers,
 			}
 			magnet += "&" + boosters.Encode()
 		}
 
-		player := bittorrent.NewBTPlayer(btService, magnet, resumeIndex, fileIndex)
+		player := bittorrent.NewBTPlayer(btService, magnet, fileIndex, resumeIndex, infoHash)
 		if player.Buffer() != nil {
 			return
 		}

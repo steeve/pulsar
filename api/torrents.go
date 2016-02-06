@@ -1,14 +1,18 @@
 package api
 
 import (
+	"os"
 	"fmt"
 	"errors"
 	"strconv"
+	"encoding/hex"
+	"path/filepath"
 
 	"github.com/op/go-logging"
 	"github.com/gin-gonic/gin"
 	"github.com/scakemyer/libtorrent-go"
 	"github.com/scakemyer/quasar/bittorrent"
+	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/xbmc"
 )
 
@@ -92,8 +96,24 @@ func RemoveTorrent(btService *bittorrent.BTService) gin.HandlerFunc {
 			libtorrent.DeleteTorrentInfo(torrentInfo)
 		}
 
-		torrentsLog.Info(fmt.Sprintf("Removing torrent %s and deleting files...", torrentHandle.Status(uint(0)).GetName()))
-		btService.Session.RemoveTorrent(torrentHandle, int(libtorrent.SessionDeleteFiles))
+		if config.Get().KeepFilesAfterStop == false {
+			torrentsLog.Info("Removing the torrent and deleting files...")
+			btService.Session.RemoveTorrent(torrentHandle, int(libtorrent.SessionDeleteFiles))
+
+			// Delete fast resume data
+			torrentStatus := torrentHandle.Status(uint(libtorrent.TorrentHandleQuerySavePath) | uint(libtorrent.TorrentHandleQueryName))
+			shaHash := torrentStatus.GetInfoHash().ToString()
+			infoHash := hex.EncodeToString([]byte(shaHash))
+			fastResumeFile := filepath.Join(config.Get().DownloadPath, fmt.Sprintf("%s.fastresume", infoHash))
+			if _, err := os.Stat(fastResumeFile); err == nil {
+				torrentsLog.Info("Deleting fast resume data at %s", fastResumeFile)
+				defer os.Remove(fastResumeFile)
+			}
+		} else {
+			torrentsLog.Info("Removing the torrent without deleting files...")
+			btService.Session.RemoveTorrent(torrentHandle, 0)
+		}
+
 		ctx.String(200, "")
 	}
 }

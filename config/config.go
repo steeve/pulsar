@@ -32,6 +32,7 @@ type Configuration struct {
 	BTListenPortMin     int
 	BTListenPortMax     int
 	ConnectionsLimit    int
+	SessionSave         int
 
 	CustomProviderTimeoutEnabled bool
 	CustomProviderTimeout        int
@@ -65,7 +66,7 @@ func Reload() *Configuration {
 
 	legacyPath := strings.Replace(info.Path, "/storage/emulated/0", "/storage/emulated/legacy", 1)
 	if _, err := os.Stat(legacyPath); err == nil {
-		info.Path = strings.Replace(info.Path, "/storage/emulated/0", "/storage/emulated/legacy", 1)
+		info.Path = legacyPath
 		info.Profile = strings.Replace(info.Profile, "/storage/emulated/0", "/storage/emulated/legacy", 1)
 		log.Info("Using /storage/emulated/legacy path.")
 	}
@@ -90,6 +91,7 @@ func Reload() *Configuration {
 		BTListenPortMin:     xbmc.GetSettingInt("listen_port_min"),
 		BTListenPortMax:     xbmc.GetSettingInt("listen_port_max"),
 		ConnectionsLimit:    xbmc.GetSettingInt("connections_limit"),
+		SessionSave:         xbmc.GetSettingInt("session_save"),
 
 		CustomProviderTimeoutEnabled: xbmc.GetSettingBool("custom_provider_timeout_enabled"),
 		CustomProviderTimeout:        xbmc.GetSettingInt("custom_provider_timeout"),
