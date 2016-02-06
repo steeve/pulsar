@@ -19,8 +19,9 @@ type Configuration struct {
 	Platform            *xbmc.Platform
 	Language            string
 	ProfilePath         string
+	BackgroundHandling  bool
 	KeepFilesAfterStop  bool
-	EnablePaging        bool
+	EnablePagination    bool
 	EnableOverlayStatus bool
 	ChooseStreamAuto    bool
 	PreReleaseUpdates   bool
@@ -80,8 +81,9 @@ func Reload() *Configuration {
 		UploadRateLimit:     xbmc.GetSettingInt("max_upload_rate") * 1024,
 		DownloadRateLimit:   xbmc.GetSettingInt("max_download_rate") * 1024,
 		LimitAfterBuffering: xbmc.GetSettingBool("limit_after_buffering"),
+		BackgroundHandling:  xbmc.GetSettingBool("background_handling"),
 		KeepFilesAfterStop:  xbmc.GetSettingBool("keep_files"),
-		EnablePaging:        xbmc.GetSettingBool("enable_paging"),
+		EnablePagination:    xbmc.GetSettingBool("enable_pagination"),
 		EnableOverlayStatus: xbmc.GetSettingBool("enable_overlay_status"),
 		ChooseStreamAuto:    xbmc.GetSettingBool("choose_stream_auto"),
 		PreReleaseUpdates:   xbmc.GetSettingBool("pre_release_updates"),

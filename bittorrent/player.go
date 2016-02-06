@@ -52,18 +52,22 @@ type BTPlayer struct {
 	overlayStatus            *xbmc.OverlayStatus
 	torrentName              string
 	deleteAfter              bool
+	backgroundHandling       bool
+	resume                   int
 	diskStatus               *diskusage.DiskStatus
 	closing                  chan interface{}
 	bufferEvents             *broadcast.Broadcaster
 }
 
-func NewBTPlayer(bts *BTService, uri string, deleteAfter bool, fileIndex int) *BTPlayer {
+func NewBTPlayer(bts *BTService, uri string, resume int, fileIndex int) *BTPlayer {
 	btp := &BTPlayer{
 		bts:                  bts,
 		fileIndex:            fileIndex,
 		uri:                  uri,
 		log:                  logging.MustGetLogger("btplayer"),
-		deleteAfter:          deleteAfter,
+		backgroundHandling:   config.Get().BackgroundHandling == true,
+		deleteAfter:          config.Get().KeepFilesAfterStop == false,
+		resume:               resume,
 		closing:              make(chan interface{}),
 		bufferEvents:         broadcast.NewBroadcaster(),
 		bufferPiecesProgress: map[int]float64{},
@@ -91,17 +95,16 @@ func (btp *BTPlayer) addTorrent() error {
 	btp.torrentHandle = btp.bts.Session.AddTorrent(torrentParams)
 	go btp.consumeAlerts()
 
-	status := btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
-
-	btp.torrentName = status.GetName()
-
 	if btp.torrentHandle == nil {
-		return fmt.Errorf("unable to add torrent with uri %s", btp.uri)
+		return fmt.Errorf("Unable to add torrent with uri %s", btp.uri)
 	}
 
 	btp.log.Info("Enabling sequential download")
 	btp.torrentHandle.SetSequentialDownload(true)
 
+	status := btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
+
+	btp.torrentName = status.GetName()
 	btp.log.Info("Downloading %s\n", btp.torrentName)
 
 	if status.GetHasMetadata() == true {
@@ -111,9 +114,38 @@ func (btp *BTPlayer) addTorrent() error {
 	return nil
 }
 
+func (btp *BTPlayer) resumeTorrent(torrentIndex int) error {
+	torrentsVector := btp.bts.Session.GetTorrents()
+	btp.torrentHandle = torrentsVector.Get(torrentIndex)
+	go btp.consumeAlerts()
+
+	if btp.torrentHandle == nil {
+		return fmt.Errorf("Unable to resume torrent with index %d", torrentIndex)
+	}
+
+	status := btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
+
+	btp.torrentName = status.GetName()
+	btp.log.Info("Resuming %s\n", btp.torrentName)
+
+	if status.GetHasMetadata() == true {
+		btp.onMetadataReceived()
+	}
+
+	btp.torrentHandle.AutoManaged(true)
+
+	return nil
+}
+
 func (btp *BTPlayer) Buffer() error {
-	if err := btp.addTorrent(); err != nil {
-		return err
+	if btp.resume >= 0 {
+		if err := btp.resumeTorrent(btp.resume); err != nil {
+			return err
+		}
+	} else {
+		if err := btp.addTorrent(); err != nil {
+			return err
+		}
 	}
 
 	buffered, done := btp.bufferEvents.Listen()
@@ -160,8 +192,8 @@ func (btp *BTPlayer) CheckAvailableSpace() bool {
 func (btp *BTPlayer) onMetadataReceived() {
 	btp.log.Info("Metadata received.")
 
-	btp.torrentHandle.Pause()
-	defer btp.torrentHandle.Resume()
+	// btp.torrentHandle.Pause()
+	// defer btp.torrentHandle.Resume()
 
 	btp.torrentName = btp.torrentHandle.Status(uint(0)).GetName()
 
@@ -312,16 +344,18 @@ func (btp *BTPlayer) onStateChanged(stateAlert libtorrent.StateChangedAlert) {
 func (btp *BTPlayer) Close() {
 	close(btp.closing)
 
-	if btp.torrentInfo != nil && btp.torrentInfo.Swigcptr() != 0 {
-		libtorrent.DeleteTorrentInfo(btp.torrentInfo)
-	}
+	if btp.backgroundHandling == false {
+		if btp.torrentInfo != nil && btp.torrentInfo.Swigcptr() != 0 {
+			libtorrent.DeleteTorrentInfo(btp.torrentInfo)
+		}
 
-	if btp.deleteAfter {
-		btp.log.Info("Removing the torrent and deleting files...")
-		btp.bts.Session.RemoveTorrent(btp.torrentHandle, int(libtorrent.SessionDeleteFiles))
-	} else {
-		btp.log.Info("Removing the torrent without deleting files...")
-		btp.bts.Session.RemoveTorrent(btp.torrentHandle, 0)
+		if btp.deleteAfter {
+			btp.log.Info("Removing the torrent and deleting files...")
+			btp.bts.Session.RemoveTorrent(btp.torrentHandle, int(libtorrent.SessionDeleteFiles))
+		} else {
+			btp.log.Info("Removing the torrent without deleting files...")
+			btp.bts.Session.RemoveTorrent(btp.torrentHandle, 0)
+		}
 	}
 }
 

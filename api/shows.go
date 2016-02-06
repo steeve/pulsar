@@ -81,7 +81,7 @@ func PopularShows(ctx *gin.Context) {
 		genre = ""
 	}
 	page := -1
-	if config.Get().EnablePaging == true {
+	if config.Get().EnablePagination == true {
 		currentpage, err := strconv.Atoi(ctx.DefaultQuery("page", "0"))
     	if err == nil {
 			page = currentpage
@@ -92,7 +92,7 @@ func PopularShows(ctx *gin.Context) {
 
 func TopRatedShows(ctx *gin.Context) {
 	page := -1
-	if config.Get().EnablePaging == true {
+	if config.Get().EnablePagination == true {
 		currentpage, err := strconv.Atoi(ctx.DefaultQuery("page", "0"))
     	if err == nil {
 			page = currentpage
@@ -103,7 +103,7 @@ func TopRatedShows(ctx *gin.Context) {
 
 func TVMostVoted(ctx *gin.Context) {
 	page := -1
-	if config.Get().EnablePaging == true {
+	if config.Get().EnablePagination == true {
 		currentpage, err := strconv.Atoi(ctx.DefaultQuery("page", "0"))
     	if err == nil {
 			page = currentpage

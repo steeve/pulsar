@@ -74,7 +74,7 @@ func (tfs *TorrentFS) Open(name string) (http.File, error) {
 		for j := 0; j < numFiles; j++ {
 			fe := torrentInfo.FileAt(j)
 			if name[1:] == fe.GetPath() {
-				tfs.log.Info("%s belongs to torrent %s", name, torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName)).GetName())
+				// tfs.log.Info("%s belongs to torrent %s", name, torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName)).GetName())
 				return NewTorrentFile(file, tfs, torrentHandle, torrentInfo, fe, j)
 			}
 		}

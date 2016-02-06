@@ -113,7 +113,7 @@ func PopularMovies(ctx *gin.Context) {
 		genre = ""
 	}
 	page := -1
-	if config.Get().EnablePaging == true {
+	if config.Get().EnablePagination == true {
 		currentpage, err := strconv.Atoi(ctx.DefaultQuery("page", "0"))
     	if err == nil {
 			page = currentpage
@@ -128,7 +128,7 @@ func TopRatedMovies(ctx *gin.Context) {
 		genre = ""
 	}
 	page := -1
-	if config.Get().EnablePaging == true {
+	if config.Get().EnablePagination == true {
 		currentpage, err := strconv.Atoi(ctx.DefaultQuery("page", "0"))
     	if err == nil {
 			page = currentpage
@@ -143,7 +143,7 @@ func IMDBTop250(ctx *gin.Context) {
 
 func MoviesMostVoted(ctx *gin.Context) {
 	page := -1
-	if config.Get().EnablePaging == true {
+	if config.Get().EnablePagination == true {
 		currentpage, err := strconv.Atoi(ctx.DefaultQuery("page", "0"))
     	if err == nil {
 			page = currentpage

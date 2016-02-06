@@ -3,9 +3,7 @@ package bittorrent
 import (
 	"io"
 	"io/ioutil"
-	"net"
 	"runtime"
-	"time"
 
 	"github.com/op/go-logging"
 	"github.com/scakemyer/libtorrent-go"
@@ -15,7 +13,6 @@ import (
 
 const (
 	libtorrentAlertWaitTime = 1 // 1 second
-	internetCheckAddress    = "google.com"
 )
 
 const (
@@ -84,38 +81,8 @@ func NewBTService(config BTConfiguration) *BTService {
 	s.configure()
 	go s.alertsConsumer()
 	go s.logAlerts()
-	go s.internetMonitor()
 
 	return s
-}
-
-func (s *BTService) onInternetCheck(lastConnected bool) bool {
-	_, err := net.LookupHost(internetCheckAddress)
-	connected := (err == nil)
-	if connected != lastConnected {
-		if connected {
-			s.log.Info("Internet connection status changed, listening...")
-			s.Listen()
-			s.startServices()
-		} else {
-			s.log.Info("No internet connection available")
-			s.stopServices()
-		}
-	}
-	return connected
-}
-
-func (s *BTService) internetMonitor() {
-	lastConnected := s.onInternetCheck(false)
-	oneSecond := time.Tick(1 * time.Second)
-	for {
-		select {
-		case <-s.closing:
-			return
-		case <-oneSecond:
-			lastConnected = s.onInternetCheck(lastConnected)
-		}
-	}
 }
 
 func (s *BTService) Close() {
