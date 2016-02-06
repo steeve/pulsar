@@ -1,10 +1,13 @@
 package bittorrent
 
 import (
+	"os"
 	"io"
 	"fmt"
 	"time"
+	"strings"
 	"runtime"
+	"net/url"
 	"io/ioutil"
 	"encoding/hex"
 	"path/filepath"
@@ -12,7 +15,6 @@ import (
 	"github.com/op/go-logging"
 	"github.com/scakemyer/libtorrent-go"
 	"github.com/scakemyer/quasar/broadcast"
-	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/util"
 )
 
@@ -33,6 +35,18 @@ var dhtBootstrapNodes = []string{
 	"router.utorrent.com",
 	"dht.transmissionbt.com",
 	"dht.aelitis.com", // Vuze
+}
+
+var DefaultTrackers = []string{
+	"udp://open.demonii.com:1337",
+	"udp://tracker.coppersurfer.tk:6969",
+	"udp://tracker.leechers-paradise.org:6969",
+	"udp://tracker.openbittorrent.com:80",
+	"udp://exodus.desync.com:6969",
+	"udp://tracker.pomf.se",
+	"udp://tracker.blackunicorn.xyz:6969",
+	"udp://tracker.publicbt.com:80",
+	"udp://pow7.com:80/announce",
 }
 
 const (
@@ -85,10 +99,12 @@ func NewBTService(config BTConfiguration) *BTService {
 	}
 
 	s.configure()
+	go s.saveResumeDataConsumer()
 	go s.saveResumeDataLoop()
-	go s.saveResumeData()
 	go s.alertsConsumer()
 	go s.logAlerts()
+
+	go s.loadFastResumeFiles()
 
 	return s
 }
@@ -284,7 +300,7 @@ func (s *BTService) saveResumeDataLoop() {
 	}
 }
 
-func (s *BTService) saveResumeData() {
+func (s *BTService) saveResumeDataConsumer() {
 	alerts, alertsDone := s.Alerts()
 	defer close(alertsDone)
 
@@ -306,12 +322,58 @@ func (s *BTService) saveResumeData() {
 				bEncoded := []byte(libtorrent.Bencode(entry))
 
 				s.log.Info("Saving resume data for %s to %s.fastresume", torrentName, infoHash)
-				path := filepath.Join(config.Get().DownloadPath, fmt.Sprintf("%s.fastresume", infoHash))
+				path := filepath.Join(s.config.DownloadPath, fmt.Sprintf("%s.fastresume", infoHash))
 				ioutil.WriteFile(path, bEncoded, 0644)
 				break
 			}
 		}
 	}
+}
+
+func (s *BTService) loadFastResumeFiles() error {
+	pattern := filepath.Join(s.config.DownloadPath, "*.fastresume")
+	files, _ := filepath.Glob(pattern)
+	for _, fastResumeFile := range files {
+		torrentParams := libtorrent.NewAddTorrentParams()
+		defer libtorrent.DeleteAddTorrentParams(torrentParams)
+
+		s.log.Info("Loading fast resume file %s", fastResumeFile)
+
+		hashFromPath := strings.Split(strings.TrimSuffix(fastResumeFile, ".fastresume"), string(os.PathSeparator))
+		infoHash := hashFromPath[len(hashFromPath) - 1]
+		uri := fmt.Sprintf("magnet:?xt=urn:btih:%s", infoHash)
+
+		torrent := NewTorrent(uri)
+		magnet := torrent.Magnet()
+		infoHash = torrent.InfoHash
+		boosters := url.Values{
+			"tr": DefaultTrackers,
+		}
+		magnet += "&" + boosters.Encode()
+		torrentParams.SetUrl(magnet)
+		torrentParams.SetSavePath(s.config.DownloadPath)
+
+		fastResumeData, err := ioutil.ReadFile(fastResumeFile)
+		if err != nil {
+			return err
+		}
+		fastResumeVector := libtorrent.NewStdVectorChar()
+		for _, c := range fastResumeData {
+			fastResumeVector.PushBack(c)
+		}
+		torrentParams.SetResumeData(fastResumeVector)
+
+		torrentHandle := s.Session.AddTorrent(torrentParams)
+
+		if torrentHandle == nil {
+			return fmt.Errorf("Unable to add torrent from %s", fastResumeFile)
+		}
+
+		torrentName := torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName)).GetName()
+		s.log.Info("Downloading %s\n", torrentName)
+	}
+
+	return nil
 }
 
 func (s *BTService) alertsConsumer() {

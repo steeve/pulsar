@@ -114,6 +114,6 @@ func RemoveTorrent(btService *bittorrent.BTService) gin.HandlerFunc {
 			btService.Session.RemoveTorrent(torrentHandle, 0)
 		}
 
-		ctx.String(200, "")
+		ctx.Redirect(302, UrlForXBMC("/torrents/"))
 	}
 }

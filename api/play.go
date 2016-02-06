@@ -8,7 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/scakemyer/quasar/bittorrent"
 	"github.com/scakemyer/quasar/config"
-	"github.com/scakemyer/quasar/providers"
 	"github.com/scakemyer/quasar/util"
 	"github.com/scakemyer/quasar/xbmc"
 )
@@ -46,7 +45,7 @@ func Play(btService *bittorrent.BTService) gin.HandlerFunc {
 			magnet = torrent.Magnet()
 			infoHash = torrent.InfoHash
 			boosters := url.Values{
-				"tr": providers.DefaultTrackers,
+				"tr": bittorrent.DefaultTrackers,
 			}
 			magnet += "&" + boosters.Encode()
 		}

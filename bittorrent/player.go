@@ -120,7 +120,7 @@ func (btp *BTPlayer) addTorrent() error {
 	go btp.consumeAlerts()
 
 	if btp.torrentHandle == nil {
-		return fmt.Errorf("Unable to add torrent with uri %s", btp.uri)
+		return fmt.Errorf("Unable to add torrent with URI %s", btp.uri)
 	}
 
 	btp.log.Info("Enabling sequential download")
