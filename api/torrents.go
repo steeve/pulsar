@@ -32,13 +32,15 @@ func ListTorrents(btService *bittorrent.BTService) gin.HandlerFunc {
 				continue
 			}
 
-			torrentName := torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName)).GetName()
-			torrentsLog.Info(fmt.Sprintf("- %s", torrentName))
+			torrentStatus := torrentHandle.Status()
+			progress := float64(torrentStatus.GetProgress()) * 100
+			torrentName := torrentStatus.GetName()
+			torrentsLog.Info("- " + torrentName)
 
 			playUrl := UrlQuery(UrlForXBMC("/play"), "resume", fmt.Sprintf("%d", i))
 
 			item := xbmc.ListItem{
-				Label: torrentName,
+				Label: fmt.Sprintf("%.2f%% - %s", progress, torrentName),
 				Path: playUrl,
 				Info: &xbmc.ListItemInfo{
 					Title: torrentName,

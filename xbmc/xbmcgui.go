@@ -4,6 +4,10 @@ type DialogProgress struct {
 	hWnd int64
 }
 
+type DialogProgressBG struct {
+	hWnd int64
+}
+
 type OverlayStatus struct {
 	hWnd int64
 }
@@ -34,6 +38,34 @@ func (dp *DialogProgress) IsCanceled() bool {
 func (dp *DialogProgress) Close() {
 	retVal := -1
 	executeJSONRPCEx("DialogProgress_Close", &retVal, Args{dp.hWnd})
+}
+
+
+func NewDialogProgressBG(title, message string) *DialogProgressBG {
+	retVal := int64(-1)
+	executeJSONRPCEx("DialogProgressBG_Create", &retVal, Args{title, message})
+	if retVal < 0 {
+		return nil
+	}
+	return &DialogProgressBG{
+		hWnd: retVal,
+	}
+}
+
+func (dp *DialogProgressBG) Update(percent int, message string) {
+	retVal := -1
+	executeJSONRPCEx("DialogProgress_Update", &retVal, Args{dp.hWnd, percent, message})
+}
+
+func (dp *DialogProgressBG) IsFinished() bool {
+	retVal := 0
+	executeJSONRPCEx("DialogProgressBG_IsFinished", &retVal, Args{dp.hWnd})
+	return retVal != 0
+}
+
+func (dp *DialogProgressBG) Close() {
+	retVal := -1
+	executeJSONRPCEx("DialogProgressBG_Close", &retVal, Args{dp.hWnd})
 }
 
 

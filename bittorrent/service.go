@@ -16,6 +16,7 @@ import (
 	"github.com/scakemyer/libtorrent-go"
 	"github.com/scakemyer/quasar/broadcast"
 	"github.com/scakemyer/quasar/util"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
 const (
@@ -85,7 +86,13 @@ type BTService struct {
 	log               *logging.Logger
 	libtorrentLog     *logging.Logger
 	alertsBroadcaster *broadcast.Broadcaster
+	dialogProgressBG  *xbmc.DialogProgressBG
 	closing           chan interface{}
+}
+
+type activeTorrent struct {
+	torrentName       string
+	progress          int
 }
 
 func NewBTService(config BTConfiguration) *BTService {
@@ -101,6 +108,7 @@ func NewBTService(config BTConfiguration) *BTService {
 	s.configure()
 	go s.saveResumeDataConsumer()
 	go s.saveResumeDataLoop()
+	go s.downloadProgress()
 	go s.alertsConsumer()
 	go s.logAlerts()
 
@@ -260,6 +268,10 @@ func (s *BTService) startServices() {
 }
 
 func (s *BTService) stopServices() {
+	if s.dialogProgressBG != nil {
+		s.dialogProgressBG.Close()
+	}
+
 	s.log.Info("Stopping DHT...")
 	s.Session.StopDht()
 
@@ -368,12 +380,70 @@ func (s *BTService) loadFastResumeFiles() error {
 		if torrentHandle == nil {
 			return fmt.Errorf("Unable to add torrent from %s", fastResumeFile)
 		}
-
-		torrentName := torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName)).GetName()
-		s.log.Info("Downloading %s\n", torrentName)
 	}
 
 	return nil
+}
+
+func (s *BTService) downloadProgress() {
+	rotateTicker := time.NewTicker(5 * time.Second)
+	defer rotateTicker.Stop()
+
+	showNext := 0
+	for {
+		select {
+		case <-rotateTicker.C:
+			torrentsVector := s.Session.GetTorrents()
+			torrentsVectorSize := int(torrentsVector.Size())
+			totalProgress := 0
+			activeTorrents := make([]*activeTorrent, 0)
+
+			for i := 0; i < torrentsVectorSize; i++ {
+				torrentHandle := torrentsVector.Get(i)
+				if torrentHandle.IsValid() == false {
+					continue
+				}
+
+				torrentStatus := torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
+				if torrentStatus.GetHasMetadata() == false {
+					continue
+				}
+
+				torrentName := torrentStatus.GetName()
+				progress := int(float64(torrentStatus.GetProgress()) * 100)
+
+				if progress < 100 {
+					activeTorrents = append(activeTorrents, &activeTorrent{
+						torrentName: torrentName,
+						progress: progress,
+					})
+					totalProgress += progress
+				}
+			}
+
+			activeDownloads := len(activeTorrents)
+			if activeDownloads > 0 {
+				showProgress := totalProgress / activeDownloads
+				showTorrent := "Total"
+				if showNext >= activeDownloads {
+					showNext = 0
+				} else {
+					showProgress = activeTorrents[showNext].progress
+					showTorrent = activeTorrents[showNext].torrentName
+					if len(showTorrent) > 32 {
+						showTorrent = showTorrent[:32]
+					}
+					showNext += 1
+				}
+				if s.dialogProgressBG == nil {
+					s.dialogProgressBG = xbmc.NewDialogProgressBG("Quasar", "")
+				}
+				s.dialogProgressBG.Update(showProgress, fmt.Sprintf("Quasar - %s", showTorrent))
+			} else if s.dialogProgressBG != nil {
+				s.dialogProgressBG.Close()
+			}
+		}
+	}
 }
 
 func (s *BTService) alertsConsumer() {
