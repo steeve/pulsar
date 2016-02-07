@@ -27,17 +27,6 @@ const (
 	minCandidateSize   = 100 * 1024 * 1024
 )
 
-var statusStrings = []string{
-	"Queued",
-	"Checking",
-	"Finding",
-	"Buffering",
-	"Finished",
-	"Seeding",
-	"Allocating",
-	"Stalled",
-}
-
 type BTPlayer struct {
 	bts                      *BTService
 	uri                      string
@@ -279,7 +268,7 @@ func (btp *BTPlayer) onMetadataReceived() {
 }
 
 func (btp *BTPlayer) statusStrings(progress float64, status libtorrent.TorrentStatus) (string, string, string) {
-	line1 := fmt.Sprintf("%s (%.2f%%)", statusStrings[int(status.GetState())], progress*100)
+	line1 := fmt.Sprintf("%s (%.2f%%)", StatusStrings[int(status.GetState())], progress*100)
 	if btp.torrentInfo != nil && btp.torrentInfo.Swigcptr() != 0 {
 		line1 += " - " + humanize.Bytes(uint64(btp.torrentInfo.TotalSize()))
 	}

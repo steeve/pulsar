@@ -50,6 +50,17 @@ var DefaultTrackers = []string{
 	"udp://pow7.com:80/announce",
 }
 
+var StatusStrings = []string{
+	"Queued",
+	"Checking",
+	"Finding",
+	"Buffering",
+	"Finished",
+	"Seeding",
+	"Allocating",
+	"Stalled",
+}
+
 const (
 	ProxyTypeNone = iota
 	ProxyTypeSocks4
