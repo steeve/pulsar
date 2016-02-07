@@ -35,17 +35,17 @@ func ListTorrents(btService *bittorrent.BTService) gin.HandlerFunc {
 			torrentStatus := torrentHandle.Status()
 			progress := float64(torrentStatus.GetProgress()) * 100
 			torrentName := torrentStatus.GetName()
-			torrentsLog.Info("- " + torrentName)
 
-			playUrl := UrlQuery(UrlForHTTP("/play"), "resume", fmt.Sprintf("%d", i))
+			playUrl := UrlQuery(UrlForXBMC("/play"), "resume", fmt.Sprintf("%d", i))
 
 			status := bittorrent.StatusStrings[int(torrentStatus.GetState())]
-			if torrentStatus.GetPaused() {
+			if torrentStatus.GetPaused() || btService.Session.IsPaused() {
 				status = "Paused"
 			}
+			torrentsLog.Info(fmt.Sprintf("%s - %d - %s", status, int(progress), torrentName))
 
 			item := xbmc.ListItem{
-				Label: fmt.Sprintf("%.2f%% - %s - %s", progress, status, torrentName),
+				Label: fmt.Sprintf("%s - %.2f%% - %s", status, progress, torrentName),
 				Path: playUrl,
 				Info: &xbmc.ListItemInfo{
 					Title: torrentName,
@@ -55,12 +55,28 @@ func ListTorrents(btService *bittorrent.BTService) gin.HandlerFunc {
 				[]string{"LOCALIZE[30230]", fmt.Sprintf("XBMC.PlayMedia(%s)", playUrl)},
 				[]string{"LOCALIZE[30231]", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/torrents/pause/%d", i))},
 				[]string{"LOCALIZE[30232]", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/torrents/delete/%d", i))},
+				[]string{"LOCALIZE[30233]", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/torrents/pause"))},
+				[]string{"LOCALIZE[30234]", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/torrents/resume"))},
 			}
 			item.IsPlayable = true
 			items = append(items, &item)
 		}
 
 		ctx.JSON(200, xbmc.NewView("", items))
+	}
+}
+
+func PauseSession(btService *bittorrent.BTService) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		btService.Session.Pause()
+		ctx.Redirect(302, UrlForHTTP("/torrents/"))
+	}
+}
+
+func ResumeSession(btService *bittorrent.BTService) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		btService.Session.Resume()
+		ctx.Redirect(302, UrlForHTTP("/torrents/"))
 	}
 }
 
@@ -83,7 +99,8 @@ func PauseTorrent(btService *bittorrent.BTService) gin.HandlerFunc {
 		torrentsLog.Info(fmt.Sprintf("Pausing torrent %s", torrentHandle.Status(uint(0)).GetName()))
 		torrentHandle.AutoManaged(false)
 		torrentHandle.Pause(1)
-		ctx.String(200, "")
+
+		ctx.Redirect(302, UrlForHTTP("/torrents/"))
 	}
 }
 
@@ -121,6 +138,6 @@ func RemoveTorrent(btService *bittorrent.BTService) gin.HandlerFunc {
 			btService.Session.RemoveTorrent(torrentHandle, 0)
 		}
 
-		ctx.Redirect(302, UrlForXBMC("/torrents/"))
+		ctx.Redirect(302, UrlForHTTP("/torrents/"))
 	}
 }
