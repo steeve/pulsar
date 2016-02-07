@@ -1,12 +1,15 @@
 package api
 
 import (
+	"os"
 	"fmt"
 	"net/url"
 	"strconv"
+	"encoding/hex"
 
 	"github.com/gin-gonic/gin"
 	"github.com/scakemyer/quasar/bittorrent"
+	"github.com/scakemyer/libtorrent-go"
 	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/util"
 	"github.com/scakemyer/quasar/xbmc"
@@ -64,9 +67,18 @@ func Play(btService *bittorrent.BTService) gin.HandlerFunc {
 }
 
 func PasteURL(ctx *gin.Context) {
-	magnet := xbmc.Keyboard("", "LOCALIZE[30217]")
-	if magnet == "" {
+	retval := xbmc.InsertTorrent()
+	if retval["path"] == "" {
 		return
+	} else if retval["type"] == "url" {
+		xbmc.PlayURL(UrlQuery(UrlForXBMC("/play"), "uri", retval["path"]))
+	} else if retval["type"] == "file" {
+		if _, err := os.Stat(retval["path"]); err == nil {
+			info := libtorrent.NewTorrentInfo(retval["path"])
+			shaHash := info.InfoHash().ToString()
+			infoHash := hex.EncodeToString([]byte(shaHash))
+			magnet := fmt.Sprintf("magnet:?xt=urn:btih:%s&dn=%s", infoHash, info.Name())
+			xbmc.PlayURL(UrlQuery(UrlForXBMC("/play"), "uri", magnet))
+		}
 	}
-	xbmc.PlayURL(UrlQuery(UrlForXBMC("/play"), "uri", magnet))
 }
