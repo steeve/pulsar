@@ -55,6 +55,9 @@ func (episodes EpisodeList) ToListItems(show *Show) []*xbmc.ListItem {
 	}
 	now := time.Now().UTC()
 	for _, episode := range episodes {
+		if episode.FirstAired == "" {
+			continue
+		}
 		airedDateTime := fmt.Sprintf("%s %s EST", episode.FirstAired, show.AirsTime)
 		firstAired, _ := time.Parse("2006-01-02 3:04 PM MST", airedDateTime)
 		if firstAired.Add(time.Duration(show.Runtime) * time.Minute).After(now) {
