@@ -56,8 +56,8 @@ type BTPlayer struct {
 	deleteAfter              bool
 	backgroundHandling       bool
 	resume                   int
-	fastResuming             bool
 	fastResumeFile           string
+	notEnoughSpace           bool
 	diskStatus               *diskusage.DiskStatus
 	closing                  chan interface{}
 	bufferEvents             *broadcast.Broadcaster
@@ -73,8 +73,8 @@ func NewBTPlayer(bts *BTService, uri string, fileIndex int, resume int, infoHash
 		backgroundHandling:   config.Get().BackgroundHandling == true,
 		deleteAfter:          config.Get().KeepFilesAfterStop == false,
 		resume:               resume,
-		fastResuming:         false,
 		fastResumeFile:       "",
+		notEnoughSpace:       false,
 		closing:              make(chan interface{}),
 		bufferEvents:         broadcast.NewBroadcaster(),
 		bufferPiecesProgress: map[int]float64{},
@@ -103,7 +103,6 @@ func (btp *BTPlayer) addTorrent() error {
 	fastResumeFile := filepath.Join(btp.bts.config.DownloadPath, fmt.Sprintf("%s.fastresume", btp.infoHash))
 	if _, err := os.Stat(fastResumeFile); err == nil {
 		btp.log.Info("Found fast resume data...")
-		btp.fastResuming = true
 		btp.fastResumeFile = fastResumeFile
 		fastResumeData, err := ioutil.ReadFile(fastResumeFile)
 		if err != nil {
@@ -207,6 +206,7 @@ func (btp *BTPlayer) CheckAvailableSpace() bool {
 			btp.log.Info("Unsufficient free space on %s. Has %d, needs %d.", btp.bts.config.DownloadPath, btp.diskStatus.Free, sizeLeft)
 			xbmc.Notify("Quasar", "LOCALIZE[30207]", config.AddonIcon())
 			btp.bufferEvents.Broadcast(errors.New("Not enough space on download destination."))
+			btp.notEnoughSpace = true
 			return false
 		}
 	}
@@ -350,21 +350,17 @@ func (btp *BTPlayer) chooseFile() (libtorrent.FileEntry, error) {
 func (btp *BTPlayer) onStateChanged(stateAlert libtorrent.StateChangedAlert) {
 	switch stateAlert.GetState() {
 	case libtorrent.TorrentStatusFinished:
-		if btp.fastResuming == false {
-			btp.log.Info("Buffer is finished, resetting piece priorities...")
-			piecesPriorities := libtorrent.NewStdVectorInt()
-			defer libtorrent.DeleteStdVectorInt(piecesPriorities)
-			numPieces := btp.torrentInfo.NumPieces()
-			for i := 0; i < numPieces; i++ {
-				piecesPriorities.PushBack(1)
-			}
-			btp.torrentHandle.PrioritizePieces(piecesPriorities)
+		btp.log.Info("Buffer is finished, resetting piece priorities...")
+		piecesPriorities := libtorrent.NewStdVectorInt()
+		defer libtorrent.DeleteStdVectorInt(piecesPriorities)
+		numPieces := btp.torrentInfo.NumPieces()
+		for i := 0; i < numPieces; i++ {
+			piecesPriorities.PushBack(1)
 		}
+		btp.torrentHandle.PrioritizePieces(piecesPriorities)
 		break
 	case libtorrent.TorrentStatusDownloading:
-		if btp.fastResuming == false {
-			btp.CheckAvailableSpace()
-		}
+		btp.CheckAvailableSpace()
 		break
 	}
 }
@@ -372,7 +368,7 @@ func (btp *BTPlayer) onStateChanged(stateAlert libtorrent.StateChangedAlert) {
 func (btp *BTPlayer) Close() {
 	close(btp.closing)
 
-	if btp.backgroundHandling == false {
+	if btp.backgroundHandling == false || btp.notEnoughSpace {
 		if btp.torrentInfo != nil && btp.torrentInfo.Swigcptr() != 0 {
 			libtorrent.DeleteTorrentInfo(btp.torrentInfo)
 		}
