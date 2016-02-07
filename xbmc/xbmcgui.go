@@ -12,6 +12,11 @@ type OverlayStatus struct {
 	hWnd int64
 }
 
+func InsertTorrent() map[string]string {
+	var retVal map[string]string
+	executeJSONRPCEx("InsertTorrent", &retVal, nil)
+	return retVal
+}
 
 func NewDialogProgress(title, line1, line2, line3 string) *DialogProgress {
 	retVal := int64(-1)
