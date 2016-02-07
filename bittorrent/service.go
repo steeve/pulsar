@@ -68,6 +68,7 @@ type ProxySettings struct {
 }
 
 type BTConfiguration struct {
+	BackgroundHandling  bool
 	BufferSize          int
 	MaxUploadRate       int
 	MaxDownloadRate     int
@@ -112,7 +113,9 @@ func NewBTService(config BTConfiguration) *BTService {
 	go s.alertsConsumer()
 	go s.logAlerts()
 
-	go s.loadFastResumeFiles()
+	if config.BackgroundHandling {
+		go s.loadFastResumeFiles()
+	}
 
 	return s
 }
