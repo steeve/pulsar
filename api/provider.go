@@ -21,7 +21,7 @@ func ProviderGetMovie(ctx *gin.Context) {
 	provider := ctx.Params.ByName("provider")
 	log.Println("Searching links for IMDB:", imdbId)
 	movie := tmdb.GetMovieFromIMDB(imdbId, "en")
-	log.Printf("Resolved %s to %s\n", imdbId, movie.Title)
+	log.Printf("Resolved %s to %s", imdbId, movie.Title)
 
 	searcher := providers.NewAddonSearcher(provider)
 	torrents := searcher.SearchMovieLinks(movie)
@@ -55,7 +55,7 @@ func ProviderGetEpisode(ctx *gin.Context) {
 	}
 	episode := show.Seasons[seasonNumber].Episodes[episodeNumber-1]
 
-	log.Printf("Resolved %s to %s\n", showId, show.SeriesName)
+	log.Printf("Resolved %s to %s", showId, show.SeriesName)
 
 	searcher := providers.NewAddonSearcher(provider)
 	torrents := searcher.SearchEpisodeLinks(show, episode)

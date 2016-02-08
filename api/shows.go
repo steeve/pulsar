@@ -190,7 +190,7 @@ func showEpisodeLinks(showId string, seasonNumber, episodeNumber int) ([]*bittor
 
 	episode := show.Seasons[seasonNumber].Episodes[episodeNumber-1]
 
-	log.Printf("Resolved %s to %s\n", showId, show.SeriesName)
+	log.Printf("Resolved %s to %s", showId, show.SeriesName)
 
 	searchers := providers.GetEpisodeSearchers()
 	if len(searchers) == 0 {

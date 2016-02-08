@@ -41,6 +41,7 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 		torrents.GET("/pause", PauseSession(btService))
 		torrents.GET("/resume", ResumeSession(btService))
 		torrents.GET("/pause/:torrentId", PauseTorrent(btService))
+		torrents.GET("/resume/:torrentId", ResumeTorrent(btService))
 		torrents.GET("/delete/:torrentId", RemoveTorrent(btService))
 	}
 

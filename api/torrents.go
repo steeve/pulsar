@@ -42,10 +42,10 @@ func ListTorrents(btService *bittorrent.BTService) gin.HandlerFunc {
 			if torrentStatus.GetPaused() || btService.Session.IsPaused() {
 				status = "Paused"
 			}
-			torrentsLog.Info(fmt.Sprintf("%s - %d - %s", status, int(progress), torrentName))
+			torrentsLog.Info(fmt.Sprintf("- %s - %s", status, torrentName))
 
 			item := xbmc.ListItem{
-				Label: fmt.Sprintf("%s - %.2f%% - %s", status, progress, torrentName),
+				Label: fmt.Sprintf("%.2f%% - %s - %s", progress, status, torrentName),
 				Path: playUrl,
 				Info: &xbmc.ListItemInfo{
 					Title: torrentName,
@@ -53,6 +53,7 @@ func ListTorrents(btService *bittorrent.BTService) gin.HandlerFunc {
 			}
 			item.ContextMenu = [][]string{
 				[]string{"LOCALIZE[30230]", fmt.Sprintf("XBMC.PlayMedia(%s)", playUrl)},
+				[]string{"LOCALIZE[30235]", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/torrents/resume/%d", i))},
 				[]string{"LOCALIZE[30231]", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/torrents/pause/%d", i))},
 				[]string{"LOCALIZE[30232]", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/torrents/delete/%d", i))},
 				[]string{"LOCALIZE[30233]", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/torrents/pause"))},
@@ -69,14 +70,36 @@ func ListTorrents(btService *bittorrent.BTService) gin.HandlerFunc {
 func PauseSession(btService *bittorrent.BTService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		btService.Session.Pause()
-		ctx.Redirect(302, UrlForHTTP("/torrents/"))
+		ctx.String(200, "")
 	}
 }
 
 func ResumeSession(btService *bittorrent.BTService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		btService.Session.Resume()
-		ctx.Redirect(302, UrlForHTTP("/torrents/"))
+		ctx.String(200, "")
+	}
+}
+
+func ResumeTorrent(btService *bittorrent.BTService) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		torrentsVector := btService.Session.GetTorrents()
+		torrentId := ctx.Params.ByName("torrentId")
+		torrentIndex, _ := strconv.Atoi(torrentId)
+		torrentHandle := torrentsVector.Get(torrentIndex)
+
+		if torrentHandle == nil {
+			ctx.Error(errors.New(fmt.Sprintf("Unable to resume torrent with index %d", torrentIndex)))
+		}
+
+		status := torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
+
+		torrentName := status.GetName()
+		torrentsLog.Info("Resuming %s", torrentName)
+
+		torrentHandle.AutoManaged(true)
+
+		ctx.String(200, "")
 	}
 }
 
@@ -100,7 +123,7 @@ func PauseTorrent(btService *bittorrent.BTService) gin.HandlerFunc {
 		torrentHandle.AutoManaged(false)
 		torrentHandle.Pause(1)
 
-		ctx.Redirect(302, UrlForHTTP("/torrents/"))
+		ctx.String(200, "")
 	}
 }
 
@@ -138,6 +161,6 @@ func RemoveTorrent(btService *bittorrent.BTService) gin.HandlerFunc {
 			btService.Session.RemoveTorrent(torrentHandle, 0)
 		}
 
-		ctx.Redirect(302, UrlForHTTP("/torrents/"))
+		ctx.String(200, "")
 	}
 }

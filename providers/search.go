@@ -94,7 +94,7 @@ func processLinks(torrentsChan chan *bittorrent.Torrent) []*bittorrent.Torrent {
 
 	for _, torrent := range torrents {
 		if torrent.InfoHash == "" { // ignore torrents whose infohash is empty
-			log.Error("Infohash is empty for %s\n", torrent.URI)
+			log.Error("InfoHash is empty for %s", torrent.URI)
 			continue
 		}
 		if existingTorrent, exists := torrentsMap[torrent.InfoHash]; exists {
@@ -151,7 +151,7 @@ func processLinks(torrentsChan chan *bittorrent.Torrent) []*bittorrent.Torrent {
 			go func(tracker *bittorrent.Tracker) {
 				defer wg.Done()
 				if err := tracker.Connect(); err != nil {
-					log.Info("Tracker %s is not available because: %s\n", tracker, err)
+					log.Info("Tracker %s is not available because: %s", tracker, err)
 					return
 				}
 				scrapeResults <- tracker.Scrape(torrents)

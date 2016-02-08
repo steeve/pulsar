@@ -407,6 +407,12 @@ func (s *BTService) downloadProgress() {
 	for {
 		select {
 		case <-rotateTicker.C:
+			if s.Session.IsPaused() && s.dialogProgressBG != nil {
+				s.dialogProgressBG.Close()
+				s.dialogProgressBG = nil
+				continue
+			}
+
 			torrentsVector := s.Session.GetTorrents()
 			torrentsVectorSize := int(torrentsVector.Size())
 			totalProgress := 0
@@ -419,7 +425,7 @@ func (s *BTService) downloadProgress() {
 				}
 
 				torrentStatus := torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
-				if torrentStatus.GetHasMetadata() == false {
+				if torrentStatus.GetHasMetadata() == false  || torrentStatus.GetPaused() || s.Session.IsPaused() {
 					continue
 				}
 
@@ -455,6 +461,7 @@ func (s *BTService) downloadProgress() {
 				s.dialogProgressBG.Update(showProgress, fmt.Sprintf("Quasar - %s", showTorrent))
 			} else if s.dialogProgressBG != nil {
 				s.dialogProgressBG.Close()
+				s.dialogProgressBG = nil
 			}
 		}
 	}

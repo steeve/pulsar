@@ -85,7 +85,7 @@ func (btp *BTPlayer) addTorrent() error {
 
 	torrentParams.SetUrl(btp.uri)
 
-	btp.log.Info("Setting save path to %s\n", btp.bts.config.DownloadPath)
+	btp.log.Info("Setting save path to %s", btp.bts.config.DownloadPath)
 	torrentParams.SetSavePath(btp.bts.config.DownloadPath)
 
 	btp.log.Info("Checking for fast resume data in %s.fastresume", btp.infoHash)
@@ -117,7 +117,7 @@ func (btp *BTPlayer) addTorrent() error {
 	status := btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
 
 	btp.torrentName = status.GetName()
-	btp.log.Info("Downloading %s\n", btp.torrentName)
+	btp.log.Info("Downloading %s", btp.torrentName)
 
 	if status.GetHasMetadata() == true {
 		btp.onMetadataReceived()
@@ -138,7 +138,7 @@ func (btp *BTPlayer) resumeTorrent(torrentIndex int) error {
 	status := btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
 
 	btp.torrentName = status.GetName()
-	btp.log.Info("Resuming %s\n", btp.torrentName)
+	btp.log.Info("Resuming %s", btp.torrentName)
 
 	if status.GetHasMetadata() == true {
 		btp.onMetadataReceived()

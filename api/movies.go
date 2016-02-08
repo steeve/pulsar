@@ -181,7 +181,7 @@ func movieLinks(imdbId string) ([]*bittorrent.Torrent, string) {
 
 	movie := tmdb.GetMovieFromIMDB(imdbId, config.Get().Language)
 
-	log.Printf("Resolved %s to %s\n", imdbId, movie.Title)
+	log.Printf("Resolved %s to %s", imdbId, movie.Title)
 
 	searchers := providers.GetMovieSearchers()
 	if len(searchers) == 0 {
