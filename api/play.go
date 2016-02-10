@@ -10,7 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/scakemyer/quasar/bittorrent"
 	"github.com/scakemyer/libtorrent-go"
-	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/util"
 	"github.com/scakemyer/quasar/xbmc"
 )
@@ -57,11 +56,8 @@ func Play(btService *bittorrent.BTService) gin.HandlerFunc {
 		if player.Buffer() != nil {
 			return
 		}
-		hostname := "localhost"
-		if localIP, err := util.LocalIP(); err == nil {
-			hostname = localIP.String()
-		}
-		rUrl, _ := url.Parse(fmt.Sprintf("http://%s:%d/files/%s", hostname, config.ListenPort, player.PlayURL()))
+
+		rUrl, _ := url.Parse(fmt.Sprintf("%s/files/%s", util.GetHTTPHost(), player.PlayURL()))
 		ctx.Redirect(302, rUrl.String())
 	}
 }

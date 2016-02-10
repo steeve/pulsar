@@ -10,6 +10,11 @@ func ResetRPC() (retVal string) {
 	return
 }
 
+func Refresh() (retVal string) {
+	executeJSONRPCEx("Refresh", &retVal, nil)
+	return
+}
+
 func VideoLibraryScan() {
 	var retVal string
 	executeJSONRPC("VideoLibrary.Scan", &retVal, nil)

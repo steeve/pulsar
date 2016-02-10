@@ -92,7 +92,7 @@ func SubtitlesIndex(ctx *gin.Context) {
 
 	// are we reading a file from Quasar?
 	if strings.HasPrefix(playingFile, util.GetHTTPHost()) {
-		playingFile = strings.Replace(playingFile, util.GetHTTPHost()+"/files", config.Get().DownloadPath, 1)
+		playingFile = strings.Replace(playingFile, util.GetHTTPHost() + "/files", config.Get().DownloadPath, 1)
 		playingFile, _ = url.QueryUnescape(playingFile)
 	}
 

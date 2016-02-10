@@ -128,6 +128,10 @@ func GetAddonFiles(ctx *gin.Context) {
 	}
 }
 
+func GetAddonFilesHead(ctx *gin.Context) {
+	ctx.String(200, "")
+}
+
 func addonZip(ctx *gin.Context, user string, repository string, lastReleaseTag string) {
 	release := getReleaseByTag(user, repository, lastReleaseTag)
 	// if there a release with an asset that matches a addon zip, use it

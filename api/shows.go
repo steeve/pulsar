@@ -63,7 +63,7 @@ func renderShows(shows tmdb.Shows, ctx *gin.Context, page int) {
 		item := show.ToListItem()
 		item.Path = UrlForXBMC("/show/%d/seasons", show.ExternalIDs.TVDBID)
 		item.ContextMenu = [][]string{
-			[]string{"LOCALIZE[30219]", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/library/show/addremove/%d", show.ExternalIDs.TVDBID))},
+			[]string{"LOCALIZE[30219]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/show/addremove/%d", show.ExternalIDs.TVDBID))},
 		}
 		items = append(items, item)
 	}

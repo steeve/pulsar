@@ -52,6 +52,7 @@ func MoviesIndex(ctx *gin.Context) {
 	items := xbmc.ListItems{
 		{Label: "LOCALIZE[30209]", Path: UrlForXBMC("/movies/search"), Thumbnail: config.AddonResource("img", "search.png")},
 		{Label: "LOCALIZE[30210]", Path: UrlForXBMC("/movies/popular"), Thumbnail: config.AddonResource("img", "popular.png")},
+		{Label: "LOCALIZE[30236]", Path: UrlForXBMC("/movies/recent"), Thumbnail: config.AddonResource("img", "clock.png")},
 		{Label: "LOCALIZE[30211]", Path: UrlForXBMC("/movies/top"), Thumbnail: config.AddonResource("img", "top_rated.png")},
 		{Label: "LOCALIZE[30212]", Path: UrlForXBMC("/movies/mostvoted"), Thumbnail: config.AddonResource("img", "most_voted.png")},
 		{Label: "LOCALIZE[30213]", Path: UrlForXBMC("/movies/imdb250"), Thumbnail: config.AddonResource("img", "imdb.png")},
@@ -62,6 +63,9 @@ func MoviesIndex(ctx *gin.Context) {
 			Label:     genre.Name,
 			Path:      UrlForXBMC("/movies/popular/%s", strconv.Itoa(genre.Id)),
 			Thumbnail: config.AddonResource("img", fmt.Sprintf("genre_%s.png", slug)),
+			ContextMenu: [][]string{
+				[]string{"LOCALIZE[30236]", fmt.Sprintf("Container.Update(%s)", UrlForXBMC("/movies/recent/%s", strconv.Itoa(genre.Id)))},
+			},
 		})
 	}
 	ctx.JSON(200, xbmc.NewView("", items))
@@ -78,8 +82,8 @@ func renderMovies(movies tmdb.Movies, ctx *gin.Context, page int) {
 			continue
 		}
 		item := movie.ToListItem()
-		playUrl := UrlForXBMC("/movie/%s/play", movie.IMDBId)
-		movieLinksUrl := UrlForXBMC("/movie/%s/links", movie.IMDBId)
+		playUrl := UrlForXBMC("/movie/%d/play", movie.Id)
+		movieLinksUrl := UrlForXBMC("/movie/%d/links", movie.Id)
 		if config.Get().ChooseStreamAuto == true {
 			item.Path = playUrl
 		} else {
@@ -89,7 +93,11 @@ func renderMovies(movies tmdb.Movies, ctx *gin.Context, page int) {
 			[]string{"LOCALIZE[30202]", fmt.Sprintf("XBMC.PlayMedia(%s)", movieLinksUrl)},
 			[]string{"LOCALIZE[30023]", fmt.Sprintf("XBMC.PlayMedia(%s)", playUrl)},
 			[]string{"LOCALIZE[30203]", "XBMC.Action(Info)"},
-			[]string{"LOCALIZE[30219]", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/library/movie/addremove/%s", movie.IMDBId))},
+		}
+		if movie.IMDBId != "" {
+			item.ContextMenu = append(item.ContextMenu, []string{
+				"LOCALIZE[30219]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/movie/addremove/%s", movie.IMDBId)),
+			})
 		}
 		item.Info.Trailer = UrlForHTTP("/youtube/%s", item.Info.Trailer)
 		item.IsPlayable = true
@@ -115,11 +123,26 @@ func PopularMovies(ctx *gin.Context) {
 	page := -1
 	if config.Get().EnablePagination == true {
 		currentpage, err := strconv.Atoi(ctx.DefaultQuery("page", "0"))
-    	if err == nil {
+		if err == nil {
 			page = currentpage
 		}
 	}
 	renderMovies(tmdb.PopularMoviesComplete(genre, config.Get().Language, page), ctx, page)
+}
+
+func RecentMovies(ctx *gin.Context) {
+	genre := ctx.Params.ByName("genre")
+	if genre == "0" {
+		genre = ""
+	}
+	page := -1
+	if config.Get().EnablePagination == true {
+		currentpage, err := strconv.Atoi(ctx.DefaultQuery("page", "0"))
+		if err == nil {
+			page = currentpage
+		}
+	}
+	renderMovies(tmdb.RecentMoviesComplete(genre, config.Get().Language, page), ctx, page)
 }
 
 func TopRatedMovies(ctx *gin.Context) {
@@ -130,7 +153,7 @@ func TopRatedMovies(ctx *gin.Context) {
 	page := -1
 	if config.Get().EnablePagination == true {
 		currentpage, err := strconv.Atoi(ctx.DefaultQuery("page", "0"))
-    	if err == nil {
+		if err == nil {
 			page = currentpage
 		}
 	}
@@ -145,7 +168,7 @@ func MoviesMostVoted(ctx *gin.Context) {
 	page := -1
 	if config.Get().EnablePagination == true {
 		currentpage, err := strconv.Atoi(ctx.DefaultQuery("page", "0"))
-    	if err == nil {
+		if err == nil {
 			page = currentpage
 		}
 	}

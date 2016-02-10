@@ -58,7 +58,7 @@ func GetShow(showId int, language string) *Show {
 				"language": language,
 			}.AsUrlValues()
 			napping.Get(
-				tmdbEndpoint+"tv/"+strconv.Itoa(showId),
+				tmdbEndpoint + "tv/" + strconv.Itoa(showId),
 				&urlValues,
 				&show,
 				nil,
@@ -104,7 +104,7 @@ func SearchShows(query string, language string) Shows {
 			"query":query,
 		}.AsUrlValues()
 		napping.Get(
-			tmdbEndpoint+"search/tv",
+			tmdbEndpoint + "search/tv",
 			&urlValues,
 			&results,
 			nil,
@@ -122,7 +122,7 @@ func ListShowsComplete(endpoint string, params napping.Params, page int) Shows {
 	if page >= 0 {
 		MaxPages = 1
 	}
-	shows := make(Shows, MaxPages*moviesPerPage)
+	shows := make(Shows, MaxPages * moviesPerPage)
 
 	params["api_key"] = apiKey
 
@@ -130,7 +130,7 @@ func ListShowsComplete(endpoint string, params napping.Params, page int) Shows {
 	for i := 0; i < MaxPages; i++ {
 		wg.Add(1)
 		currentpage := i
-		startMoviesIndex := i*moviesPerPage
+		startMoviesIndex := i * moviesPerPage
 		if page >= 0 {
 			currentpage = page
 		}
@@ -146,7 +146,7 @@ func ListShowsComplete(endpoint string, params napping.Params, page int) Shows {
       urlValues := tmpParams.AsUrlValues()
 			rateLimiter.Call(func() {
 				napping.Get(
-					tmdbEndpoint+endpoint,
+					tmdbEndpoint + endpoint,
 					&urlValues,
 					&tmp,
 					nil,
@@ -202,7 +202,7 @@ func GetTVGenres(language string) []*Genre {
 			"language": language,
 		}.AsUrlValues()
 		napping.Get(
-			tmdbEndpoint+"genre/tv/list",
+			tmdbEndpoint + "genre/tv/list",
 			&urlValues,
 			&genres,
 			nil,

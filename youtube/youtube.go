@@ -28,7 +28,7 @@ type YTPlayerConfig struct {
 }
 
 type YTSearchItems struct {
-    Item[] struct{
+    Item[]struct{
     	ID struct{
     		Kind    string `json:"kind"`
     		VideoID string `json:"videoId"`

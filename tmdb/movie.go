@@ -2,12 +2,12 @@ package tmdb
 
 import (
 	"fmt"
-	"math/rand"
 	"path"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
+	"strconv"
+	"strings"
+	"math/rand"
 
 	"github.com/jmcvetta/napping"
 	"github.com/scakemyer/quasar/cache"
@@ -24,18 +24,19 @@ const (
 type Movie struct {
 	Entity
 
-	IMDBId              string      `json:"imdb_id"`
-	Overview            string      `json:"overview"`
-	ProductionCompanies []*IdName   `json:"production_companies"`
-	Runtime             int         `json:"runtime"`
-	TagLine             string      `json:"tagline"`
-	RawPopularity       interface{} `json:"popularity"`
-	Popularity          float64     `json:"-"`
+	IMDBId              string       `json:"imdb_id"`
+	Overview            string       `json:"overview"`
+	ProductionCompanies []*IdName    `json:"production_companies"`
+	Runtime             int          `json:"runtime"`
+	TagLine             string       `json:"tagline"`
+	RawPopularity       interface{}  `json:"popularity"`
+	Popularity          float64      `json:"-"`
+	SpokenLanguages     []*Language  `json:"spoken_languages"`
+	ExternalIDs         *ExternalIDs `json:"external_ids"`
+
 	AlternativeTitles   *struct {
 		Titles []*AlternativeTitle `json:"titles"`
 	} `json:"alternative_titles"`
-	SpokenLanguages []*Language  `json:"spoken_languages"`
-	ExternalIDs     *ExternalIDs `json:"external_ids"`
 
 	Translations *struct {
 		Translations []*Language `json:"translations"`
@@ -71,7 +72,7 @@ func getMovieById(movieId string, language string) *Movie {
 				"language": language,
 			}.AsUrlValues()
 			napping.Get(
-				tmdbEndpoint+"movie/"+movieId,
+				tmdbEndpoint + "movie/" + movieId,
 				&urlValues,
 				&movie,
 				nil,
@@ -133,7 +134,7 @@ func SearchMovies(query string, language string) Movies {
 			"query": query,
 		}.AsUrlValues()
 		napping.Get(
-			tmdbEndpoint+"search/movie",
+			tmdbEndpoint + "search/movie",
 			&urlValues,
 			&results,
 			nil,
@@ -153,7 +154,7 @@ func GetList(listId string, language string) Movies {
 			"api_key": apiKey,
 		}.AsUrlValues()
 		napping.Get(
-			tmdbEndpoint+"list/"+listId,
+			tmdbEndpoint + "list/" + listId,
 			&urlValues,
 			&results,
 			nil,
@@ -177,14 +178,14 @@ func ListMoviesComplete(endpoint string, params napping.Params, page int) Movies
 	if page >= 0 {
 		MaxPages = 1
 	}
-	movies := make(Movies, MaxPages*moviesPerPage)
+	movies := make(Movies, MaxPages * moviesPerPage)
 	params["api_key"] = apiKey
 
 	wg := sync.WaitGroup{}
 	for i := 0; i < MaxPages; i++ {
 		wg.Add(1)
 		currentpage := i
-		startMoviesIndex := i*moviesPerPage
+		startMoviesIndex := i * moviesPerPage
 		if page >= 0 {
 			currentpage = page
 		}
@@ -200,14 +201,14 @@ func ListMoviesComplete(endpoint string, params napping.Params, page int) Movies
       urlValues := tmpParams.AsUrlValues()
 			rateLimiter.Call(func() {
 				napping.Get(
-					tmdbEndpoint+endpoint,
+					tmdbEndpoint + endpoint,
 					&urlValues,
 					&tmp,
 					nil,
 				)
 			})
 			for i, movie := range tmp.Results {
-				movies[startMoviesIndex+i] = GetMovie(movie.Id, params["language"])
+				movies[startMoviesIndex + i] = GetMovie(movie.Id, params["language"])
 			}
 		}(currentpage)
 	}
@@ -227,6 +228,25 @@ func PopularMoviesComplete(genre string, language string, page int) Movies {
 		p = napping.Params{
 			"language":                 language,
 			"sort_by":                  "popularity.desc",
+			"primary_release_date.lte": time.Now().UTC().Format("2006-01-02"),
+			"with_genres":              genre,
+		}
+	}
+	return ListMoviesComplete("discover/movie", p, page)
+}
+
+func RecentMoviesComplete(genre string, language string, page int) Movies {
+	var p napping.Params
+	if genre == "" {
+		p = napping.Params{
+			"language":                 language,
+			"sort_by":                  "primary_release_date.desc",
+			"primary_release_date.lte": time.Now().UTC().Format("2006-01-02"),
+		}
+	} else {
+		p = napping.Params{
+			"language":                 language,
+			"sort_by":                  "primary_release_date.desc",
 			"primary_release_date.lte": time.Now().UTC().Format("2006-01-02"),
 			"with_genres":              genre,
 		}

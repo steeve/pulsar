@@ -37,8 +37,8 @@ func LocalIP() (net.IP, error) {
 
 func GetHTTPHost() string {
 	hostname := "localhost"
-	if localIP, err := LocalIP(); err == nil {
-		hostname = localIP.String()
-	}
+	// if localIP, err := LocalIP(); err == nil {
+	// 	hostname = localIP.String()
+	// }
 	return fmt.Sprintf("http://%s:%d", hostname, config.ListenPort)
 }

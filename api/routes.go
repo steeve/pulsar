@@ -51,6 +51,8 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 		movies.GET("/search", SearchMovies)
 		movies.GET("/popular", cache.Cache(store, DefaultCacheTime), PopularMovies)
 		movies.GET("/popular/:genre", cache.Cache(store, DefaultCacheTime), PopularMovies)
+		movies.GET("/recent", cache.Cache(store, DefaultCacheTime), RecentMovies)
+		movies.GET("/recent/:genre", cache.Cache(store, DefaultCacheTime), RecentMovies)
 		movies.GET("/top", cache.Cache(store, DefaultCacheTime), TopRatedMovies)
 		movies.GET("/imdb250", cache.Cache(store, DefaultCacheTime), IMDBTop250)
 		movies.GET("/mostvoted", cache.Cache(store, DefaultCacheTime), MoviesMostVoted)
@@ -105,7 +107,7 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 	repo := r.Group("/repository")
 	{
 		repo.GET("/:user/:repository/*filepath", repository.GetAddonFiles)
-		repo.HEAD("/:user/:repository/*filepath", repository.GetAddonFiles)
+		repo.HEAD("/:user/:repository/*filepath", repository.GetAddonFilesHead)
 	}
 
 	r.GET("/youtube/:id", PlayYoutubeVideo)
@@ -114,6 +116,7 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 	r.GET("/subtitle/:id", SubtitleGet)
 
 	r.GET("/play", Play(btService))
+
 	r.POST("/callbacks/:cid", providers.CallbackHandler)
 
 	cmd := r.Group("/cmd")

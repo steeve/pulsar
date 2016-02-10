@@ -1,16 +1,16 @@
 package tvdb
 
 import (
-	"archive/zip"
-	"bytes"
-	"encoding/xml"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"path"
 	"sort"
-	"strconv"
 	"time"
+	"bytes"
+	"strconv"
+	"net/http"
+	"io/ioutil"
+	"archive/zip"
+	"encoding/xml"
 
 	"github.com/scakemyer/quasar/cache"
 	"github.com/scakemyer/quasar/config"
