@@ -181,6 +181,45 @@ func PopularShowsComplete(genre string, language string, page int) Shows {
 	return ListShowsComplete("discover/tv", p, page)
 }
 
+func RecentShowsComplete(genre string, language string, page int) Shows {
+	var p napping.Params
+	if genre == "" {
+		p = napping.Params{
+			"language":           language,
+			"sort_by":            "first_air_date.desc",
+			"first_air_date.lte": time.Now().UTC().Format("2006-01-02"),
+		}
+	} else {
+		p = napping.Params{
+			"language":           language,
+			"sort_by":            "first_air_date.desc",
+			"first_air_date.lte": time.Now().UTC().Format("2006-01-02"),
+			"with_genres":        genre,
+		}
+	}
+	return ListShowsComplete("discover/tv", p, page)
+}
+
+func RecentEpisodesComplete(genre string, language string, page int) Shows {
+	var p napping.Params
+
+	if genre == "" {
+		p = napping.Params{
+			"language":           language,
+			"air_date.gte": time.Now().UTC().AddDate(0, 0, -7).Format("2006-01-02"),
+			"first_air_date.lte": time.Now().UTC().Format("2006-01-02"),
+		}
+	} else {
+		p = napping.Params{
+			"language":           language,
+			"air_date.gte": time.Now().UTC().AddDate(0, 0, -7).Format("2006-01-02"),
+			"first_air_date.lte": time.Now().UTC().Format("2006-01-02"),
+			"with_genres":        genre,
+		}
+	}
+	return ListShowsComplete("discover/tv", p, page)
+}
+
 func TopRatedShowsComplete(genre string, language string, page int) Shows {
 	return ListShowsComplete("tv/top_rated", napping.Params{"language": language}, page)
 }

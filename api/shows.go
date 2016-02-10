@@ -24,6 +24,8 @@ func TVIndex(ctx *gin.Context) {
 	items := xbmc.ListItems{
 		{Label: "LOCALIZE[30209]", Path: UrlForXBMC("/shows/search"), Thumbnail: config.AddonResource("img", "search.png")},
 		{Label: "LOCALIZE[30210]", Path: UrlForXBMC("/shows/popular"), Thumbnail: config.AddonResource("img", "popular.png")},
+		{Label: "LOCALIZE[30237]", Path: UrlForXBMC("/shows/recent/shows"), Thumbnail: config.AddonResource("img", "clock.png")},
+		{Label: "LOCALIZE[30238]", Path: UrlForXBMC("/shows/recent/episodes"), Thumbnail: config.AddonResource("img", "fresh.png")},
 	}
 	for _, genre := range tmdb.GetTVGenres(config.Get().Language) {
 		slug, _ := genreSlugs[genre.Id]
@@ -31,6 +33,10 @@ func TVIndex(ctx *gin.Context) {
 			Label:     genre.Name,
 			Path:      UrlForXBMC("/shows/popular/%s", strconv.Itoa(genre.Id)),
 			Thumbnail: config.AddonResource("img", fmt.Sprintf("genre_%s.png", slug)),
+			ContextMenu: [][]string{
+				[]string{"LOCALIZE[30237]", fmt.Sprintf("Container.Update(%s)", UrlForXBMC("/shows/recent/shows/%s", strconv.Itoa(genre.Id)))},
+				[]string{"LOCALIZE[30238]", fmt.Sprintf("Container.Update(%s)", UrlForXBMC("/shows/recent/episodes/%s", strconv.Itoa(genre.Id)))},
+			},
 		})
 	}
 
@@ -83,18 +89,48 @@ func PopularShows(ctx *gin.Context) {
 	page := -1
 	if config.Get().EnablePagination == true {
 		currentpage, err := strconv.Atoi(ctx.DefaultQuery("page", "0"))
-    	if err == nil {
+		if err == nil {
 			page = currentpage
 		}
 	}
 	renderShows(tmdb.PopularShowsComplete(genre, config.Get().Language, page), ctx, page)
 }
 
+func RecentShows(ctx *gin.Context) {
+	genre := ctx.Params.ByName("genre")
+	if genre == "0" {
+		genre = ""
+	}
+	page := -1
+	if config.Get().EnablePagination == true {
+		currentpage, err := strconv.Atoi(ctx.DefaultQuery("page", "0"))
+		if err == nil {
+			page = currentpage
+		}
+	}
+	renderShows(tmdb.RecentShowsComplete(genre, config.Get().Language, page), ctx, page)
+}
+
+func RecentEpisodes(ctx *gin.Context) {
+	genre := ctx.Params.ByName("genre")
+	if genre == "0" {
+		genre = ""
+	}
+	page := -1
+	if config.Get().EnablePagination == true {
+		currentpage, err := strconv.Atoi(ctx.DefaultQuery("page", "0"))
+		if err == nil {
+			page = currentpage
+		}
+	}
+	renderShows(tmdb.RecentEpisodesComplete(genre, config.Get().Language, page), ctx, page)
+}
+
 func TopRatedShows(ctx *gin.Context) {
 	page := -1
 	if config.Get().EnablePagination == true {
 		currentpage, err := strconv.Atoi(ctx.DefaultQuery("page", "0"))
-    	if err == nil {
+		if err == nil {
 			page = currentpage
 		}
 	}
@@ -105,7 +141,7 @@ func TVMostVoted(ctx *gin.Context) {
 	page := -1
 	if config.Get().EnablePagination == true {
 		currentpage, err := strconv.Atoi(ctx.DefaultQuery("page", "0"))
-    	if err == nil {
+		if err == nil {
 			page = currentpage
 		}
 	}

@@ -320,7 +320,7 @@ func (s *BTService) saveResumeDataLoop() {
 					continue
 				}
 
-				torrentHandle.SaveResumeData()
+				torrentHandle.SaveResumeData(1)
 			}
 		}
 	}
