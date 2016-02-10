@@ -46,5 +46,5 @@ func GetSettingBool(id string) bool {
 
 func SetSetting(id string, value interface{}) {
 	retVal := 0
-	executeJSONRPCEx("GetSetting", &retVal, Args{id, value})
+	executeJSONRPCEx("SetSetting", &retVal, Args{id, value})
 }
