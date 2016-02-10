@@ -89,6 +89,7 @@ type BTConfiguration struct {
 	LowerListenPort     int
 	UpperListenPort     int
 	DownloadPath        string
+	TorrentsPath        string
 	Proxy               *ProxySettings
 }
 
@@ -115,6 +116,13 @@ func NewBTService(config BTConfiguration) *BTService {
 		alertsBroadcaster: broadcast.NewBroadcaster(),
 		config:            &config,
 		closing:           make(chan interface{}),
+	}
+
+	filepath.Join()
+	if _, err := os.Stat(s.config.TorrentsPath); os.IsNotExist(err) {
+		if err := os.Mkdir(s.config.TorrentsPath, 0755); err != nil{
+			s.log.Info("Unable to create Torrents folder")
+		}
 	}
 
 	s.configure()
@@ -348,7 +356,7 @@ func (s *BTService) saveResumeDataConsumer() {
 				bEncoded := []byte(libtorrent.Bencode(entry))
 
 				s.log.Info("Saving resume data for %s to %s.fastresume", torrentName, infoHash)
-				path := filepath.Join(s.config.DownloadPath, fmt.Sprintf("%s.fastresume", infoHash))
+				path := filepath.Join(s.config.TorrentsPath, fmt.Sprintf("%s.fastresume", infoHash))
 				ioutil.WriteFile(path, bEncoded, 0644)
 				break
 			}
@@ -357,7 +365,7 @@ func (s *BTService) saveResumeDataConsumer() {
 }
 
 func (s *BTService) loadFastResumeFiles() error {
-	pattern := filepath.Join(s.config.DownloadPath, "*.fastresume")
+	pattern := filepath.Join(s.config.TorrentsPath, "*.fastresume")
 	files, _ := filepath.Glob(pattern)
 	for _, fastResumeFile := range files {
 		torrentParams := libtorrent.NewAddTorrentParams()

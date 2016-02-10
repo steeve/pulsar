@@ -14,6 +14,7 @@ var log = logging.MustGetLogger("config")
 
 type Configuration struct {
 	DownloadPath        string
+	TorrentsPath        string
 	LibraryPath         string
 	Info                *xbmc.AddonInfo
 	Platform            *xbmc.Platform
@@ -102,6 +103,8 @@ func Reload() *Configuration {
 		SocksLogin:    xbmc.GetSettingString("socks_login"),
 		SocksPassword: xbmc.GetSettingString("socks_password"),
 	}
+	newConfig.TorrentsPath = filepath.Join(newConfig.DownloadPath, "Torrents")
+
 	lock.Lock()
 	config = &newConfig
 	lock.Unlock()

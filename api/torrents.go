@@ -151,7 +151,7 @@ func RemoveTorrent(btService *bittorrent.BTService) gin.HandlerFunc {
 		torrentStatus := torrentHandle.Status(uint(libtorrent.TorrentHandleQuerySavePath) | uint(libtorrent.TorrentHandleQueryName))
 		shaHash := torrentStatus.GetInfoHash().ToString()
 		infoHash := hex.EncodeToString([]byte(shaHash))
-		fastResumeFile := filepath.Join(config.Get().DownloadPath, fmt.Sprintf("%s.fastresume", infoHash))
+		fastResumeFile := filepath.Join(config.Get().TorrentsPath, fmt.Sprintf("%s.fastresume", infoHash))
 		if _, err := os.Stat(fastResumeFile); err == nil {
 			torrentsLog.Info("Deleting fast resume data at %s", fastResumeFile)
 			defer os.Remove(fastResumeFile)

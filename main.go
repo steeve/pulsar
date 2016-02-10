@@ -46,6 +46,7 @@ func makeBTConfiguration(conf *config.Configuration) *bittorrent.BTConfiguration
 		LowerListenPort:     conf.BTListenPortMin,
 		UpperListenPort:     conf.BTListenPortMax,
 		DownloadPath:        conf.DownloadPath,
+		TorrentsPath:        conf.TorrentsPath,
 	}
 
 	if conf.SocksEnabled == true {

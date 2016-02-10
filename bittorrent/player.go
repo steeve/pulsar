@@ -89,7 +89,7 @@ func (btp *BTPlayer) addTorrent() error {
 	torrentParams.SetSavePath(btp.bts.config.DownloadPath)
 
 	btp.log.Info("Checking for fast resume data in %s.fastresume", btp.infoHash)
-	fastResumeFile := filepath.Join(btp.bts.config.DownloadPath, fmt.Sprintf("%s.fastresume", btp.infoHash))
+	fastResumeFile := filepath.Join(btp.bts.config.TorrentsPath, fmt.Sprintf("%s.fastresume", btp.infoHash))
 	if _, err := os.Stat(fastResumeFile); err == nil {
 		btp.log.Info("Found fast resume data...")
 		btp.fastResumeFile = fastResumeFile
