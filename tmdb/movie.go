@@ -241,12 +241,14 @@ func RecentMoviesComplete(genre string, language string, page int) Movies {
 		p = napping.Params{
 			"language":                 language,
 			"sort_by":                  "primary_release_date.desc",
+			"vote_count.gte":           "10",
 			"primary_release_date.lte": time.Now().UTC().Format("2006-01-02"),
 		}
 	} else {
 		p = napping.Params{
 			"language":                 language,
 			"sort_by":                  "primary_release_date.desc",
+			"vote_count.gte":           "10",
 			"primary_release_date.lte": time.Now().UTC().Format("2006-01-02"),
 			"with_genres":              genre,
 		}
