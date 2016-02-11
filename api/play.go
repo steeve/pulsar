@@ -63,7 +63,7 @@ func Play(btService *bittorrent.BTService) gin.HandlerFunc {
 }
 
 func PasteURL(ctx *gin.Context) {
-	retval := xbmc.InsertTorrent()
+	retval := xbmc.DialogInsert()
 	if retval["path"] == "" {
 		return
 	} else if retval["type"] == "url" {

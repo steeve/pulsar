@@ -12,9 +12,9 @@ type OverlayStatus struct {
 	hWnd int64
 }
 
-func InsertTorrent() map[string]string {
+func DialogInsert() map[string]string {
 	var retVal map[string]string
-	executeJSONRPCEx("InsertTorrent", &retVal, nil)
+	executeJSONRPCEx("DialogInsert", &retVal, nil)
 	return retVal
 }
 

@@ -249,7 +249,7 @@ func MovieLinks(ctx *gin.Context) {
 			torrentName = torrentName[:80]
 		}
 
-		label := fmt.Sprintf("[B](%d / %d) %s[/B]\n%s",
+		label := fmt.Sprintf("(%d / %d) %s\n%s",
 			torrent.Seeds,
 			torrent.Peers,
 			strings.Join(info, " "),
