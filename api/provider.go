@@ -9,6 +9,7 @@ import (
 	"github.com/scakemyer/quasar/providers"
 	"github.com/scakemyer/quasar/tmdb"
 	"github.com/scakemyer/quasar/tvdb"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
 type providerDebugResponse struct {
@@ -35,6 +36,7 @@ func ProviderGetMovie(ctx *gin.Context) {
 		Results: torrents,
 	}, "", "    ")
 	if err != nil {
+		xbmc.AddonFailure(provider)
 		ctx.Error(err)
 	}
 	ctx.Data(200, "application/json", data)
@@ -69,6 +71,7 @@ func ProviderGetEpisode(ctx *gin.Context) {
 		Results: torrents,
 	}, "", "    ")
 	if err != nil {
+		xbmc.AddonFailure(provider)
 		ctx.Error(err)
 	}
 	ctx.Data(200, "application/json", data)

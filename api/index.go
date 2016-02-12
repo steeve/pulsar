@@ -24,6 +24,8 @@ func Index(ctx *gin.Context) {
 		{Label: "LOCALIZE[30209]", Path: UrlForXBMC("/search"), Thumbnail: config.AddonResource("img", "search.png")},
 		{Label: "LOCALIZE[30216]", Path: UrlForXBMC("/pasted"), Thumbnail: config.AddonResource("img", "magnet.png")},
 
-		{Label: "LOCALIZE[30229]", Path: UrlForXBMC("/torrents/"), Thumbnail: config.AddonResource("img", "settings.png")},
+		{Label: "LOCALIZE[30229]", Path: UrlForXBMC("/torrents/"), Thumbnail: config.AddonResource("img", "cloud.png")},
+
+		{Label: "LOCALIZE[30239]", Path: UrlForXBMC("/provider/"), Thumbnail: config.AddonResource("img", "shield.png")},
 	}))
 }

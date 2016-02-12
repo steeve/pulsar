@@ -25,6 +25,21 @@ func GetAddonInfo() *AddonInfo {
 	return &retVal
 }
 
+func AddonSettings(addonId string) (retVal string) {
+	executeJSONRPCEx("AddonSettings", &retVal, Args{addonId})
+	return
+}
+
+func AddonFailure(addonId string) (failures int) {
+	executeJSONRPCEx("AddonFailure", &failures, Args{addonId})
+	return
+}
+
+func AddonCheck(addonId string) (failures int) {
+	executeJSONRPCEx("AddonCheck", &failures, Args{addonId})
+	return
+}
+
 func GetLocalizedString(id int) (retVal string) {
 	executeJSONRPCEx("GetLocalizedString", &retVal, Args{id})
 	return

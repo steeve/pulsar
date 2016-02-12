@@ -104,6 +104,13 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 
 	provider := r.Group("/provider")
 	{
+		provider.GET("/", ProviderList)
+		provider.GET("/:provider/check", ProviderCheck)
+		provider.GET("/:provider/enable", ProviderEnable)
+		provider.GET("/:provider/disable", ProviderDisable)
+		provider.GET("/:provider/failure", ProviderFailure)
+		provider.GET("/:provider/settings", ProviderSettings)
+
 		provider.GET("/:provider/movie/:imdbId", ProviderGetMovie)
 		provider.GET("/:provider/show/:showId/season/:season/episode/:episode", ProviderGetEpisode)
 	}
