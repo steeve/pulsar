@@ -75,7 +75,7 @@ func (btp *BTPlayer) addTorrent() error {
 	btp.log.Info("Adding torrent")
 
 	if status, err := diskusage.DiskUsage(btp.bts.config.DownloadPath); err != nil {
-		btp.bts.log.Infof("Unable to retrieve the free space for %s, continuing anyway...", btp.bts.config.DownloadPath)
+		btp.bts.log.Warningf("Unable to retrieve the free space for %s, continuing anyway...", btp.bts.config.DownloadPath)
 	} else {
 		btp.diskStatus = status
 	}
@@ -192,7 +192,7 @@ func (btp *BTPlayer) CheckAvailableSpace() bool {
 		btp.log.Infof("Size left: %d", sizeLeft)
 
 		if btp.diskStatus.Free < sizeLeft {
-			btp.log.Infof("Unsufficient free space on %s. Has %d, needs %d.", btp.bts.config.DownloadPath, btp.diskStatus.Free, sizeLeft)
+			btp.log.Errorf("Unsufficient free space on %s. Has %d, needs %d.", btp.bts.config.DownloadPath, btp.diskStatus.Free, sizeLeft)
 			xbmc.Notify("Quasar", "LOCALIZE[30207]", config.AddonIcon())
 			btp.bufferEvents.Broadcast(errors.New("Not enough space on download destination."))
 			btp.notEnoughSpace = true
@@ -531,7 +531,7 @@ playbackWaitLoop:
 		}
 		select {
 		case <-playbackTimeout:
-			btp.log.Infof("Playback was unable to start after %d seconds. Aborting...", playbackMaxWait / time.Second)
+			btp.log.Warningf("Playback was unable to start after %d seconds. Aborting...", playbackMaxWait / time.Second)
 			btp.bufferEvents.Broadcast(errors.New("Playback was unable to start before timeout."))
 		 	return
 		case <-oneSecond.C:

@@ -64,19 +64,22 @@ func Reload() *Configuration {
 	info := xbmc.GetAddonInfo()
 	info.Path = xbmc.TranslatePath(info.Path)
 	info.Profile = xbmc.TranslatePath(info.Profile)
+	platform := xbmc.GetPlatform()
 
-	legacyPath := strings.Replace(info.Path, "/storage/emulated/0", "/storage/emulated/legacy", 1)
-	if _, err := os.Stat(legacyPath); err == nil {
-		info.Path = legacyPath
-		info.Profile = strings.Replace(info.Profile, "/storage/emulated/0", "/storage/emulated/legacy", 1)
-		log.Info("Using /storage/emulated/legacy path.")
+	if platform.OS == "android" {
+		legacyPath := strings.Replace(info.Path, "/storage/emulated/0", "/storage/emulated/legacy", 1)
+		if _, err := os.Stat(legacyPath); err == nil {
+			info.Path = legacyPath
+			info.Profile = strings.Replace(info.Profile, "/storage/emulated/0", "/storage/emulated/legacy", 1)
+			log.Info("Using /storage/emulated/legacy path.")
+		}
 	}
 
 	newConfig := Configuration{
 		DownloadPath:        filepath.Dir(xbmc.GetSettingString("download_path")),
 		LibraryPath:         filepath.Dir(xbmc.GetSettingString("library_path")),
 		Info:                info,
-		Platform:            xbmc.GetPlatform(),
+		Platform:            platform,
 		Language:            xbmc.GetLanguageISO_639_1(),
 		ProfilePath:         info.Profile,
 		BufferSize:          xbmc.GetSettingInt("buffer_size") * 1024 * 1024,

@@ -35,11 +35,11 @@ type DataBase struct {
 }
 
 type Item struct {
-	Id        string `json:"id"`
-	Title     string `json:"title"`
-	Year      string `json:"year"`
-	Overview  string `json:"overview"`
-	Poster    string `json:"poster"`
+	Id       string `json:"id"`
+	Title    string `json:"title"`
+	Year     string `json:"year"`
+	Overview string `json:"overview"`
+	Poster   string `json:"poster"`
 }
 
 func toFileName(filename string) string {
@@ -74,14 +74,14 @@ func Lookup(ctx *gin.Context) {
 
 	if _, err := os.Stat(DBPath); err == nil {
 		file, err := ioutil.ReadFile(DBPath)
-	    if err != nil {
-	    	ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	        ctx.JSON(200, gin.H{
-	            "success": false,
-	        })
-	        return
-	    }
-	    json.Unmarshal(file, &db)
+		if err != nil {
+			ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+			ctx.JSON(200, gin.H{
+				"success": false,
+			})
+			return
+		}
+		json.Unmarshal(file, &db)
 	}
 
 	Movies := make([]*Item, 0, len(db.Movies))
@@ -103,9 +103,9 @@ func Lookup(ctx *gin.Context) {
 		if err != nil {
 			ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 			ctx.JSON(200, gin.H{
-	            "success": false,
-	        })
-	        return
+				"success": false,
+			})
+			return
 		}
 		Shows = append(Shows, &Item{
 			Id: db.Shows[i],
@@ -131,20 +131,20 @@ func UpdateJsonDB(DBPath string, ID string, ltype int) error {
 
 	if _, err := os.Stat(DBPath); err == nil {
 		file, err := ioutil.ReadFile(DBPath)
-	    if err != nil {
-	        return err
-	    }
-	    json.Unmarshal(file, &db)
+		if err != nil {
+			return err
+		}
+		json.Unmarshal(file, &db)
 	}
 
-    if ltype == LMovie {
-    	db.Movies = append(db.Movies, ID)
-    } else if ltype == LShow {
-    	db.Shows = append(db.Shows, ID)
-    } else {
-    	return fmt.Errorf("Unknown ltype")
-    }
-    b, err := json.Marshal(db)
+	if ltype == LMovie {
+		db.Movies = append(db.Movies, ID)
+	} else if ltype == LShow {
+		db.Shows = append(db.Shows, ID)
+	} else {
+		return fmt.Errorf("Unknown ltype")
+	}
+	b, err := json.Marshal(db)
 	if err != nil {
 		return err
 	}
@@ -158,10 +158,10 @@ func RemoveFromJsonDB(DBPath string, ID string, ltype int) error {
 
 	if _, err := os.Stat(DBPath); err == nil {
 		file, err := ioutil.ReadFile(DBPath)
-	    if err != nil {
-	        return err
-	    }
-	    json.Unmarshal(file, &db)
+		if err != nil {
+			return err
+		}
+		json.Unmarshal(file, &db)
 	}
 
 	for _, movieId := range db.Movies {
@@ -190,36 +190,36 @@ func inJsonDB(DBPath string, ID string, ltype int) (bool, error) {
 
 	if _, err := os.Stat(DBPath); err == nil {
 		file, err := ioutil.ReadFile(DBPath)
-	    if err != nil {
-	        return false, err
-	    }
-	    json.Unmarshal(file, &db)
+		if err != nil {
+			return false, err
+		}
+		json.Unmarshal(file, &db)
 	}
 
 	if ltype == LMovie {
-    	for _, movieId := range db.Movies {
-    		if movieId == ID {
-    			return true, nil
-    		}
-    	}
-    } else if ltype == LShow {
-    	for _, showId := range db.Shows {
-    		if showId == ID {
-    			return true, nil
-    		}
-    	}
-    } else {
-    	return false, fmt.Errorf("Unknown ltype")
-    }
+		for _, movieId := range db.Movies {
+			if movieId == ID {
+				return true, nil
+			}
+		}
+	} else if ltype == LShow {
+		for _, showId := range db.Shows {
+			if showId == ID {
+				return true, nil
+			}
+		}
+	} else {
+		return false, fmt.Errorf("Unknown ltype")
+	}
 
-    return false, nil
+	return false, nil
 }
 
 func UpdateLibrary(ctx *gin.Context) {
 	LibraryPath := config.Get().LibraryPath
 	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
 
-  if fileInfo, err := os.Stat(LibraryPath); err != nil || fileInfo.IsDir() == false || LibraryPath == "" || LibraryPath == "." {
+	if fileInfo, err := os.Stat(LibraryPath); err != nil || fileInfo.IsDir() == false || LibraryPath == "" || LibraryPath == "." {
 		ctx.String(404, "")
 		return
 	}
@@ -232,7 +232,7 @@ func UpdateLibrary(ctx *gin.Context) {
 	MoviesLibraryPath := filepath.Join(LibraryPath, "Movies")
 	if _, err := os.Stat(MoviesLibraryPath); os.IsNotExist(err) {
 		if err := os.Mkdir(MoviesLibraryPath, 0755); err != nil{
-			libraryLog.Info("Unable to create MoviesLibraryPath")
+			libraryLog.Error("Unable to create MoviesLibraryPath")
 			ctx.String(404, "")
 			return
 		}
@@ -241,7 +241,7 @@ func UpdateLibrary(ctx *gin.Context) {
 	ShowsLibraryPath := filepath.Join(LibraryPath, "Shows")
 	if _, err := os.Stat(ShowsLibraryPath); os.IsNotExist(err) {
 		if err := os.Mkdir(ShowsLibraryPath, 0755); err != nil{
-			libraryLog.Info("Unable to create ShowsLibraryPath")
+			libraryLog.Error("Unable to create ShowsLibraryPath")
 			ctx.String(404, "")
 			return
 		}
@@ -249,23 +249,23 @@ func UpdateLibrary(ctx *gin.Context) {
 
 	var db DataBase
 	file, err := ioutil.ReadFile(DBPath)
-    if err != nil {
-    	ctx.String(404, "")
-        return
-    }
-    json.Unmarshal(file, &db)
+	if err != nil {
+		ctx.String(404, "")
+		return
+	}
+	json.Unmarshal(file, &db)
 
-    for _, movieId := range db.Movies {
-			WriteMovieStrm(movieId, MoviesLibraryPath)
-    }
+	for _, movieId := range db.Movies {
+		WriteMovieStrm(movieId, MoviesLibraryPath)
+	}
 
-    for _, showId := range db.Shows {
-    	WriteShowStrm(showId, ShowsLibraryPath)
-    }
+	for _, showId := range db.Shows {
+		WriteShowStrm(showId, ShowsLibraryPath)
+	}
 
-    ctx.String(200, "")
-    xbmc.VideoLibraryScan()
-    libraryLog.Info("Library Updated")
+	ctx.String(200, "")
+	xbmc.VideoLibraryScan()
+	libraryLog.Info("Library Updated")
 }
 
 func GetLibraryPath(ctx *gin.Context) {
@@ -280,23 +280,23 @@ func GetCount(ctx *gin.Context) {
 
 	if _, err := os.Stat(DBPath); err == nil {
 		file, err := ioutil.ReadFile(DBPath)
-	    if err != nil {
-	    	ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	    	ctx.JSON(200, gin.H{
-	            "success": false,
-	        })
-	        return
-	    }
-	    json.Unmarshal(file, &db)
+		if err != nil {
+			ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+			ctx.JSON(200, gin.H{
+				"success": false,
+			})
+			return
+		}
+		json.Unmarshal(file, &db)
 	}
 
 	ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	ctx.JSON(200, gin.H{
-        "success": true,
-        "movies": len(db.Movies),
-        "shows": len(db.Shows),
-        "total": len(db.Movies) + len(db.Shows),
-    })
+				"success": true,
+				"movies": len(db.Movies),
+				"shows": len(db.Shows),
+				"total": len(db.Movies) + len(db.Shows),
+		})
 }
 
 func AddRemoveMovie(ctx *gin.Context) {
@@ -333,7 +333,7 @@ func AddMovie(ctx *gin.Context) {
 	MoviesLibraryPath := filepath.Join(LibraryPath, "Movies")
 	if _, err := os.Stat(MoviesLibraryPath); os.IsNotExist(err) {
 		if err := os.Mkdir(MoviesLibraryPath, 0755); err != nil{
-			libraryLog.Info("Unable to create MoviesLibraryPath")
+			libraryLog.Error("Unable to create MoviesLibraryPath")
 			ctx.String(404, "")
 			return
 		}
@@ -344,11 +344,11 @@ func AddMovie(ctx *gin.Context) {
 		return
 	}
 
-    if err := UpdateJsonDB(DBPath, imdbId, LMovie); err != nil {
-			libraryLog.Info("Unable to UpdateJsonDB")
-    	ctx.String(404, "")
-    	return
-    }
+	if err := UpdateJsonDB(DBPath, imdbId, LMovie); err != nil {
+		libraryLog.Error("Unable to UpdateJsonDB")
+		ctx.String(404, "")
+		return
+	}
 
 	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
 	ctx.String(200, "")
@@ -363,18 +363,18 @@ func WriteMovieStrm(imdbId string, MoviesLibraryPath string) error {
 
 	if _, err := os.Stat(MoviePath); os.IsNotExist(err) {
 		if err := os.Mkdir(MoviePath, 0755); err != nil{
-			libraryLog.Info("Unable to create MoviePath")
+			libraryLog.Error("Unable to create MoviePath")
 			return err
 		}
 	}
 
 	MovieStrmPath := filepath.Join(MoviePath, fmt.Sprintf("%s.strm", MovieStrm))
 	if err := ioutil.WriteFile(MovieStrmPath, []byte(UrlForXBMC("/library/play/movie/%s", imdbId)), 0755); err != nil {
-        libraryLog.Info("Unable to write to MovieStrmPath")
-        return err
-    }
+				libraryLog.Error("Unable to write to MovieStrmPath")
+				return err
+		}
 
-    return nil
+		return nil
 }
 
 func RemoveMovie(ctx *gin.Context) {
@@ -387,13 +387,13 @@ func RemoveMovie(ctx *gin.Context) {
 	MoviePath := filepath.Join(MoviesLibraryPath, MovieStrm)
 
 	if err := RemoveFromJsonDB(DBPath, imdbId, LMovie); err != nil {
-		libraryLog.Info("Unable to remove movie from db")
+		libraryLog.Error("Unable to remove movie from db")
 		ctx.String(404, "")
 		return
 	}
 
 	if err := os.RemoveAll(MoviePath); err != nil{
-		libraryLog.Info("Unable to remove movie folder")
+		libraryLog.Error("Unable to remove movie folder")
 		ctx.String(404, "")
 		return
 	}
@@ -438,7 +438,7 @@ func AddShow(ctx *gin.Context) {
 	ShowsLibraryPath := filepath.Join(LibraryPath, "Shows")
 	if _, err := os.Stat(ShowsLibraryPath); os.IsNotExist(err) {
 		if err := os.Mkdir(ShowsLibraryPath, 0755); err != nil{
-			libraryLog.Info("Unable to create ShowsLibraryPath")
+			libraryLog.Error("Unable to create ShowsLibraryPath")
 			ctx.String(404, "")
 			return
 		}
@@ -450,10 +450,10 @@ func AddShow(ctx *gin.Context) {
 	}
 
 	if err := UpdateJsonDB(DBPath, showId, LShow); err != nil {
-			libraryLog.Info("Unable to UpdateJsonDB")
-    	ctx.String(404, "")
-    	return
-    }
+			libraryLog.Error("Unable to UpdateJsonDB")
+			ctx.String(404, "")
+			return
+		}
 
 	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
 	ctx.String(200, "")
@@ -470,7 +470,7 @@ func WriteShowStrm(showId string, ShowsLibraryPath string) error {
 
 	if _, err := os.Stat(ShowPath); os.IsNotExist(err) {
 		if err := os.Mkdir(ShowPath, 0755); err != nil {
-			libraryLog.Info("Unable to create ShowPath")
+			libraryLog.Error("Unable to create ShowPath")
 			return err
 		}
 	}
@@ -513,9 +513,9 @@ func WriteShowStrm(showId string, ShowsLibraryPath string) error {
 			EpisodeStrmPath := filepath.Join(ShowPath, fmt.Sprintf("%s S%02dE%02d.strm", toFileName(show.SeriesName), season.Season, episode.EpisodeNumber))
 			playLink := UrlForXBMC("/library/play/show/%s/season/%d/episode/%d", showId, season.Season, episode.EpisodeNumber)
 			if err := ioutil.WriteFile(EpisodeStrmPath, []byte(playLink), 0755); err != nil {
-		        libraryLog.Info("Unable to write to EpisodeStrmPath")
-		        return err
-		    }
+						libraryLog.Error("Unable to write to EpisodeStrmPath")
+						return err
+				}
 		}
 	}
 
@@ -535,13 +535,13 @@ func RemoveShow(ctx *gin.Context) {
 	ShowPath := filepath.Join(ShowsLibraryPath, toFileName(show.SeriesName))
 
 	if err := RemoveFromJsonDB(DBPath, showId, LShow); err != nil {
-		libraryLog.Info("Unable to remove show from db")
+		libraryLog.Error("Unable to remove show from db")
 		ctx.String(404, "")
 		return
 	}
 
 	if err := os.RemoveAll(ShowPath); err != nil{
-		libraryLog.Info("Unable to remove show folder")
+		libraryLog.Error("Unable to remove show folder")
 		ctx.String(404, "")
 		return
 	}

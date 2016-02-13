@@ -220,7 +220,7 @@ func (tf *TorrentFile) waitForPiece(piece int) error {
 	for tf.hasPiece(piece) == false {
 		select {
 		case <-removed:
-			tf.tfs.log.Infof("Unable to wait for piece %d as file was closed", piece)
+			tf.tfs.log.Warningf("Unable to wait for piece %d as file was closed", piece)
 			return errors.New("File was closed.")
 		case <-pieceRefreshTicker:
 			continue

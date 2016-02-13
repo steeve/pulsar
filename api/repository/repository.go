@@ -45,7 +45,7 @@ func getLastRelease(user string, repository string) (string, string) {
 		log.Infof("Last release: %s on %s", *lastRelease.TagName, *lastRelease.TargetCommitish)
 		return *lastRelease.TagName, *lastRelease.TargetCommitish
 	}
-	log.Info("Unable to find a last tag, using master.")
+	log.Warning("Unable to find a last tag, using master.")
 	return "", "master"
 }
 

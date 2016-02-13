@@ -151,7 +151,7 @@ func processLinks(torrentsChan chan *bittorrent.Torrent) []*bittorrent.Torrent {
 			go func(tracker *bittorrent.Tracker) {
 				defer wg.Done()
 				if err := tracker.Connect(); err != nil {
-					log.Infof("Tracker %s is not available because: %s", tracker, err)
+					log.Errorf("Tracker %s is not available because: %s", tracker, err)
 					return
 				}
 				scrapeResults <- tracker.Scrape(torrents)

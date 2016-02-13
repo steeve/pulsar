@@ -193,7 +193,7 @@ func (as *AddonSearcher) call(method string, searchObject interface{}) []*bittor
 
 	select {
 	case <-time.After(timeout):
-		as.log.Infof("Provider %s was too slow. Ignored.", as.addonId)
+		as.log.Warningf("Provider %s was too slow. Ignored.", as.addonId)
 		RemoveCallback(cid)
 	case result := <-c:
 		json.Unmarshal(result, &torrents)
