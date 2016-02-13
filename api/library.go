@@ -218,12 +218,12 @@ func inJsonDB(DBPath string, ID string, ltype int) (bool, error) {
 func UpdateLibrary(ctx *gin.Context) {
 	LibraryPath := config.Get().LibraryPath
 	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
-    
-    if fileInfo, err := os.Stat(LibraryPath); err != nil || fileInfo.IsDir() == false || LibraryPath == "" || LibraryPath == "." {
+
+  if fileInfo, err := os.Stat(LibraryPath); err != nil || fileInfo.IsDir() == false || LibraryPath == "" || LibraryPath == "." {
 		ctx.String(404, "")
 		return
 	}
-    
+
 	if _, err := os.Stat(DBPath); err != nil {
 		ctx.String(404, "")
 		return
@@ -256,7 +256,7 @@ func UpdateLibrary(ctx *gin.Context) {
     json.Unmarshal(file, &db)
 
     for _, movieId := range db.Movies {
-    	WriteMovieStrm(movieId, MoviesLibraryPath) 
+			WriteMovieStrm(movieId, MoviesLibraryPath)
     }
 
     for _, showId := range db.Shows {
@@ -345,7 +345,7 @@ func AddMovie(ctx *gin.Context) {
 	}
 
     if err := UpdateJsonDB(DBPath, imdbId, LMovie); err != nil {
-    	libraryLog.Info("Unable to UpdateJsonDB")
+			libraryLog.Info("Unable to UpdateJsonDB")
     	ctx.String(404, "")
     	return
     }
@@ -450,7 +450,7 @@ func AddShow(ctx *gin.Context) {
 	}
 
 	if err := UpdateJsonDB(DBPath, showId, LShow); err != nil {
-    	libraryLog.Info("Unable to UpdateJsonDB")
+			libraryLog.Info("Unable to UpdateJsonDB")
     	ctx.String(404, "")
     	return
     }
@@ -485,7 +485,7 @@ func WriteShowStrm(showId string, ShowsLibraryPath string) error {
 		if firstAired.Add(time.Duration(show.Runtime) * time.Minute).After(now) {
 			continue
 		}
-		
+
 		/*var SeasonPath string
 		if season.Season == 0 {
 			SeasonPath = filepath.Join(ShowPath, "Specials")

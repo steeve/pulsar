@@ -86,7 +86,7 @@ func processLinks(torrentsChan chan *bittorrent.Torrent) []*bittorrent.Torrent {
 		go func(torrent *bittorrent.Torrent) {
 			defer wg.Done()
 			if err := torrent.Resolve(); err != nil {
-				log.Error("Unable to resolve .torrent file at: %s", torrent.URI)
+				log.Errorf("Unable to resolve .torrent file at: %s", torrent.URI)
 			}
 		}(torrent)
 	}
@@ -94,7 +94,7 @@ func processLinks(torrentsChan chan *bittorrent.Torrent) []*bittorrent.Torrent {
 
 	for _, torrent := range torrents {
 		if torrent.InfoHash == "" { // ignore torrents whose infohash is empty
-			log.Error("InfoHash is empty for %s", torrent.URI)
+			log.Errorf("InfoHash is empty for %s", torrent.URI)
 			continue
 		}
 		if existingTorrent, exists := torrentsMap[torrent.InfoHash]; exists {
@@ -136,13 +136,13 @@ func processLinks(torrentsChan chan *bittorrent.Torrent) []*bittorrent.Torrent {
 		torrents = append(torrents, torrent)
 	}
 
-	log.Info("Received %d links.\n", len(torrents))
+	log.Infof("Received %d links.\n", len(torrents))
 
 	if len(torrents) == 0 {
 		return torrents
 	}
 
-	log.Info("Scraping torrent metrics from %d trackers...\n", len(trackers))
+	log.Infof("Scraping torrent metrics from %d trackers...\n", len(trackers))
 	scrapeResults := make(chan []bittorrent.ScrapeResponseEntry)
 	go func() {
 		wg := sync.WaitGroup{}
@@ -151,7 +151,7 @@ func processLinks(torrentsChan chan *bittorrent.Torrent) []*bittorrent.Torrent {
 			go func(tracker *bittorrent.Tracker) {
 				defer wg.Done()
 				if err := tracker.Connect(); err != nil {
-					log.Info("Tracker %s is not available because: %s", tracker, err)
+					log.Infof("Tracker %s is not available because: %s", tracker, err)
 					return
 				}
 				scrapeResults <- tracker.Scrape(torrents)
@@ -173,9 +173,9 @@ func processLinks(torrentsChan chan *bittorrent.Torrent) []*bittorrent.Torrent {
 	}
 
 	sort.Sort(sort.Reverse(BySeeds(torrents)))
-	log.Info("Sorted torrent candidates:\n")
+	log.Info("Sorted torrent candidates:")
 	for _, torrent := range torrents {
-		log.Info("%s - %s S:%d P:%d", torrent.Name, torrent.Provider, torrent.Seeds, torrent.Peers)
+		log.Infof("%s - %s S:%d P:%d", torrent.Name, torrent.Provider, torrent.Seeds, torrent.Peers)
 	}
 
 	return torrents

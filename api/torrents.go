@@ -97,7 +97,7 @@ func ResumeTorrent(btService *bittorrent.BTService) gin.HandlerFunc {
 		status := torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
 
 		torrentName := status.GetName()
-		torrentsLog.Info("Resuming %s", torrentName)
+		torrentsLog.Infof("Resuming %s", torrentName)
 
 		torrentHandle.AutoManaged(true)
 
@@ -153,7 +153,7 @@ func RemoveTorrent(btService *bittorrent.BTService) gin.HandlerFunc {
 		infoHash := hex.EncodeToString([]byte(shaHash))
 		fastResumeFile := filepath.Join(config.Get().TorrentsPath, fmt.Sprintf("%s.fastresume", infoHash))
 		if _, err := os.Stat(fastResumeFile); err == nil {
-			torrentsLog.Info("Deleting fast resume data at %s", fastResumeFile)
+			torrentsLog.Infof("Deleting fast resume data at %s", fastResumeFile)
 			defer os.Remove(fastResumeFile)
 		}
 

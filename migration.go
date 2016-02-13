@@ -25,7 +25,7 @@ func Migrate() {
 
 	log.Info("Creating Quasar Repository Addon")
 	if err := repository.MakeQuasarRepositoryAddon(); err != nil {
-		log.Error("Unable to create repository addon: %s", err)
+		log.Errorf("Unable to create repository addon: %s", err)
 	} else {
 		log.Info("Updating Kodi Addon Repositories")
 		xbmc.UpdateAddonRepos()

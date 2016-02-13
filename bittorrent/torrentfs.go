@@ -57,10 +57,10 @@ func (tfs *TorrentFS) Open(name string) (http.File, error) {
 	// make sure we don't open a file that's locked, as it can happen
 	// on BSD systems (darwin included)
 	if err := unlockFile(file); err != nil {
-		tfs.log.Error("Unable to unlock file because: %s", err)
+		tfs.log.Errorf("Unable to unlock file because: %s", err)
 	}
 
-	tfs.log.Info("Opening %s", name)
+	tfs.log.Infof("Opening %s", name)
 	// NB: this does NOT return a pointer to vector, no need to free!
 	torrentsVector := tfs.service.Session.GetTorrents()
 	torrentsVectorSize := int(torrentsVector.Size())
@@ -74,7 +74,7 @@ func (tfs *TorrentFS) Open(name string) (http.File, error) {
 		for j := 0; j < numFiles; j++ {
 			fe := torrentInfo.FileAt(j)
 			if name[1:] == fe.GetPath() {
-				// tfs.log.Info("%s belongs to torrent %s", name, torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName)).GetName())
+				// tfs.log.Infof("%s belongs to torrent %s", name, torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName)).GetName())
 				return NewTorrentFile(file, tfs, torrentHandle, torrentInfo, fe, j)
 			}
 		}
@@ -162,7 +162,7 @@ func (tf *TorrentFile) Read(data []byte) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	// tf.tfs.log.Info("About to read from file at %d for %d\n", currentOffset, len(data))
+	// tf.tfs.log.Infof("About to read from file at %d for %d\n", currentOffset, len(data))
 	piece, _ := tf.pieceFromOffset(currentOffset + int64(len(data)))
 	if err := tf.waitForPiece(piece); err != nil {
 		return 0, err
@@ -187,10 +187,10 @@ func (tf *TorrentFile) Seek(offset int64, whence int) (int64, error) {
 		break
 	}
 
-	tf.tfs.log.Info("Seeking at %d...", seekingOffset)
+	tf.tfs.log.Infof("Seeking at %d...", seekingOffset)
 	piece, _ := tf.pieceFromOffset(seekingOffset)
 	if tf.hasPiece(piece) == false {
-		tf.tfs.log.Info("We don't have piece %d, setting piece priorities", piece)
+		tf.tfs.log.Infof("We don't have piece %d, setting piece priorities", piece)
 		piecesPriorities := libtorrent.NewStdVectorInt()
 		defer libtorrent.DeleteStdVectorInt(piecesPriorities)
 		curPiece := 0
@@ -212,7 +212,7 @@ func (tf *TorrentFile) waitForPiece(piece int) error {
 		return nil
 	}
 
-	tf.tfs.log.Info("Waiting for piece %d", piece)
+	tf.tfs.log.Infof("Waiting for piece %d", piece)
 
 	pieceRefreshTicker := time.Tick(piecesRefreshDuration)
 	removed, done := tf.removed.Listen()
@@ -220,7 +220,7 @@ func (tf *TorrentFile) waitForPiece(piece int) error {
 	for tf.hasPiece(piece) == false {
 		select {
 		case <-removed:
-			tf.tfs.log.Info("Unable to wait for piece %d as file was closed", piece)
+			tf.tfs.log.Infof("Unable to wait for piece %d as file was closed", piece)
 			return errors.New("File was closed.")
 		case <-pieceRefreshTicker:
 			continue

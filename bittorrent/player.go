@@ -75,7 +75,7 @@ func (btp *BTPlayer) addTorrent() error {
 	btp.log.Info("Adding torrent")
 
 	if status, err := diskusage.DiskUsage(btp.bts.config.DownloadPath); err != nil {
-		btp.bts.log.Info("Unable to retrieve the free space for %s, continuing anyway...", btp.bts.config.DownloadPath)
+		btp.bts.log.Infof("Unable to retrieve the free space for %s, continuing anyway...", btp.bts.config.DownloadPath)
 	} else {
 		btp.diskStatus = status
 	}
@@ -85,10 +85,10 @@ func (btp *BTPlayer) addTorrent() error {
 
 	torrentParams.SetUrl(btp.uri)
 
-	btp.log.Info("Setting save path to %s", btp.bts.config.DownloadPath)
+	btp.log.Infof("Setting save path to %s", btp.bts.config.DownloadPath)
 	torrentParams.SetSavePath(btp.bts.config.DownloadPath)
 
-	btp.log.Info("Checking for fast resume data in %s.fastresume", btp.infoHash)
+	btp.log.Infof("Checking for fast resume data in %s.fastresume", btp.infoHash)
 	fastResumeFile := filepath.Join(btp.bts.config.TorrentsPath, fmt.Sprintf("%s.fastresume", btp.infoHash))
 	if _, err := os.Stat(fastResumeFile); err == nil {
 		btp.log.Info("Found fast resume data...")
@@ -117,7 +117,7 @@ func (btp *BTPlayer) addTorrent() error {
 	status := btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
 
 	btp.torrentName = status.GetName()
-	btp.log.Info("Downloading %s", btp.torrentName)
+	btp.log.Infof("Downloading %s", btp.torrentName)
 
 	if status.GetHasMetadata() == true {
 		btp.onMetadataReceived()
@@ -138,7 +138,7 @@ func (btp *BTPlayer) resumeTorrent(torrentIndex int) error {
 	status := btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
 
 	btp.torrentName = status.GetName()
-	btp.log.Info("Resuming %s", btp.torrentName)
+	btp.log.Infof("Resuming %s", btp.torrentName)
 
 	if status.GetHasMetadata() == true {
 		btp.onMetadataReceived()
@@ -185,14 +185,14 @@ func (btp *BTPlayer) CheckAvailableSpace() bool {
 		status := btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
 		sizeLeft := btp.torrentInfo.TotalSize() - status.GetTotalDone()
 
-		btp.log.Info("Checking for sufficient space on %s...", btp.bts.config.DownloadPath)
-		btp.log.Info("Total size of download: %d", btp.torrentInfo.TotalSize())
-		btp.log.Info("All time download: %d", status.GetAllTimeDownload())
-		btp.log.Info("Size total done: %d", status.GetTotalDone())
-		btp.log.Info("Size left: %d", sizeLeft)
+		btp.log.Infof("Checking for sufficient space on %s...", btp.bts.config.DownloadPath)
+		btp.log.Infof("Total size of download: %d", btp.torrentInfo.TotalSize())
+		btp.log.Infof("All time download: %d", status.GetAllTimeDownload())
+		btp.log.Infof("Size total done: %d", status.GetTotalDone())
+		btp.log.Infof("Size left: %d", sizeLeft)
 
 		if btp.diskStatus.Free < sizeLeft {
-			btp.log.Info("Unsufficient free space on %s. Has %d, needs %d.", btp.bts.config.DownloadPath, btp.diskStatus.Free, sizeLeft)
+			btp.log.Infof("Unsufficient free space on %s. Has %d, needs %d.", btp.bts.config.DownloadPath, btp.diskStatus.Free, sizeLeft)
 			xbmc.Notify("Quasar", "LOCALIZE[30207]", config.AddonIcon())
 			btp.bufferEvents.Broadcast(errors.New("Not enough space on download destination."))
 			btp.notEnoughSpace = true
@@ -218,7 +218,7 @@ func (btp *BTPlayer) onMetadataReceived() {
 		btp.bufferEvents.Broadcast(errors.New("User cancelled."))
 		return
 	}
-	btp.log.Info("Chosen file: %s", btp.chosenFile.GetPath())
+	btp.log.Infof("Chosen file: %s", btp.chosenFile.GetPath())
 
 	btp.log.Info("Setting piece priorities")
 
@@ -364,7 +364,7 @@ func (btp *BTPlayer) Close() {
 
 		// Delete fast resume data
 		if _, err := os.Stat(btp.fastResumeFile); err == nil {
-			btp.log.Info("Deleting fast resume data at %s", btp.fastResumeFile)
+			btp.log.Infof("Deleting fast resume data at %s", btp.fastResumeFile)
 			defer os.Remove(btp.fastResumeFile)
 		}
 
@@ -488,12 +488,12 @@ func (btp *BTPlayer) setRateLimiting(enable bool) {
 		settings := btp.bts.Session.Settings()
 		if enable == true {
 			if btp.bts.config.MaxDownloadRate > 0 {
-				btp.log.Info("Buffer filled, rate limiting download to %dkb/s", btp.bts.config.MaxDownloadRate/1024)
+				btp.log.Infof("Buffer filled, rate limiting download to %dkb/s", btp.bts.config.MaxDownloadRate/1024)
 				settings.SetDownloadRateLimit(btp.bts.config.MaxDownloadRate)
 			}
 			if btp.bts.config.MaxUploadRate > 0 {
 				// If we have an upload rate, use the nicer bittyrant choker
-				btp.log.Info("Buffer filled, rate limiting upload to %dkb/s", btp.bts.config.MaxUploadRate/1024)
+				btp.log.Infof("Buffer filled, rate limiting upload to %dkb/s", btp.bts.config.MaxUploadRate/1024)
 				settings.SetUploadRateLimit(btp.bts.config.MaxUploadRate)
 			}
 		} else {
@@ -531,7 +531,7 @@ playbackWaitLoop:
 		}
 		select {
 		case <-playbackTimeout:
-			btp.log.Info("Playback was unable to start after %d seconds. Aborting...", playbackMaxWait / time.Second)
+			btp.log.Infof("Playback was unable to start after %d seconds. Aborting...", playbackMaxWait / time.Second)
 			btp.bufferEvents.Broadcast(errors.New("Playback was unable to start before timeout."))
 		 	return
 		case <-oneSecond.C:

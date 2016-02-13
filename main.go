@@ -66,13 +66,16 @@ func main() {
 	// Make sure we are properly multithreaded.
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	logging.SetFormatter(logging.MustStringFormatter("%{time:2006-01-02 15:04:05}  %{level:.4s}  %{module:-15s}  %{message}"))
+	// logging.SetFormatter(logging.MustStringFormatter("%{time:2006-01-02 15:04:05}  %{level:.4s}  %{module:-15s}  %{message}"))
+	logging.SetFormatter(logging.MustStringFormatter(
+		`%{color}%{level:.4s}  %{module:-12s} ▶ %{shortfunc:-15s}  %{color:reset}%{message}`,
+	))
 	logging.SetBackend(logging.NewLogBackend(os.Stdout, "", 0))
 
 	for _, line := range strings.Split(QuasarLogo, "\n") {
 		log.Info(line)
 	}
-	log.Info("Version: %s Go: %s", util.Version, runtime.Version())
+	log.Infof("Version: %s Go: %s", util.Version, runtime.Version())
 
 	conf := config.Reload()
 
@@ -81,7 +84,7 @@ func main() {
 
 	// xbmc.CloseAllDialogs()
 
-	log.Info("Addon: %s v%s", conf.Info.Id, conf.Info.Version)
+	log.Infof("Addon: %s v%s", conf.Info.Id, conf.Info.Version)
 
 	btService := bittorrent.NewBTService(*makeBTConfiguration(conf))
 

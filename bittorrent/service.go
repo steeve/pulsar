@@ -173,11 +173,11 @@ func (s *BTService) configure() {
 
 	if s.config.LimitAfterBuffering == false {
 		if s.config.MaxDownloadRate > 0 {
-			s.log.Info("Rate limiting download to %dkb/s", s.config.MaxDownloadRate / 1024)
+			s.log.Infof("Rate limiting download to %dkb/s", s.config.MaxDownloadRate / 1024)
 			settings.SetDownloadRateLimit(s.config.MaxDownloadRate)
 		}
 		if s.config.MaxUploadRate > 0 {
-			s.log.Info("Rate limiting upload to %dkb/s", s.config.MaxUploadRate / 1024)
+			s.log.Infof("Rate limiting upload to %dkb/s", s.config.MaxUploadRate / 1024)
 			// If we have an upload rate, use the nicer bittyrant choker
 			settings.SetChokingAlgorithm(int(libtorrent.SessionSettingsBittyrantChoker))
 			settings.SetUploadRateLimit(s.config.MaxUploadRate)
@@ -355,7 +355,7 @@ func (s *BTService) saveResumeDataConsumer() {
 				entry := saveResumeData.ResumeData()
 				bEncoded := []byte(libtorrent.Bencode(entry))
 
-				s.log.Info("Saving resume data for %s to %s.fastresume", torrentName, infoHash)
+				s.log.Infof("Saving resume data for %s to %s.fastresume", torrentName, infoHash)
 				path := filepath.Join(s.config.TorrentsPath, fmt.Sprintf("%s.fastresume", infoHash))
 				ioutil.WriteFile(path, bEncoded, 0644)
 				break
@@ -371,7 +371,7 @@ func (s *BTService) loadFastResumeFiles() error {
 		torrentParams := libtorrent.NewAddTorrentParams()
 		defer libtorrent.DeleteAddTorrentParams(torrentParams)
 
-		s.log.Info("Loading fast resume file %s", fastResumeFile)
+		s.log.Infof("Loading fast resume file %s", fastResumeFile)
 
 		hashFromPath := strings.Split(strings.TrimSuffix(fastResumeFile, ".fastresume"), string(os.PathSeparator))
 		infoHash := hashFromPath[len(hashFromPath) - 1]
@@ -517,13 +517,13 @@ func (s *BTService) logAlerts() {
 	for alert := range alerts {
 		alertCategory := alert.Category()
 		if alertCategory&int(libtorrent.AlertErrorNotification) != 0 {
-			s.libtorrentLog.Error("%s: %s", alert.What(), alert.Message())
+			s.libtorrentLog.Errorf("%s: %s", alert.What(), alert.Message())
 		} else if alertCategory&int(libtorrent.AlertDebugNotification) != 0 {
-			s.libtorrentLog.Debug("%s: %s", alert.What(), alert.Message())
+			s.libtorrentLog.Debugf("%s: %s", alert.What(), alert.Message())
 		} else if alertCategory&int(libtorrent.AlertPerformanceWarning) != 0 {
-			s.libtorrentLog.Warning("%s: %s", alert.What(), alert.Message())
+			s.libtorrentLog.Warningf("%s: %s", alert.What(), alert.Message())
 		} else {
-			s.libtorrentLog.Notice("%s: %s", alert.What(), alert.Message())
+			s.libtorrentLog.Noticef("%s: %s", alert.What(), alert.Message())
 		}
 	}
 }
