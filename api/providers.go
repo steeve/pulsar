@@ -79,7 +79,7 @@ func ProviderCheck(ctx *gin.Context) {
 	failures := xbmc.AddonCheck(addonId)
 	translated := xbmc.GetLocalizedString(30243)
 	xbmc.Notify("Quasar", fmt.Sprintf("%s: %d", translated, failures), config.AddonIcon())
-  ctx.String(200, "")
+	ctx.String(200, "")
 }
 
 func ProviderFailure(ctx *gin.Context) {
@@ -95,7 +95,7 @@ func ProviderEnable(ctx *gin.Context) {
 	if path == "plugin://plugin.video.quasar/provider/" {
 		xbmc.Refresh()
 	}
-  ctx.String(200, "")
+	ctx.String(200, "")
 }
 
 func ProviderDisable(ctx *gin.Context) {
@@ -105,5 +105,5 @@ func ProviderDisable(ctx *gin.Context) {
 	if path == "plugin://plugin.video.quasar/provider/" {
 		xbmc.Refresh()
 	}
-  ctx.String(200, "")
+	ctx.String(200, "")
 }
