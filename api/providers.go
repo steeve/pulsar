@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -14,7 +15,18 @@ type Addon struct {
 	Name    string
 	Version string
 	Enabled bool
+	Status  int
 }
+
+type ByEnabled []Addon
+func (a ByEnabled) Len() int           { return len(a) }
+func (a ByEnabled) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByEnabled) Less(i, j int) bool { return a[i].Enabled }
+
+type ByStatus []Addon
+func (a ByStatus) Len() int           { return len(a) }
+func (a ByStatus) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByStatus) Less(i, j int) bool { return a[i].Status < a[j].Status }
 
 func getProviders() []Addon {
 	list := make([]Addon, 0)
@@ -23,11 +35,14 @@ func getProviders() []Addon {
 			list = append(list, Addon{
 				ID: addon.ID,
 				Name: addon.Name,
-				Enabled: addon.Enabled,
 				Version: addon.Version,
+				Enabled: addon.Enabled,
+				Status: xbmc.AddonCheck(addon.ID),
 			})
 		}
 	}
+	sort.Sort(ByStatus(list))
+	sort.Sort(ByEnabled(list))
 	return list
 }
 
@@ -36,10 +51,9 @@ func ProviderList(ctx *gin.Context) {
 
 	items := make(xbmc.ListItems, 0, len(providers))
 	for _, provider := range providers {
-		status := "[COLOR FF009900]OK[/COLOR]"
-		failures := xbmc.AddonCheck(provider.ID)
-		if failures > 0 {
-			status = "[COLOR FF999900]WARN[/COLOR]"
+		status := "[COLOR FF009900]Ok[/COLOR]"
+		if provider.Status > 0 {
+			status = "[COLOR FF999900]Fail[/COLOR]"
 		}
 
 		enabled := "[COLOR FF009900]Enabled[/COLOR]"
