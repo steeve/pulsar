@@ -446,7 +446,7 @@ func (btp *BTPlayer) bufferDialog() {
 	for {
 		select {
 		case <-halfSecond.C:
-			if btp.dialogProgress.IsCanceled() {
+			if btp.dialogProgress.IsCanceled() || btp.notEnoughSpace {
 				btp.log.Info("User cancelled the buffering")
 				btp.bufferEvents.Broadcast(errors.New("user canceled the buffering"))
 				return
