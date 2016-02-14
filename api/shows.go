@@ -70,6 +70,7 @@ func renderShows(shows tmdb.Shows, ctx *gin.Context, page int) {
 		item.Path = UrlForXBMC("/show/%d/seasons", show.ExternalIDs.TVDBID)
 		item.ContextMenu = [][]string{
 			[]string{"LOCALIZE[30219]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/show/addremove/%d", show.ExternalIDs.TVDBID))},
+			[]string{"LOCALIZE[30035]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/setviewmode/tvshows"))},
 		}
 		items = append(items, item)
 	}
@@ -171,6 +172,9 @@ func ShowSeasons(ctx *gin.Context) {
 	for i := len(items) - 1; i >= 0; i-- {
 		item := items[i]
 		item.Path = UrlForXBMC("/show/%d/season/%d/episodes", show.Id, item.Info.Season)
+		item.ContextMenu = [][]string{
+			[]string{"LOCALIZE[30036]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/setviewmode/seasons"))},
+		}
 		reversedItems = append(reversedItems, item)
 	}
 	// xbmc.ListItems always returns false to Less() so that order is unchanged
@@ -209,6 +213,7 @@ func ShowEpisodes(ctx *gin.Context) {
 			[]string{"LOCALIZE[30202]", fmt.Sprintf("XBMC.PlayMedia(%s)", episodeLinksUrl)},
 			[]string{"LOCALIZE[30023]", fmt.Sprintf("XBMC.PlayMedia(%s)", playUrl)},
 			[]string{"LOCALIZE[30203]", "XBMC.Action(Info)"},
+			[]string{"LOCALIZE[30037]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/setviewmode/episodes"))},
 		}
 		item.IsPlayable = true
 	}

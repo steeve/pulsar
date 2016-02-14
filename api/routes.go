@@ -121,6 +121,8 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 		repo.HEAD("/:user/:repository/*filepath", repository.GetAddonFilesHead)
 	}
 
+	r.GET("/setviewmode/:content_type", SetViewMode)
+
 	r.GET("/youtube/:id", PlayYoutubeVideo)
 
 	r.GET("/subtitles", SubtitlesIndex)

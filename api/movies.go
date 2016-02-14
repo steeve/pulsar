@@ -99,6 +99,9 @@ func renderMovies(movies tmdb.Movies, ctx *gin.Context, page int) {
 				"LOCALIZE[30219]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/movie/addremove/%s", movie.IMDBId)),
 			})
 		}
+		item.ContextMenu = append(item.ContextMenu, []string{
+			"LOCALIZE[30034]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/setviewmode/movies")),
+		})
 		item.Info.Trailer = UrlForHTTP("/youtube/%s", item.Info.Trailer)
 		item.IsPlayable = true
 		items = append(items, item)

@@ -63,3 +63,8 @@ func SetSetting(id string, value interface{}) {
 	retVal := 0
 	executeJSONRPCEx("SetSetting", &retVal, Args{id, value})
 }
+
+func GetCurrentView() (viewMode string) {
+	executeJSONRPCEx("GetCurrentView", &viewMode, nil)
+	return
+}
