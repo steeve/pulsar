@@ -283,12 +283,12 @@ func (movie *Movie) ToListItem() *xbmc.ListItem {
 	year, _ := strconv.Atoi(strings.Split(movie.ReleaseDate, "-")[0])
 
 	item := &xbmc.ListItem{
-		Label: movie.OriginalTitle,
+		Label: movie.Title,
 		Info: &xbmc.ListItemInfo{
 			Year:          year,
 			Count:         rand.Int(),
-			Title:         movie.OriginalTitle,
-			OriginalTitle: movie.Title,
+			Title:         movie.Title,
+			OriginalTitle: movie.OriginalTitle,
 			Plot:          movie.Overview,
 			PlotOutline:   movie.Overview,
 			TagLine:       movie.TagLine,

@@ -254,12 +254,12 @@ func (show *Show) ToListItem() *xbmc.ListItem {
 	year, _ := strconv.Atoi(strings.Split(show.FirstAirDate, "-")[0])
 
 	item := &xbmc.ListItem{
-		Label: show.OriginalName,
+		Label: show.Name,
 		Info: &xbmc.ListItemInfo{
 			Year:          year,
 			Count:         rand.Int(),
-			Title:         show.OriginalName,
-			OriginalTitle: show.Name,
+			Title:         show.Name,
+			OriginalTitle: show.OriginalName,
 			Plot:          show.Overview,
 			PlotOutline:   show.Overview,
 			Code:          show.ExternalIDs.IMDBId,
