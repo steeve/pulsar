@@ -227,12 +227,14 @@ func MovieLinks(ctx *gin.Context) {
 
 	choices := make([]string, 0, len(torrents))
 	for _, torrent := range torrents {
-		info := make([]string, 0)
+		resolution := ""
 		if torrent.Resolution > 0 {
-			info = append(info, bittorrent.Resolutions[torrent.Resolution])
+			resolution = fmt.Sprintf("[B][COLOR %s]%s[/COLOR][/B] ", bittorrent.Colors[torrent.Resolution], bittorrent.Resolutions[torrent.Resolution])
 		}
+
+		info := make([]string, 0)
 		if torrent.Size != "" {
-			info = append(info, fmt.Sprintf("[%s]", torrent.Size))
+			info = append(info, fmt.Sprintf("[B][%s][/B]", torrent.Size))
 		}
 		if torrent.RipType > 0 {
 			info = append(info, bittorrent.Rips[torrent.RipType])
@@ -244,19 +246,16 @@ func MovieLinks(ctx *gin.Context) {
 			info = append(info, bittorrent.Codecs[torrent.AudioCodec])
 		}
 		if torrent.Provider != "" {
-			info = append(info, " - " + torrent.Provider)
+			info = append(info, fmt.Sprintf(" - [B]%s[/B]", torrent.Provider))
 		}
 
-		torrentName := torrent.Name
-		if len(torrentName) > 80 {
-			torrentName = torrentName[:80]
-		}
-
-		label := fmt.Sprintf("(%d / %d) %s\n%s",
+		label := fmt.Sprintf("%s(%d / %d) %s\n%s\n%s",
+			resolution,
 			torrent.Seeds,
 			torrent.Peers,
 			strings.Join(info, " "),
-			torrentName,
+			torrent.Name,
+			torrent.Icon,
 		)
 		choices = append(choices, label)
 	}

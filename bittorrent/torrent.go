@@ -26,6 +26,7 @@ type Torrent struct {
 	Peers     int64    `json:"peers"`
 	IsPrivate bool     `json:"is_private"`
 	Provider  string   `json:"provider"`
+	Icon      string   `json:"icon"`
 
 	Resolution  int    `json:"resolution"`
 	VideoCodec  int    `json:"video_codec"`
@@ -53,6 +54,7 @@ var (
 		regexp.MustCompile(`\W+1080p\W*`):           Resolution1080p,
 	}
 	Resolutions = []string{"", "480p", "720p", "1080p"}
+	Colors = []string{"", "FFA56F01", "FF539A02", "FF0166FC"}
 )
 
 const (
