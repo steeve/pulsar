@@ -68,13 +68,16 @@ func ProviderList(ctx *gin.Context) {
 		}
 		item.ContextMenu = [][]string{
 			[]string{"LOCALIZE[30242]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/provider/%s/check", provider.ID))},
-			[]string{"LOCALIZE[30240]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/provider/%s/enable", provider.ID))},
-			[]string{"LOCALIZE[30241]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/provider/%s/disable", provider.ID))},
 		}
 		if provider.Enabled {
-			item.ContextMenu = append(item.ContextMenu, []string{
-				"LOCALIZE[30244]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/provider/%s/settings", provider.ID)),
-			})
+			item.ContextMenu = append(item.ContextMenu,
+				[]string{"LOCALIZE[30241]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/provider/%s/disable", provider.ID))},
+				[]string{"LOCALIZE[30244]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/provider/%s/settings", provider.ID))},
+			)
+		} else {
+			item.ContextMenu = append(item.ContextMenu,
+				[]string{"LOCALIZE[30240]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/provider/%s/enable", provider.ID))},
+			)
 		}
 		items = append(items, item)
 	}
