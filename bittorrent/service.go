@@ -128,12 +128,12 @@ func NewBTService(config BTConfiguration) *BTService {
 	s.configure()
 	go s.saveResumeDataConsumer()
 	go s.saveResumeDataLoop()
-	go s.downloadProgress()
 	go s.alertsConsumer()
 	go s.logAlerts()
 
 	if config.BackgroundHandling {
 		go s.loadFastResumeFiles()
+		go s.downloadProgress()
 	}
 
 	return s
