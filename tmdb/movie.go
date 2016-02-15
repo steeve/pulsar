@@ -282,12 +282,17 @@ func MostVotedMoviesComplete(genre string, language string, page int) Movies {
 func (movie *Movie) ToListItem() *xbmc.ListItem {
 	year, _ := strconv.Atoi(strings.Split(movie.ReleaseDate, "-")[0])
 
+	title := movie.Title
+	if config.Get().UseOriginalTitle && movie.OriginalTitle != "" {
+		title = movie.OriginalTitle
+	}
+
 	item := &xbmc.ListItem{
-		Label: movie.Title,
+		Label: title,
 		Info: &xbmc.ListItemInfo{
 			Year:          year,
 			Count:         rand.Int(),
-			Title:         movie.Title,
+			Title:         title,
 			OriginalTitle: movie.OriginalTitle,
 			Plot:          movie.Overview,
 			PlotOutline:   movie.Overview,

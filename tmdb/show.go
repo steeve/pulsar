@@ -253,12 +253,17 @@ func GetTVGenres(language string) []*Genre {
 func (show *Show) ToListItem() *xbmc.ListItem {
 	year, _ := strconv.Atoi(strings.Split(show.FirstAirDate, "-")[0])
 
+	name := show.Name
+	if config.Get().UseOriginalTitle && show.OriginalName != "" {
+		name = show.OriginalName
+	}
+
 	item := &xbmc.ListItem{
-		Label: show.Name,
+		Label: name,
 		Info: &xbmc.ListItemInfo{
 			Year:          year,
 			Count:         rand.Int(),
-			Title:         show.Name,
+			Title:         name,
 			OriginalTitle: show.OriginalName,
 			Plot:          show.Overview,
 			PlotOutline:   show.Overview,

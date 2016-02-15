@@ -25,6 +25,7 @@ type Configuration struct {
 	EnablePagination    bool
 	EnableOverlayStatus bool
 	ChooseStreamAuto    bool
+	UseOriginalTitle    bool
 	PreReleaseUpdates   bool
 	BufferSize          int
 	UploadRateLimit     int
@@ -91,6 +92,7 @@ func Reload() *Configuration {
 		EnablePagination:    xbmc.GetSettingBool("enable_pagination"),
 		EnableOverlayStatus: xbmc.GetSettingBool("enable_overlay_status"),
 		ChooseStreamAuto:    xbmc.GetSettingBool("choose_stream_auto"),
+		UseOriginalTitle:    xbmc.GetSettingBool("use_original_title"),
 		PreReleaseUpdates:   xbmc.GetSettingBool("pre_release_updates"),
 		BTListenPortMin:     xbmc.GetSettingInt("listen_port_min"),
 		BTListenPortMax:     xbmc.GetSettingInt("listen_port_max"),
