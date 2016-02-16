@@ -39,7 +39,7 @@ type Torrent struct {
 }
 
 const (
-	ResolutionUnkown = iota
+	ResolutionUnknown = iota
 	Resolution480p
 	Resolution720p
 	Resolution1080p
@@ -246,7 +246,7 @@ func (t *Torrent) initialize() {
 		t.initializeFromMagnet()
 	}
 
-	if t.Resolution == ResolutionUnkown {
+	if t.Resolution == ResolutionUnknown {
 		t.Resolution = matchTags(t, resolutionTags)
 	}
 	if t.VideoCodec == CodecUnknown {

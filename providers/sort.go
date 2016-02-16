@@ -26,7 +26,7 @@ type ByQuality []*bittorrent.Torrent
 
 func QualityFactor(t *bittorrent.Torrent) float64 {
 	result := float64(t.Seeds)
-	if t.Resolution > bittorrent.ResolutionUnkown {
+	if t.Resolution > bittorrent.ResolutionUnknown {
 		result *= math.Pow(float64(t.Resolution), 3)
 	}
 	if t.RipType > bittorrent.RipUnknown {
