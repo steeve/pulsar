@@ -292,11 +292,11 @@ func GetCount(ctx *gin.Context) {
 
 	ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	ctx.JSON(200, gin.H{
-				"success": true,
-				"movies": len(db.Movies),
-				"shows": len(db.Shows),
-				"total": len(db.Movies) + len(db.Shows),
-		})
+		"success": true,
+		"movies": len(db.Movies),
+		"shows": len(db.Shows),
+		"total": len(db.Movies) + len(db.Shows),
+	})
 }
 
 func AddRemoveMovie(ctx *gin.Context) {
@@ -467,7 +467,8 @@ func WriteShowStrm(showId string, ShowsLibraryPath string) error {
 	if show == nil {
 		return errors.New("Unable to get Show")
 	}
-	ShowPath := filepath.Join(ShowsLibraryPath, toFileName(show.Name))
+	ShowStrm := toFileName(fmt.Sprintf("%s (%s)", show.Name, strings.Split(show.FirstAirDate, "-")[0]))
+	ShowPath := filepath.Join(ShowsLibraryPath, ShowStrm)
 
 	if _, err := os.Stat(ShowPath); os.IsNotExist(err) {
 		if err := os.Mkdir(ShowPath, 0755); err != nil {
@@ -497,7 +498,7 @@ func WriteShowStrm(showId string, ShowsLibraryPath string) error {
 				continue
 			}
 
-			EpisodeStrmPath := filepath.Join(ShowPath, fmt.Sprintf("%s S%02dE%02d.strm", toFileName(show.Name), season.Season, episode.EpisodeNumber))
+			EpisodeStrmPath := filepath.Join(ShowPath, fmt.Sprintf("%s S%02dE%02d.strm", ShowStrm, season.Season, episode.EpisodeNumber))
 			playLink := UrlForXBMC("/library/play/show/%d/season/%d/episode/%d", Id, season.Season, episode.EpisodeNumber)
 			if err := ioutil.WriteFile(EpisodeStrmPath, []byte(playLink), 0755); err != nil {
 						libraryLog.Error("Unable to write to EpisodeStrmPath")
@@ -520,7 +521,8 @@ func RemoveShow(ctx *gin.Context) {
 		ctx.String(404, "")
 		return
 	}
-	ShowPath := filepath.Join(ShowsLibraryPath, toFileName(show.Name))
+	ShowStrm := toFileName(fmt.Sprintf("%s (%s)", show.Name, strings.Split(show.FirstAirDate, "-")[0]))
+	ShowPath := filepath.Join(ShowsLibraryPath, ShowStrm)
 
 	if err := RemoveFromJsonDB(DBPath, showId, LShow); err != nil {
 		libraryLog.Error("Unable to remove show from db")
