@@ -35,6 +35,7 @@ type Configuration struct {
 	BTListenPortMax     int
 	ConnectionsLimit    int
 	SessionSave         int
+	TMDBApiKey          string
 
 	CustomProviderTimeoutEnabled bool
 	CustomProviderTimeout        int
@@ -98,6 +99,7 @@ func Reload() *Configuration {
 		BTListenPortMax:     xbmc.GetSettingInt("listen_port_max"),
 		ConnectionsLimit:    xbmc.GetSettingInt("connections_limit"),
 		SessionSave:         xbmc.GetSettingInt("session_save"),
+		TMDBApiKey:          xbmc.GetSettingString("tmdb_api_key"),
 
 		CustomProviderTimeoutEnabled: xbmc.GetSettingBool("custom_provider_timeout_enabled"),
 		CustomProviderTimeout:        xbmc.GetSettingInt("custom_provider_timeout"),

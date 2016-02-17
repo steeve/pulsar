@@ -5,6 +5,7 @@ import (
 	"path"
 	"sync"
 	"time"
+	"errors"
 	"strconv"
 	"strings"
 	"math/rand"
@@ -71,12 +72,18 @@ func getMovieById(movieId string, language string) *Movie {
 				"append_to_response": "credits,images,alternative_titles,translations,external_ids,trailers",
 				"language": language,
 			}.AsUrlValues()
-			napping.Get(
+			resp, err := napping.Get(
 				tmdbEndpoint + "movie/" + movieId,
 				&urlValues,
 				&movie,
 				nil,
 			)
+			if err != nil {
+				panic(err)
+			}
+			if resp.Status() != 200 {
+				panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+			}
 			if movie != nil {
 				cacheStore.Set(key, movie, cacheTime)
 			}
@@ -116,12 +123,18 @@ func GetMovieGenres(language string) []*Genre {
 			"api_key": apiKey,
 			"language": language,
 		}.AsUrlValues()
-		napping.Get(
+		resp, err := napping.Get(
 			tmdbEndpoint+"genre/movie/list",
 			&urlValues,
 			&genres,
 			nil,
 		)
+		if err != nil {
+			panic(err)
+		}
+		if resp.Status() != 200 {
+			panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+		}
 	})
 	return genres.Genres
 }
@@ -133,12 +146,18 @@ func SearchMovies(query string, language string) Movies {
 			"api_key": apiKey,
 			"query": query,
 		}.AsUrlValues()
-		napping.Get(
+		resp, err := napping.Get(
 			tmdbEndpoint + "search/movie",
 			&urlValues,
 			&results,
 			nil,
 		)
+		if err != nil {
+			panic(err)
+		}
+		if resp.Status() != 200 {
+			panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+		}
 	})
 	tmdbIds := make([]int, 0, len(results.Results))
 	for _, movie := range results.Results {
@@ -153,12 +172,18 @@ func GetList(listId string, language string) Movies {
     urlValues := napping.Params{
 			"api_key": apiKey,
 		}.AsUrlValues()
-		napping.Get(
+		resp, err := napping.Get(
 			tmdbEndpoint + "list/" + listId,
 			&urlValues,
 			&results,
 			nil,
 		)
+		if err != nil {
+			panic(err)
+		}
+		if resp.Status() != 200 {
+			panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+		}
 	})
 	tmdbIds := make([]int, 0, len(results.Items))
 	for _, movie := range results.Items {
@@ -200,12 +225,18 @@ func ListMoviesComplete(endpoint string, params napping.Params, page int) Movies
 			}
       urlValues := tmpParams.AsUrlValues()
 			rateLimiter.Call(func() {
-				napping.Get(
+				resp, err := napping.Get(
 					tmdbEndpoint + endpoint,
 					&urlValues,
 					&tmp,
 					nil,
 				)
+				if err != nil {
+					panic(err)
+				}
+				if resp.Status() != 200 {
+					panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+				}
 			})
 			for i, movie := range tmp.Results {
 				movies[startMoviesIndex + i] = GetMovie(movie.Id, params["language"])

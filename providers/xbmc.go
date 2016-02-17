@@ -15,7 +15,6 @@ import (
 	"github.com/scakemyer/quasar/bittorrent"
 	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/tmdb"
-	"github.com/scakemyer/quasar/tvdb"
 	"github.com/scakemyer/quasar/util"
 	"github.com/scakemyer/quasar/xbmc"
 )
@@ -127,45 +126,13 @@ func (as *AddonSearcher) GetMovieSearchObject(movie *tmdb.Movie) *MovieSearchObj
 	return sObject
 }
 
-func (as *AddonSearcher) GetEpisodeSearchObject(show *tvdb.Show, episode *tvdb.Episode) *EpisodeSearchObject {
-	seriesName := show.SeriesName
-	absoluteNumber := 0
-	tmdbFindResults := tmdb.Find(strconv.Itoa(show.Id), "tvdb_id")
-
-	// FIXME: This can crash
-	if tmdbFindResults != nil {
-		var tmdbShow *tmdb.Show
-		for _, result := range tmdbFindResults.TVResults {
-			tmdbShow = tmdb.GetShow(result.Id, "en")
-			break
-		}
-		if tmdbShow != nil {
-			seriesName = tmdbShow.Name
-		}
-		// is this an anime?
-		countryIsJP := false
-		for _, country := range tmdbShow.OriginCountry {
-			if country == "JP" {
-				countryIsJP = true
-				break
-			}
-		}
-		genreIsAnim := false
-		for _, genre := range tmdbShow.Genres {
-			if genre.Name == "Animation" {
-				genreIsAnim = true
-				break
-			}
-		}
-		if countryIsJP && genreIsAnim {
-			absoluteNumber = episode.AbsoluteNumber
-		}
-	}
+func (as *AddonSearcher) GetEpisodeSearchObject(show *tmdb.Show, episode *tmdb.Episode) *EpisodeSearchObject {
+	absoluteNumber := 0 // FIXME
 
 	return &EpisodeSearchObject{
-		IMDBId:         show.ImdbId,
-		TVDBId:         show.Id,
-		Title:          NormalizeTitle(seriesName),
+		IMDBId:         show.ExternalIDs.IMDBId,
+		TVDBId:         show.ExternalIDs.TVDBID,
+		Title:          NormalizeTitle(show.Name),
 		Season:         episode.SeasonNumber,
 		Episode:        episode.EpisodeNumber,
 		AbsoluteNumber: absoluteNumber,
@@ -210,6 +177,6 @@ func (as *AddonSearcher) SearchMovieLinks(movie *tmdb.Movie) []*bittorrent.Torre
 	return as.call("search_movie", as.GetMovieSearchObject(movie))
 }
 
-func (as *AddonSearcher) SearchEpisodeLinks(show *tvdb.Show, episode *tvdb.Episode) []*bittorrent.Torrent {
+func (as *AddonSearcher) SearchEpisodeLinks(show *tmdb.Show, episode *tmdb.Episode) []*bittorrent.Torrent {
 	return as.call("search_episode", as.GetEpisodeSearchObject(show, episode))
 }

@@ -1,0 +1,119 @@
+package tmdb
+
+import (
+	"fmt"
+	"path"
+	"time"
+	"errors"
+	"math/rand"
+
+	"github.com/jmcvetta/napping"
+	"github.com/scakemyer/quasar/cache"
+	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/xbmc"
+)
+
+func GetSeason(showId int, seasonNumber int, language string) *Season {
+	var season *Season
+	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
+	key := fmt.Sprintf("com.tmdb.season.%d.%d.%s", showId, seasonNumber, language)
+	if err := cacheStore.Get(key, &season); err != nil {
+		rateLimiter.Call(func() {
+			urlValues := napping.Params{
+				"api_key": apiKey,
+				"append_to_response": "credits,images,videos,external_ids",
+				"language": language,
+			}.AsUrlValues()
+			resp, err := napping.Get(
+				fmt.Sprintf("%stv/%d/season/%d", tmdbEndpoint, showId, seasonNumber),
+				&urlValues,
+				&season,
+				nil,
+			)
+			if err != nil {
+				panic(err)
+			}
+			if resp.Status() != 200 {
+				panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+			}
+		})
+		season.EpisodeCount = len(season.Episodes)
+		if season != nil {
+			cacheStore.Set(key, season, cacheTime)
+		}
+	}
+	if season == nil {
+		return nil
+	}
+	return season
+}
+
+func (seasons SeasonList) ToListItems(show *Show) []*xbmc.ListItem {
+	items := make([]*xbmc.ListItem, 0, len(seasons))
+
+	fanarts := make([]string, 0)
+	for _, backdrop := range show.Images.Backdrops {
+		fanarts = append(fanarts, imageURL(backdrop.FilePath, fmt.Sprintf("w%d", backdrop.Width)))
+	}
+
+	now := time.Now().UTC()
+	for _, season := range seasons {
+		if season.EpisodeCount == 0 {
+			continue
+		}
+		firstAired, _ := time.Parse("2006-01-02", season.AirDate)
+		if firstAired.After(now) {
+			continue
+		}
+
+		item := season.ToListItem(show)
+
+		if len(fanarts) > 0 {
+			item.Art.FanArt = fanarts[rand.Int()%len(fanarts)]
+		}
+
+		items = append(items, item)
+	}
+	return items
+}
+
+func (season *Season) ToListItem(show *Show) *xbmc.ListItem {
+	name := fmt.Sprintf("Season %d", season.Season)
+	if season.Season == 0 {
+		name = "Specials"
+	}
+
+	item := &xbmc.ListItem{
+		Label: name,
+		Info: &xbmc.ListItemInfo{
+			Count:         rand.Int(),
+			Title:         name,
+			OriginalTitle: name,
+			Season:        season.Season,
+			TVShowTitle:   show.Title,
+		},
+		Art: &xbmc.ListItemArt{},
+	}
+
+	if season.Poster != "" {
+		item.Art.Poster = imageURL(season.Poster, "w500")
+		item.Art.Thumbnail = imageURL(season.Poster, "w500")
+	}
+
+	fanarts := make([]string, 0)
+	for _, backdrop := range show.Images.Backdrops {
+		fanarts = append(fanarts, imageURL(backdrop.FilePath, fmt.Sprintf("w%d", backdrop.Width)))
+	}
+	if len(fanarts) > 0 {
+		item.Art.FanArt = fanarts[rand.Int()%len(fanarts)]
+	}
+
+	// FIXME
+	item.Info.Genre = show.Genres[0].Name
+
+	return item
+}
+
+func (s SeasonList) Len() int           { return len(s) }
+func (s SeasonList) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s SeasonList) Less(i, j int) bool { return s[i].Season < s[j].Season }

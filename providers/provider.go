@@ -3,7 +3,6 @@ package providers
 import (
 	"github.com/scakemyer/quasar/bittorrent"
 	"github.com/scakemyer/quasar/tmdb"
-	"github.com/scakemyer/quasar/tvdb"
 )
 
 type Searcher interface {
@@ -15,5 +14,5 @@ type MovieSearcher interface {
 }
 
 type EpisodeSearcher interface {
-	SearchEpisodeLinks(show *tvdb.Show, episode *tvdb.Episode) []*bittorrent.Torrent
+	SearchEpisodeLinks(show *tmdb.Show, episode *tmdb.Episode) []*bittorrent.Torrent
 }

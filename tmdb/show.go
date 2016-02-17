@@ -2,49 +2,19 @@ package tmdb
 
 import (
 	"fmt"
-	"math/rand"
 	"path"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
+	"errors"
+	"strconv"
+	"strings"
+	"math/rand"
 
 	"github.com/jmcvetta/napping"
 	"github.com/scakemyer/quasar/cache"
 	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/xbmc"
 )
-
-type Show struct {
-	Entity
-
-	EpisodeRunTime      []int        `json:"episode_run_time"`
-	Genres              []*Genre     `json:"genres"`
-	Homepage            string       `json:"homepage"`
-	InProduction        bool         `json:"in_production"`
-	FirstAirDate        string       `json:"first_air_date"`
-	LastAirDate         string       `json:"last_air_date"`
-	Networks            []*IdName    `json:"networks"`
-	NumberOfEpisodes    int          `json:"number_of_episodes"`
-	NumberOfSeasons     int          `json:"number_of_seasons"`
-	OriginalName        string       `json:"original_name"`
-	OriginCountry       []string     `json:"origin_country"`
-	Overview            string       `json:"overview"`
-	EpisodeRuntime      []int        `json:"runtime"`
-	RawPopularity       interface{}  `json:"popularity"`
-	Popularity          float64      `json:"-"`
-	ProductionCompanies []*IdName    `json:"production_companies"`
-	Status              string       `json:"status"`
-	ExternalIDs         *ExternalIDs `json:"external_ids"`
-	Translations        *struct {
-		Translations []*Language `json:"translations"`
-	} `json:"translations"`
-
-	Credits *Credits `json:"credits,omitempty"`
-	Images  *Images  `json:"images,omitempty"`
-}
-
-type Shows []*Show
 
 func GetShow(showId int, language string) *Show {
 	var show *Show
@@ -57,12 +27,18 @@ func GetShow(showId int, language string) *Show {
 				"append_to_response": "credits,images,alternative_titles,translations,external_ids",
 				"language": language,
 			}.AsUrlValues()
-			napping.Get(
+			resp, err := napping.Get(
 				tmdbEndpoint + "tv/" + strconv.Itoa(showId),
 				&urlValues,
 				&show,
 				nil,
 			)
+			if err != nil {
+				panic(err)
+			}
+			if resp.Status() != 200 {
+				panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+			}
 		})
 		if show != nil {
 			cacheStore.Set(key, show, cacheTime)
@@ -103,12 +79,18 @@ func SearchShows(query string, language string) Shows {
 			"api_key": apiKey,
 			"query":query,
 		}.AsUrlValues()
-		napping.Get(
+		resp, err := napping.Get(
 			tmdbEndpoint + "search/tv",
 			&urlValues,
 			&results,
 			nil,
 		)
+		if err != nil {
+			panic(err)
+		}
+		if resp.Status() != 200 {
+			panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+		}
 	})
 	tmdbIds := make([]int, 0, len(results.Results))
 	for _, entity := range results.Results {
@@ -145,15 +127,21 @@ func ListShowsComplete(endpoint string, params napping.Params, page int) Shows {
 			}
       urlValues := tmpParams.AsUrlValues()
 			rateLimiter.Call(func() {
-				napping.Get(
+				resp, err := napping.Get(
 					tmdbEndpoint + endpoint,
 					&urlValues,
 					&tmp,
 					nil,
 				)
+				if err != nil {
+					panic(err)
+				}
+				if resp.Status() != 200 {
+					panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+				}
 			})
 			for i, entity := range tmp.Results {
-				shows[startMoviesIndex+i] = GetShow(entity.Id, params["language"])
+				shows[startMoviesIndex + i] = GetShow(entity.Id, params["language"])
 			}
 		}(currentpage)
 	}
@@ -240,12 +228,18 @@ func GetTVGenres(language string) []*Genre {
 			"api_key": apiKey,
 			"language": language,
 		}.AsUrlValues()
-		napping.Get(
+		resp, err := napping.Get(
 			tmdbEndpoint + "genre/tv/list",
 			&urlValues,
 			&genres,
 			nil,
 		)
+		if err != nil {
+			panic(err)
+		}
+		if resp.Status() != 200 {
+			panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+		}
 	})
 	return genres.Genres
 }

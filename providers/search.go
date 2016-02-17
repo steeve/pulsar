@@ -7,7 +7,6 @@ import (
 	"github.com/op/go-logging"
 	"github.com/scakemyer/quasar/bittorrent"
 	"github.com/scakemyer/quasar/tmdb"
-	"github.com/scakemyer/quasar/tvdb"
 )
 
 var log = logging.MustGetLogger("linkssearch")
@@ -52,7 +51,7 @@ func SearchMovie(searchers []MovieSearcher, movie *tmdb.Movie) []*bittorrent.Tor
 	return processLinks(torrentsChan)
 }
 
-func SearchEpisode(searchers []EpisodeSearcher, show *tvdb.Show, episode *tvdb.Episode) []*bittorrent.Torrent {
+func SearchEpisode(searchers []EpisodeSearcher, show *tmdb.Show, episode *tmdb.Episode) []*bittorrent.Torrent {
 	torrentsChan := make(chan *bittorrent.Torrent)
 	go func() {
 		wg := sync.WaitGroup{}

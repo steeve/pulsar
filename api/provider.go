@@ -1,14 +1,15 @@
 package api
 
 import (
-	"encoding/json"
+	"fmt"
 	"log"
+	"errors"
 	"strconv"
+	"encoding/json"
 
 	"github.com/gin-gonic/gin"
 	"github.com/scakemyer/quasar/providers"
 	"github.com/scakemyer/quasar/tmdb"
-	"github.com/scakemyer/quasar/tvdb"
 	"github.com/scakemyer/quasar/xbmc"
 )
 
@@ -44,20 +45,21 @@ func ProviderGetMovie(ctx *gin.Context) {
 
 func ProviderGetEpisode(ctx *gin.Context) {
 	provider := ctx.Params.ByName("provider")
-	showId := ctx.Params.ByName("showId")
+	showId, _ := strconv.Atoi(ctx.Params.ByName("showId"))
 	seasonNumber, _ := strconv.Atoi(ctx.Params.ByName("season"))
 	episodeNumber, _ := strconv.Atoi(ctx.Params.ByName("episode"))
 
-	log.Println("Searching links for TVDB Id:", showId)
+	log.Println("Searching links for TMDB Id:", showId)
 
-	show, err := tvdb.NewShowCached(showId, "en")
-	if err != nil {
-		ctx.Error(err)
+	show := tmdb.GetShow(showId, "en")
+	season := tmdb.GetSeason(showId, seasonNumber, "en")
+	if season == nil {
+		ctx.Error(errors.New(fmt.Sprintf("Unable to get season %d", seasonNumber)))
 		return
 	}
-	episode := show.Seasons[seasonNumber].Episodes[episodeNumber-1]
+	episode := season.Episodes[episodeNumber - 1]
 
-	log.Printf("Resolved %s to %s", showId, show.SeriesName)
+	log.Printf("Resolved %s to %s", showId, show.Name)
 
 	searcher := providers.NewAddonSearcher(provider)
 	torrents := searcher.SearchEpisodeLinks(show, episode)

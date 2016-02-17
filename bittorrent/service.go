@@ -15,6 +15,7 @@ import (
 	"github.com/op/go-logging"
 	"github.com/scakemyer/libtorrent-go"
 	"github.com/scakemyer/quasar/broadcast"
+	"github.com/scakemyer/quasar/tmdb"
 	"github.com/scakemyer/quasar/util"
 	"github.com/scakemyer/quasar/xbmc"
 )
@@ -135,6 +136,8 @@ func NewBTService(config BTConfiguration) *BTService {
 		go s.loadFastResumeFiles()
 		go s.downloadProgress()
 	}
+
+	tmdb.CheckApiKey()
 
 	return s
 }
