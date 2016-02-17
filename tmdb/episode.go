@@ -16,7 +16,7 @@ func (episodes EpisodeList) ToListItems(show *Show, season *Season) []*xbmc.List
 
 	fanarts := make([]string, 0)
 	for _, backdrop := range show.Images.Backdrops {
-		fanarts = append(fanarts, imageURL(backdrop.FilePath, fmt.Sprintf("w%d", backdrop.Width)))
+		fanarts = append(fanarts, imageURL(backdrop.FilePath, "w1280"))
 	}
 
 	now := time.Now().UTC()

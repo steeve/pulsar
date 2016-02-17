@@ -53,7 +53,7 @@ func (seasons SeasonList) ToListItems(show *Show) []*xbmc.ListItem {
 
 	fanarts := make([]string, 0)
 	for _, backdrop := range show.Images.Backdrops {
-		fanarts = append(fanarts, imageURL(backdrop.FilePath, fmt.Sprintf("w%d", backdrop.Width)))
+		fanarts = append(fanarts, imageURL(backdrop.FilePath, "w1280"))
 	}
 
 	now := time.Now().UTC()
@@ -102,7 +102,7 @@ func (season *Season) ToListItem(show *Show) *xbmc.ListItem {
 
 	fanarts := make([]string, 0)
 	for _, backdrop := range show.Images.Backdrops {
-		fanarts = append(fanarts, imageURL(backdrop.FilePath, fmt.Sprintf("w%d", backdrop.Width)))
+		fanarts = append(fanarts, imageURL(backdrop.FilePath, "w1280"))
 	}
 	if len(fanarts) > 0 {
 		item.Art.FanArt = fanarts[rand.Int()%len(fanarts)]
