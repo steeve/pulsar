@@ -113,6 +113,7 @@ func processLinks(torrentsChan chan *bittorrent.Torrent) []*bittorrent.Torrent {
 			if torrent.SceneRating > existingTorrent.SceneRating {
 				existingTorrent.SceneRating = torrent.SceneRating
 			}
+			existingTorrent.Multi = true
 		} else {
 			torrentsMap[torrent.InfoHash] = torrent
 		}

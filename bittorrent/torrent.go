@@ -27,6 +27,7 @@ type Torrent struct {
 	IsPrivate bool     `json:"is_private"`
 	Provider  string   `json:"provider"`
 	Icon      string   `json:"icon"`
+	Multi     bool
 
 	Resolution  int    `json:"resolution"`
 	VideoCodec  int    `json:"video_codec"`

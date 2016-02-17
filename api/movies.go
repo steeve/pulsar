@@ -249,13 +249,19 @@ func MovieLinks(ctx *gin.Context) {
 			info = append(info, fmt.Sprintf(" - [B]%s[/B]", torrent.Provider))
 		}
 
-		label := fmt.Sprintf("%s(%d / %d) %s\n%s\n%s",
+		multi := ""
+		if torrent.Multi {
+			multi = "\nmulti"
+		}
+
+		label := fmt.Sprintf("%s(%d / %d) %s\n%s\n%s%s",
 			resolution,
 			torrent.Seeds,
 			torrent.Peers,
 			strings.Join(info, " "),
 			torrent.Name,
 			torrent.Icon,
+			multi,
 		)
 		choices = append(choices, label)
 	}
