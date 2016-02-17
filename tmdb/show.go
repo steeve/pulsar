@@ -269,8 +269,8 @@ func (show *Show) ToListItem() *xbmc.ListItem {
 			Premiered:     show.FirstAirDate,
 		},
 		Art: &xbmc.ListItemArt{
-			FanArt: imageURL(show.BackdropPath, "w1280"),
-			Poster: imageURL(show.PosterPath, "w500"),
+			FanArt: ImageURL(show.BackdropPath, "w1280"),
+			Poster: ImageURL(show.PosterPath, "w500"),
 		},
 	}
 	item.Thumbnail = item.Art.Poster

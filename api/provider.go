@@ -19,11 +19,11 @@ type providerDebugResponse struct {
 }
 
 func ProviderGetMovie(ctx *gin.Context) {
-	imdbId := ctx.Params.ByName("imdbId")
+	tmdbId := ctx.Params.ByName("tmdbId")
 	provider := ctx.Params.ByName("provider")
-	log.Println("Searching links for IMDB:", imdbId)
-	movie := tmdb.GetMovieFromIMDB(imdbId, "en")
-	log.Printf("Resolved %s to %s", imdbId, movie.Title)
+	log.Println("Searching links for:", tmdbId)
+	movie := tmdb.GetMovieById(tmdbId, "en")
+	log.Printf("Resolved %s to %s", tmdbId, movie.Title)
 
 	searcher := providers.NewAddonSearcher(provider)
 	torrents := searcher.SearchMovieLinks(movie)

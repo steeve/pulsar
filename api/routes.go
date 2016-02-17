@@ -58,8 +58,8 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 	}
 	movie := r.Group("/movie")
 	{
-		movie.GET("/:imdbId/links", MovieLinks)
-		movie.GET("/:imdbId/play", MoviePlay)
+		movie.GET("/:tmdbId/links", MovieLinks)
+		movie.GET("/:tmdbId/play", MoviePlay)
 	}
 
 	shows := r.Group("/shows")
@@ -86,9 +86,9 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 
 	library := r.Group("/library")
 	{
-		library.GET("/movie/add/:imdbId", AddMovie)
-		library.GET("/movie/remove/:imdbId", RemoveMovie)
-		library.GET("/movie/addremove/:imdbId", AddRemoveMovie)
+		library.GET("/movie/add/:tmdbId", AddMovie)
+		library.GET("/movie/remove/:tmdbId", RemoveMovie)
+		library.GET("/movie/addremove/:tmdbId", AddRemoveMovie)
 		library.GET("/show/add/:showId", AddShow)
 		library.GET("/show/remove/:showId", RemoveShow)
 		library.GET("/show/addremove/:showId", AddRemoveShow)
@@ -96,7 +96,7 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 		library.GET("/getpath", GetLibraryPath)
 		library.GET("/getcount", GetCount)
 		library.GET("/lookup", Lookup)
-		library.GET("/play/movie/:imdbId", PlayMovie)
+		library.GET("/play/movie/:tmdbId", PlayMovie)
 		library.GET("/play/show/:showId/season/:season/episode/:episode", PlayShow)
 	}
 
@@ -109,7 +109,7 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 		provider.GET("/:provider/failure", ProviderFailure)
 		provider.GET("/:provider/settings", ProviderSettings)
 
-		provider.GET("/:provider/movie/:imdbId", ProviderGetMovie)
+		provider.GET("/:provider/movie/:tmdbId", ProviderGetMovie)
 		provider.GET("/:provider/show/:showId/season/:season/episode/:episode", ProviderGetEpisode)
 	}
 

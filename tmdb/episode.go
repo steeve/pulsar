@@ -16,7 +16,7 @@ func (episodes EpisodeList) ToListItems(show *Show, season *Season) []*xbmc.List
 
 	fanarts := make([]string, 0)
 	for _, backdrop := range show.Images.Backdrops {
-		fanarts = append(fanarts, imageURL(backdrop.FilePath, "w1280"))
+		fanarts = append(fanarts, ImageURL(backdrop.FilePath, "w1280"))
 	}
 
 	now := time.Now().UTC()
@@ -32,14 +32,14 @@ func (episodes EpisodeList) ToListItems(show *Show, season *Season) []*xbmc.List
 		item := episode.ToListItem(show)
 
 		if episode.StillPath != "" {
-			item.Art.FanArt = imageURL(episode.StillPath, "w1280")
-			item.Art.Thumbnail = imageURL(episode.StillPath, "w500")
+			item.Art.FanArt = ImageURL(episode.StillPath, "w1280")
+			item.Art.Thumbnail = ImageURL(episode.StillPath, "w500")
 		} else {
 			if len(fanarts) > 0 {
 				item.Art.FanArt = fanarts[rand.Int()%len(fanarts)]
 			}
 		}
-		item.Art.Poster = imageURL(season.Poster, "w500")
+		item.Art.Poster = ImageURL(season.Poster, "w500")
 
 		items = append(items, item)
 	}

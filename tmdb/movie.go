@@ -22,46 +22,11 @@ const (
 	popularMoviesStartPage = 1
 )
 
-type Movie struct {
-	Entity
-
-	IMDBId              string       `json:"imdb_id"`
-	Overview            string       `json:"overview"`
-	ProductionCompanies []*IdName    `json:"production_companies"`
-	Runtime             int          `json:"runtime"`
-	TagLine             string       `json:"tagline"`
-	RawPopularity       interface{}  `json:"popularity"`
-	Popularity          float64      `json:"-"`
-	SpokenLanguages     []*Language  `json:"spoken_languages"`
-	ExternalIDs         *ExternalIDs `json:"external_ids"`
-
-	AlternativeTitles   *struct {
-		Titles []*AlternativeTitle `json:"titles"`
-	} `json:"alternative_titles"`
-
-	Translations *struct {
-		Translations []*Language `json:"translations"`
-	} `json:"translations"`
-
-	Trailers *struct {
-		Youtube []*Trailer `json:"youtube"`
-	} `json:"trailers"`
-
-	Credits *Credits `json:"credits,omitempty"`
-	Images  *Images  `json:"images,omitempty"`
-}
-
-type Movies []*Movie
-
-func GetMovieFromIMDB(imdbId string, language string) *Movie {
-	return getMovieById(imdbId, language)
-}
-
 func GetMovie(tmdbId int, language string) *Movie {
-	return getMovieById(strconv.Itoa(tmdbId), language)
+	return GetMovieById(strconv.Itoa(tmdbId), language)
 }
 
-func getMovieById(movieId string, language string) *Movie {
+func GetMovieById(movieId string, language string) *Movie {
 	var movie *Movie
 	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
 	key := fmt.Sprintf("com.tmdb.movie.%s.%s", movieId, language)
@@ -335,8 +300,8 @@ func (movie *Movie) ToListItem() *xbmc.ListItem {
 			Rating:        movie.VoteAverage,
 		},
 		Art: &xbmc.ListItemArt{
-			FanArt: imageURL(movie.BackdropPath, "w1280"),
-			Poster: imageURL(movie.PosterPath, "w500"),
+			FanArt: ImageURL(movie.BackdropPath, "w1280"),
+			Poster: ImageURL(movie.PosterPath, "w500"),
 		},
 	}
 	item.Thumbnail = item.Art.Poster
@@ -354,8 +319,8 @@ func (movie *Movie) ToListItem() *xbmc.ListItem {
 		}
 	}
 
-	if item.Info.Trailer == "" && config.Get().Language != "en" && movie.IMDBId != "" {
-		enMovie := getMovieById(movie.IMDBId, "en")
+	if item.Info.Trailer == "" && config.Get().Language != "en" {
+		enMovie := GetMovie(movie.Id, "en")
 		if enMovie.Trailers != nil {
 			for _, trailer := range enMovie.Trailers.Youtube {
 				item.Info.Trailer = trailer.Source

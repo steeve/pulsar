@@ -4,6 +4,8 @@ import (
 	"os"
 	"fmt"
 	"time"
+	"errors"
+	"strconv"
 	"strings"
 	"io/ioutil"
 	"encoding/json"
@@ -14,13 +16,10 @@ import (
 	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/xbmc"
 	"github.com/scakemyer/quasar/tmdb"
-	"github.com/scakemyer/quasar/tvdb"
 )
 
 const (
-	imageEndpoint = "http://image.tmdb.org/t/p/"
-	tvdbBanners   = "http://thetvdb.com/banners/"
-	LMovie        = iota
+	LMovie = iota
 	LShow
 )
 
@@ -88,19 +87,20 @@ func Lookup(ctx *gin.Context) {
 	Shows := make([]*Item, 0, len(db.Shows))
 
 	for i := 0; i < len(db.Movies); i++ {
-		movie := tmdb.GetMovieFromIMDB(db.Movies[i], "en")
+		movie := tmdb.GetMovieById(db.Movies[i], "en")
 		Movies = append(Movies, &Item{
 			Id: db.Movies[i],
 			Title: movie.OriginalTitle,
 			Year: strings.Split(movie.ReleaseDate, "-")[0],
 			Overview: movie.Overview,
-			Poster: imageEndpoint + "w500" + movie.PosterPath,
+			Poster: tmdb.ImageURL(movie.PosterPath, "w500"),
 		})
 	}
 
 	for i := 0; i < len(db.Shows); i++ {
-		show, err := tvdb.NewShowCached(db.Shows[i], "en")
-		if err != nil {
+		showId, _ := strconv.Atoi(db.Shows[i])
+		show := tmdb.GetShow(showId, "en")
+		if show == nil {
 			ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 			ctx.JSON(200, gin.H{
 				"success": false,
@@ -109,10 +109,10 @@ func Lookup(ctx *gin.Context) {
 		}
 		Shows = append(Shows, &Item{
 			Id: db.Shows[i],
-			Title: show.SeriesName,
-			Year: strings.Split(show.FirstAired, "-")[0],
+			Title: show.Name,
+			Year: strings.Split(show.FirstAirDate, "-")[0],
 			Overview: show.Overview,
-			Poster: tvdbBanners + show.Poster,
+			Poster: tmdb.ImageURL(show.PosterPath, "w500"),
 		})
 	}
 
@@ -232,7 +232,7 @@ func UpdateLibrary(ctx *gin.Context) {
 	MoviesLibraryPath := filepath.Join(LibraryPath, "Movies")
 	if _, err := os.Stat(MoviesLibraryPath); os.IsNotExist(err) {
 		if err := os.Mkdir(MoviesLibraryPath, 0755); err != nil{
-			libraryLog.Error("Unable to create MoviesLibraryPath")
+			libraryLog.Error("Unable to create library path for Movies")
 			ctx.String(404, "")
 			return
 		}
@@ -241,7 +241,7 @@ func UpdateLibrary(ctx *gin.Context) {
 	ShowsLibraryPath := filepath.Join(LibraryPath, "Shows")
 	if _, err := os.Stat(ShowsLibraryPath); os.IsNotExist(err) {
 		if err := os.Mkdir(ShowsLibraryPath, 0755); err != nil{
-			libraryLog.Error("Unable to create ShowsLibraryPath")
+			libraryLog.Error("Unable to create library path for Shows")
 			ctx.String(404, "")
 			return
 		}
@@ -302,8 +302,8 @@ func GetCount(ctx *gin.Context) {
 func AddRemoveMovie(ctx *gin.Context) {
 	LibraryPath := config.Get().LibraryPath
 	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
-	imdbId := ctx.Params.ByName("imdbId")
-	inJsonDb, err := inJsonDB(DBPath, imdbId, LMovie)
+	tmdbId := ctx.Params.ByName("tmdbId")
+	inJsonDb, err := inJsonDB(DBPath, tmdbId, LMovie)
 	if err != nil {
 		return
 	}
@@ -317,7 +317,7 @@ func AddRemoveMovie(ctx *gin.Context) {
 func AddMovie(ctx *gin.Context) {
 	LibraryPath := config.Get().LibraryPath
 	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
-	imdbId := ctx.Params.ByName("imdbId")
+	tmdbId := ctx.Params.ByName("tmdbId")
 
 	if fileInfo, err := os.Stat(LibraryPath); err != nil || fileInfo.IsDir() == false || LibraryPath == "" || LibraryPath == "." {
 		xbmc.Notify("Quasar", "LOCALIZE[30220]", config.AddonIcon())
@@ -325,7 +325,7 @@ func AddMovie(ctx *gin.Context) {
 		return
 	}
 
-	if inJsonDb, err := inJsonDB(DBPath, imdbId, LMovie); err != nil || inJsonDb == true {
+	if inJsonDb, err := inJsonDB(DBPath, tmdbId, LMovie); err != nil || inJsonDb == true {
 		ctx.String(404, "")
 		return
 	}
@@ -333,19 +333,19 @@ func AddMovie(ctx *gin.Context) {
 	MoviesLibraryPath := filepath.Join(LibraryPath, "Movies")
 	if _, err := os.Stat(MoviesLibraryPath); os.IsNotExist(err) {
 		if err := os.Mkdir(MoviesLibraryPath, 0755); err != nil{
-			libraryLog.Error("Unable to create MoviesLibraryPath")
+			libraryLog.Error("Unable to create library path for Movies")
 			ctx.String(404, "")
 			return
 		}
 	}
 
-	if err := WriteMovieStrm(imdbId, MoviesLibraryPath); err != nil {
+	if err := WriteMovieStrm(tmdbId, MoviesLibraryPath); err != nil {
 		ctx.String(404, "")
 		return
 	}
 
-	if err := UpdateJsonDB(DBPath, imdbId, LMovie); err != nil {
-		libraryLog.Error("Unable to UpdateJsonDB")
+	if err := UpdateJsonDB(DBPath, tmdbId, LMovie); err != nil {
+		libraryLog.Error("Unable to update json DB")
 		ctx.String(404, "")
 		return
 	}
@@ -356,21 +356,21 @@ func AddMovie(ctx *gin.Context) {
 	libraryLog.Info("Movie added")
 }
 
-func WriteMovieStrm(imdbId string, MoviesLibraryPath string) error {
-	movie := tmdb.GetMovieFromIMDB(imdbId, "en")
+func WriteMovieStrm(tmdbId string, MoviesLibraryPath string) error {
+	movie := tmdb.GetMovieById(tmdbId, "en")
 	MovieStrm := toFileName(fmt.Sprintf("%s (%s)", movie.OriginalTitle, strings.Split(movie.ReleaseDate, "-")[0]))
 	MoviePath := filepath.Join(MoviesLibraryPath, MovieStrm)
 
 	if _, err := os.Stat(MoviePath); os.IsNotExist(err) {
 		if err := os.Mkdir(MoviePath, 0755); err != nil{
-			libraryLog.Error("Unable to create MoviePath")
+			libraryLog.Error("Unable to create path for Movies")
 			return err
 		}
 	}
 
 	MovieStrmPath := filepath.Join(MoviePath, fmt.Sprintf("%s.strm", MovieStrm))
-	if err := ioutil.WriteFile(MovieStrmPath, []byte(UrlForXBMC("/library/play/movie/%s", imdbId)), 0755); err != nil {
-				libraryLog.Error("Unable to write to MovieStrmPath")
+	if err := ioutil.WriteFile(MovieStrmPath, []byte(UrlForXBMC("/library/play/movie/%s", tmdbId)), 0755); err != nil {
+				libraryLog.Error("Unable to write to strm file for movie")
 				return err
 		}
 
@@ -381,12 +381,12 @@ func RemoveMovie(ctx *gin.Context) {
 	LibraryPath := config.Get().LibraryPath
 	MoviesLibraryPath := filepath.Join(LibraryPath, "Movies")
 	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
-	imdbId := ctx.Params.ByName("imdbId")
-	movie := tmdb.GetMovieFromIMDB(imdbId, "en")
+	tmdbId := ctx.Params.ByName("tmdbId")
+	movie := tmdb.GetMovieById(tmdbId, "en")
 	MovieStrm := toFileName(fmt.Sprintf("%s (%s)", movie.OriginalTitle, strings.Split(movie.ReleaseDate, "-")[0]))
 	MoviePath := filepath.Join(MoviesLibraryPath, MovieStrm)
 
-	if err := RemoveFromJsonDB(DBPath, imdbId, LMovie); err != nil {
+	if err := RemoveFromJsonDB(DBPath, tmdbId, LMovie); err != nil {
 		libraryLog.Error("Unable to remove movie from db")
 		ctx.String(404, "")
 		return
@@ -462,56 +462,43 @@ func AddShow(ctx *gin.Context) {
 }
 
 func WriteShowStrm(showId string, ShowsLibraryPath string) error {
-	show, err := tvdb.NewShow(showId, "en")
-	if err != nil {
-		return err
+	Id, _ := strconv.Atoi(showId)
+	show := tmdb.GetShow(Id, "en")
+	if show == nil {
+		return errors.New("Unable to get Show")
 	}
-	ShowPath := filepath.Join(ShowsLibraryPath, toFileName(show.SeriesName))
+	ShowPath := filepath.Join(ShowsLibraryPath, toFileName(show.Name))
 
 	if _, err := os.Stat(ShowPath); os.IsNotExist(err) {
 		if err := os.Mkdir(ShowPath, 0755); err != nil {
-			libraryLog.Error("Unable to create ShowPath")
+			libraryLog.Error("Unable to create path for Show")
 			return err
 		}
 	}
 
 	now := time.Now().UTC()
 	for _, season := range show.Seasons {
-		if len(season.Episodes) == 0 {
+		if season.EpisodeCount == 0 {
 			continue
 		}
-		airedDateTime := fmt.Sprintf("%s %s EST", season.Episodes[0].FirstAired, show.AirsTime)
-		firstAired, _ := time.Parse("2006-01-02 3:04 PM MST", airedDateTime)
-		if firstAired.Add(time.Duration(show.Runtime) * time.Minute).After(now) {
+		firstAired, _ := time.Parse("2006-01-02", show.FirstAirDate)
+		if firstAired.After(now) {
 			continue
 		}
 
-		/*var SeasonPath string
-		if season.Season == 0 {
-			SeasonPath = filepath.Join(ShowPath, "Specials")
-		} else {
-			SeasonPath = filepath.Join(ShowPath, fmt.Sprintf("Season %d", season.Season))
-		}
+		episodes := tmdb.GetSeason(Id, season.Season, "en").Episodes
 
-		if _, err := os.Stat(SeasonPath); os.IsNotExist(err) {
-			if err := os.Mkdir(SeasonPath, 0755); err != nil {
-				libraryLog.Info("Unable to create SeasonPath")
-				return err
-			}
-		}*/
-
-		for _, episode := range season.Episodes {
-			if episode.FirstAired == "" {
+		for _, episode := range episodes {
+			if episode.AirDate == "" {
 				continue
 			}
-			airedDateTime := fmt.Sprintf("%s %s EST", episode.FirstAired, show.AirsTime)
-			firstAired, _ := time.Parse("2006-01-02 3:04 PM MST", airedDateTime)
-			if firstAired.Add(time.Duration(show.Runtime) * time.Minute).After(now) {
+			firstAired, _ := time.Parse("2006-01-02", episode.AirDate)
+			if firstAired.After(now) {
 				continue
 			}
 
-			EpisodeStrmPath := filepath.Join(ShowPath, fmt.Sprintf("%s S%02dE%02d.strm", toFileName(show.SeriesName), season.Season, episode.EpisodeNumber))
-			playLink := UrlForXBMC("/library/play/show/%s/season/%d/episode/%d", showId, season.Season, episode.EpisodeNumber)
+			EpisodeStrmPath := filepath.Join(ShowPath, fmt.Sprintf("%s S%02dE%02d.strm", toFileName(show.Name), season.Season, episode.EpisodeNumber))
+			playLink := UrlForXBMC("/library/play/show/%d/season/%d/episode/%d", Id, season.Season, episode.EpisodeNumber)
 			if err := ioutil.WriteFile(EpisodeStrmPath, []byte(playLink), 0755); err != nil {
 						libraryLog.Error("Unable to write to EpisodeStrmPath")
 						return err
@@ -527,12 +514,13 @@ func RemoveShow(ctx *gin.Context) {
 	ShowsLibraryPath := filepath.Join(LibraryPath, "Shows")
 	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
 	showId := ctx.Params.ByName("showId")
-	show, err := tvdb.NewShow(showId, "en")
-	if err != nil {
+	Id, _ := strconv.Atoi(showId)
+	show := tmdb.GetShow(Id, "en")
+	if show == nil {
 		ctx.String(404, "")
 		return
 	}
-	ShowPath := filepath.Join(ShowsLibraryPath, toFileName(show.SeriesName))
+	ShowPath := filepath.Join(ShowsLibraryPath, toFileName(show.Name))
 
 	if err := RemoveFromJsonDB(DBPath, showId, LShow); err != nil {
 		libraryLog.Error("Unable to remove show from db")

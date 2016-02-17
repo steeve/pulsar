@@ -93,15 +93,9 @@ func renderMovies(movies tmdb.Movies, ctx *gin.Context, page int) {
 			[]string{"LOCALIZE[30202]", fmt.Sprintf("XBMC.PlayMedia(%s)", movieLinksUrl)},
 			[]string{"LOCALIZE[30023]", fmt.Sprintf("XBMC.PlayMedia(%s)", playUrl)},
 			[]string{"LOCALIZE[30203]", "XBMC.Action(Info)"},
+			[]string{"LOCALIZE[30219]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/movie/addremove/%d", movie.Id))},
+			[]string{"LOCALIZE[30034]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/setviewmode/movies"))},
 		}
-		if movie.IMDBId != "" {
-			item.ContextMenu = append(item.ContextMenu, []string{
-				"LOCALIZE[30219]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/movie/addremove/%s", movie.IMDBId)),
-			})
-		}
-		item.ContextMenu = append(item.ContextMenu, []string{
-			"LOCALIZE[30034]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/setviewmode/movies")),
-		})
 		item.Info.Trailer = UrlForHTTP("/youtube/%s", item.Info.Trailer)
 		item.IsPlayable = true
 		items = append(items, item)
@@ -202,12 +196,12 @@ func MovieGenres(ctx *gin.Context) {
 	ctx.JSON(200, xbmc.NewView("", items))
 }
 
-func movieLinks(imdbId string) ([]*bittorrent.Torrent, string) {
-	log.Println("Searching links for IMDB:", imdbId)
+func movieLinks(tmdbId string) ([]*bittorrent.Torrent, string) {
+	log.Println("Searching links for:", tmdbId)
 
-	movie := tmdb.GetMovieFromIMDB(imdbId, config.Get().Language)
+	movie := tmdb.GetMovieById(tmdbId, config.Get().Language)
 
-	log.Printf("Resolved %s to %s", imdbId, movie.Title)
+	log.Printf("Resolved %s to %s", tmdbId, movie.Title)
 
 	searchers := providers.GetMovieSearchers()
 	if len(searchers) == 0 {
@@ -218,7 +212,7 @@ func movieLinks(imdbId string) ([]*bittorrent.Torrent, string) {
 }
 
 func MovieLinks(ctx *gin.Context) {
-	torrents, movieTitle := movieLinks(ctx.Params.ByName("imdbId"))
+	torrents, movieTitle := movieLinks(ctx.Params.ByName("tmdbId"))
 
 	if len(torrents) == 0 {
 		xbmc.Notify("Quasar", "LOCALIZE[30205]", config.AddonIcon())
@@ -274,7 +268,7 @@ func MovieLinks(ctx *gin.Context) {
 }
 
 func MoviePlay(ctx *gin.Context) {
-	torrents, _ := movieLinks(ctx.Params.ByName("imdbId"))
+	torrents, _ := movieLinks(ctx.Params.ByName("tmdbId"))
 	if len(torrents) == 0 {
 		xbmc.Notify("Quasar", "LOCALIZE[30205]", config.AddonIcon())
 		return

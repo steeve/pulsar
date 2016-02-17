@@ -20,20 +20,39 @@ var (
 	tmdbLog = logging.MustGetLogger("tmdb")
 )
 
-type IdName struct {
-	Id   int    `json:"id"`
-	Name string `json:"name"`
-}
-
-type Genre IdName
-
-type GenreList struct {
-	Genres []*Genre `json:"genres"`
-}
-
+type Movies []*Movie
 type Shows []*Show
 type SeasonList []*Season
 type EpisodeList []*Episode
+
+type Movie struct {
+	Entity
+
+	IMDBId              string       `json:"imdb_id"`
+	Overview            string       `json:"overview"`
+	ProductionCompanies []*IdName    `json:"production_companies"`
+	Runtime             int          `json:"runtime"`
+	TagLine             string       `json:"tagline"`
+	RawPopularity       interface{}  `json:"popularity"`
+	Popularity          float64      `json:"-"`
+	SpokenLanguages     []*Language  `json:"spoken_languages"`
+	ExternalIDs         *ExternalIDs `json:"external_ids"`
+
+	AlternativeTitles   *struct {
+		Titles []*AlternativeTitle `json:"titles"`
+	} `json:"alternative_titles"`
+
+	Translations *struct {
+		Translations []*Language `json:"translations"`
+	} `json:"translations"`
+
+	Trailers *struct {
+		Youtube []*Trailer `json:"youtube"`
+	} `json:"trailers"`
+
+	Credits *Credits `json:"credits,omitempty"`
+	Images  *Images  `json:"images,omitempty"`
+}
 
 type Show struct {
 	Entity
@@ -75,8 +94,6 @@ type Season struct {
 	Poster       string `json:"poster_path"`
 
 	Episodes EpisodeList `json:"episodes"`
-
-	// Images  *Images  `json:"images,omitempty"`
 }
 
 type Episode struct {
@@ -88,8 +105,40 @@ type Episode struct {
 	EpisodeNumber int     `json:"episode_number"`
 	VoteAverage   float32 `json:"vote_average"`
 	StillPath     string  `json:"still_path"`
+}
 
-	// Images  *Images  `json:"images,omitempty"`
+type Entity struct {
+	IsAdult       bool      `json:"adult"`
+	BackdropPath  string    `json:"backdrop_path"`
+	Id            int       `json:"id"`
+	Genres        []*IdName `json:"genres"`
+	OriginalTitle string    `json:"original_title,omitempty"`
+	ReleaseDate   string    `json:"release_date"`
+	FirstAirDate  string    `json:"first_air_date"`
+	PosterPath    string    `json:"poster_path"`
+	Title         string    `json:"title,omitempty"`
+	VoteAverage   float32   `json:"vote_average"`
+	VoteCount     int       `json:"vote_count"`
+	OriginalName  string    `json:"original_name,omitempty"`
+	Name          string    `json:"name,omitempty"`
+}
+
+type EntityList struct {
+	Page         int       `json:"page"`
+	Results      []*Entity `json:"results"`
+	TotalPages   int       `json:"total_pages"`
+	TotalResults int       `json:"total_results"`
+}
+
+type IdName struct {
+	Id   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type Genre IdName
+
+type GenreList struct {
+	Genres []*Genre `json:"genres"`
 }
 
 type Image struct {
@@ -125,29 +174,6 @@ type Crew struct {
 type Credits struct {
 	Cast []*Cast `json:"cast"`
 	Crew []*Crew `json:"crew"`
-}
-
-type Entity struct {
-	IsAdult       bool      `json:"adult"`
-	BackdropPath  string    `json:"backdrop_path"`
-	Id            int       `json:"id"`
-	Genres        []*IdName `json:"genres"`
-	OriginalTitle string    `json:"original_title,omitempty"`
-	ReleaseDate   string    `json:"release_date"`
-	FirstAirDate  string    `json:"first_air_date"`
-	PosterPath    string    `json:"poster_path"`
-	Title         string    `json:"title,omitempty"`
-	VoteAverage   float32   `json:"vote_average"`
-	VoteCount     int       `json:"vote_count"`
-	OriginalName  string    `json:"original_name,omitempty"`
-	Name          string    `json:"name,omitempty"`
-}
-
-type EntityList struct {
-	Page         int       `json:"page"`
-	Results      []*Entity `json:"results"`
-	TotalPages   int       `json:"total_pages"`
-	TotalResults int       `json:"total_results"`
 }
 
 type ExternalIDs struct {
@@ -267,7 +293,7 @@ func tmdbCheck(key string) bool {
 	return true
 }
 
-func imageURL(uri string, size string) string {
+func ImageURL(uri string, size string) string {
 	return imageEndpoint + size + uri
 }
 

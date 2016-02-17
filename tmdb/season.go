@@ -53,7 +53,7 @@ func (seasons SeasonList) ToListItems(show *Show) []*xbmc.ListItem {
 
 	fanarts := make([]string, 0)
 	for _, backdrop := range show.Images.Backdrops {
-		fanarts = append(fanarts, imageURL(backdrop.FilePath, "w1280"))
+		fanarts = append(fanarts, ImageURL(backdrop.FilePath, "w1280"))
 	}
 
 	now := time.Now().UTC()
@@ -96,13 +96,13 @@ func (season *Season) ToListItem(show *Show) *xbmc.ListItem {
 	}
 
 	if season.Poster != "" {
-		item.Art.Poster = imageURL(season.Poster, "w500")
-		item.Art.Thumbnail = imageURL(season.Poster, "w500")
+		item.Art.Poster = ImageURL(season.Poster, "w500")
+		item.Art.Thumbnail = ImageURL(season.Poster, "w500")
 	}
 
 	fanarts := make([]string, 0)
 	for _, backdrop := range show.Images.Backdrops {
-		fanarts = append(fanarts, imageURL(backdrop.FilePath, "w1280"))
+		fanarts = append(fanarts, ImageURL(backdrop.FilePath, "w1280"))
 	}
 	if len(fanarts) > 0 {
 		item.Art.FanArt = fanarts[rand.Int()%len(fanarts)]
