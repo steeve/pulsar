@@ -69,7 +69,7 @@ func (seasons SeasonList) ToListItems(show *Show) []*xbmc.ListItem {
 		item := season.ToListItem(show)
 
 		if len(fanarts) > 0 {
-			item.Art.FanArt = fanarts[rand.Int()%len(fanarts)]
+			item.Art.FanArt = fanarts[rand.Intn(len(fanarts))]
 		}
 
 		items = append(items, item)
@@ -105,7 +105,7 @@ func (season *Season) ToListItem(show *Show) *xbmc.ListItem {
 		fanarts = append(fanarts, ImageURL(backdrop.FilePath, "w1280"))
 	}
 	if len(fanarts) > 0 {
-		item.Art.FanArt = fanarts[rand.Int()%len(fanarts)]
+		item.Art.FanArt = fanarts[rand.Intn(len(fanarts))]
 	}
 
 	// FIXME

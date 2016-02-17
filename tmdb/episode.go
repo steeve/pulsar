@@ -36,7 +36,7 @@ func (episodes EpisodeList) ToListItems(show *Show, season *Season) []*xbmc.List
 			item.Art.Thumbnail = ImageURL(episode.StillPath, "w500")
 		} else {
 			if len(fanarts) > 0 {
-				item.Art.FanArt = fanarts[rand.Int()%len(fanarts)]
+				item.Art.FanArt = fanarts[rand.Intn(len(fanarts))]
 			}
 		}
 		item.Art.Poster = ImageURL(season.Poster, "w500")

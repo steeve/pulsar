@@ -226,17 +226,17 @@ const (
 	tmdbEndpoint            = "http://api.themoviedb.org/3/"
 	imageEndpoint           = "http://image.tmdb.org/t/p/"
 	burstRate               = 40
-	burstTime               = 10 * time.Second
+	burstTime               = 15 * time.Second
 	simultaneousConnections = 20
 	cacheTime               = 60 * 24 * time.Hour
 )
 
 var (
 	apiKeys = []string{
-		"ae4bd1b6fce2a5648671bfc171d15ba4",
 		"8cf43ad9c085135b9479ad5cf6bbcbda",
+		"ae4bd1b6fce2a5648671bfc171d15ba4",
 	}
-	apiKey = apiKeys[rand.Int()%len(apiKeys)]
+	apiKey = apiKeys[rand.Intn(len(apiKeys))]
 )
 
 var rateLimiter = util.NewRateLimiter(burstRate, burstTime, simultaneousConnections)
@@ -251,7 +251,7 @@ func CheckApiKey() {
 	}
 
 	result := false
-	for index := len(apiKeys); index >= 0; index-- {
+	for index := len(apiKeys) - 1; index >= 0; index-- {
 		result = tmdbCheck(apiKey)
 		if result {
 			tmdbLog.Noticef("TMDB API key check passed, using %s...", apiKey[:7])
@@ -261,7 +261,7 @@ func CheckApiKey() {
 			if apiKey == apiKeys[index] {
 				apiKeys = append(apiKeys[:index], apiKeys[index + 1:]...)
 			}
-			apiKey = apiKeys[rand.Int()%len(apiKeys)]
+			apiKey = apiKeys[rand.Intn(len(apiKeys))]
 		}
 	}
 	if result == false {
