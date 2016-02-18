@@ -129,10 +129,15 @@ func (as *AddonSearcher) GetMovieSearchObject(movie *tmdb.Movie) *MovieSearchObj
 func (as *AddonSearcher) GetEpisodeSearchObject(show *tmdb.Show, episode *tmdb.Episode) *EpisodeSearchObject {
 	absoluteNumber := 0 // FIXME
 
+	title := show.OriginalName
+	if title == "" {
+		title = show.Name
+	}
+
 	return &EpisodeSearchObject{
 		IMDBId:         show.ExternalIDs.IMDBId,
 		TVDBId:         show.ExternalIDs.TVDBID,
-		Title:          NormalizeTitle(show.Name),
+		Title:          NormalizeTitle(title),
 		Season:         episode.SeasonNumber,
 		Episode:        episode.EpisodeNumber,
 		AbsoluteNumber: absoluteNumber,
