@@ -194,13 +194,13 @@ func RecentEpisodesComplete(genre string, language string, page int) Shows {
 	if genre == "" {
 		p = napping.Params{
 			"language":           language,
-			"air_date.gte": time.Now().UTC().AddDate(0, 0, -7).Format("2006-01-02"),
+			"air_date.gte": time.Now().UTC().AddDate(0, 0, -3).Format("2006-01-02"),
 			"first_air_date.lte": time.Now().UTC().Format("2006-01-02"),
 		}
 	} else {
 		p = napping.Params{
 			"language":           language,
-			"air_date.gte": time.Now().UTC().AddDate(0, 0, -7).Format("2006-01-02"),
+			"air_date.gte": time.Now().UTC().AddDate(0, 0, -3).Format("2006-01-02"),
 			"first_air_date.lte": time.Now().UTC().Format("2006-01-02"),
 			"with_genres":        genre,
 		}
