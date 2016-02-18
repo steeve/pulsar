@@ -2,50 +2,93 @@ package trakt
 
 import (
 	"fmt"
-	"math/rand"
+	"errors"
+	"strconv"
 	"strings"
+	"math/rand"
 
 	"github.com/jmcvetta/napping"
 	"github.com/scakemyer/quasar/xbmc"
 )
 
-type MovieList []*Movie
+func GetMovie(Id string) (movie *Movie) {
+	endPoint := fmt.Sprintf("movies/%s", Id)
 
-type Movie struct {
-	Title         string      `json:"title"`
-	Year          int         `json:"year"`
-	Released      int         `json:"released"`
-	URL           string      `json:"url"`
-	Trailer       string      `json:"trailer"`
-	Runtime       int         `json:"runtime"`
-	TagLine       string      `json:"tagline"`
-	Overview      string      `json:"overview"`
-	Certification string      `json:"certification"`
-	IMDBId        string      `json:"imdb_id"`
-	TMDBId        interface{} `json:"tmdb_id"`
-	Poster        string      `json:"poster"`
-	Images        *Images     `json:"images"`
-	Ratings       *Ratings    `json:"ratings"`
-	Genres        []string    `json:"genres"`
+	params := napping.Params{
+		"extended": "full,images",
+	}.AsUrlValues()
+
+	resp, err := Get(endPoint, params)
+
+	if err != nil {
+		panic(err)
+	}
+
+	resp.Unmarshal(&movie)
+	return movie
 }
 
-func SearchMovies(query string) MovieList {
-	var movies MovieList
-	napping.Get(fmt.Sprintf("%s/search/movies.json/%s", ENDPOINT, APIKEY),
-		&napping.Params{"query": query, "limit": SearchLimit},
-		&movies,
-		nil)
+func SearchMovies(query string, page string) (movies []*Movies) {
+	endPoint := "search"
+
+	params := napping.Params{
+		"page": page,
+		"limit": Limit,
+		"query": query,
+		"extended": "full,images",
+	}.AsUrlValues()
+
+	resp, err := Get(endPoint, params)
+
+	if err != nil {
+		panic(err)
+	}
+	if resp.Status() != 200 {
+		panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+	}
+
+  // TODO use response headers for pagination limits:
+  // X-Pagination-Page-Count:10
+  // X-Pagination-Item-Count:100
+
+	resp.Unmarshal(&movies)
 	return movies
 }
 
-func TrendingMovies() (movies MovieList) {
-	napping.Get(fmt.Sprintf("%s/movies/trending.json/%s", ENDPOINT, APIKEY), nil, &movies, nil)
-	return
-}
+func TopMovies(topCategory string, page string) (movies []*Movies) {
+	endPoint := "movies/" + topCategory
 
-func NewMovie(IMDBId string) (movie *Movie) {
-	napping.Get(fmt.Sprintf("%s/movie/summary.json/%s/%s", ENDPOINT, APIKEY, IMDBId), nil, &movie, nil)
-	return
+	params := napping.Params{
+		"page": page,
+		"limit": Limit,
+		"extended": "full,images",
+	}.AsUrlValues()
+
+	resp, err := Get(endPoint, params)
+
+	if err != nil {
+		panic(err)
+	}
+	if resp.Status() != 200 {
+		panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+	}
+
+	if topCategory == "popular" {
+		var movieList []*Movie
+		resp.Unmarshal(&movieList)
+
+	  movieListing := make([]*Movies, 0)
+	  for _, movie := range movieList {
+			movieItem := Movies{
+	      Movie: movie,
+	    }
+	    movieListing = append(movieListing, &movieItem)
+	  }
+		movies = movieListing
+	} else {
+		resp.Unmarshal(&movies)
+	}
+	return movies
 }
 
 func (movie *Movie) ToListItem() *xbmc.ListItem {
@@ -54,18 +97,23 @@ func (movie *Movie) ToListItem() *xbmc.ListItem {
 		Info: &xbmc.ListItemInfo{
 			Count:       rand.Int(),
 			Title:       movie.Title,
-			Genre:       strings.Join(movie.Genres, " / "),
+			Year:        movie.Year,
+			Genre:       strings.Title(strings.Join(movie.Genres, " / ")),
 			Plot:        movie.Overview,
 			PlotOutline: movie.Overview,
 			TagLine:     movie.TagLine,
-			Rating:      float32(movie.Ratings.Percentage) / 10,
-			Duration:    movie.Runtime,
-			Code:        movie.IMDBId,
+			Rating:      movie.Rating,
+			Votes:       strconv.Itoa(movie.Votes),
+			Duration:    movie.Runtime * 60,
+			MPAA:        movie.Certification,
+			Code:        movie.IDs.IMDB,
 			Trailer:     movie.Trailer,
 		},
 		Art: &xbmc.ListItemArt{
-			Poster: movie.Images.Poster,
-			FanArt: movie.Images.FanArt,
+			Poster: movie.Images.Poster.Full,
+			FanArt: movie.Images.FanArt.Full,
+			Banner: movie.Images.Banner.Full,
+			Thumbnail: movie.Images.Thumbnail.Full,
 		},
 	}
 }

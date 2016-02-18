@@ -9,8 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/scakemyer/quasar/bittorrent"
-	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/providers"
+	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/tmdb"
 	"github.com/scakemyer/quasar/xbmc"
 )
@@ -55,6 +55,13 @@ func MoviesIndex(ctx *gin.Context) {
 		{Label: "LOCALIZE[30236]", Path: UrlForXBMC("/movies/recent"), Thumbnail: config.AddonResource("img", "clock.png")},
 		{Label: "LOCALIZE[30211]", Path: UrlForXBMC("/movies/top"), Thumbnail: config.AddonResource("img", "top_rated.png")},
 		{Label: "LOCALIZE[30212]", Path: UrlForXBMC("/movies/mostvoted"), Thumbnail: config.AddonResource("img", "most_voted.png")},
+		{Label: "LOCALIZE[30245]", Path: UrlForXBMC("/movies/trakt/popular"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{Label: "LOCALIZE[30246]", Path: UrlForXBMC("/movies/trakt/trending"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{Label: "LOCALIZE[30247]", Path: UrlForXBMC("/movies/trakt/played"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{Label: "LOCALIZE[30248]", Path: UrlForXBMC("/movies/trakt/watched"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{Label: "LOCALIZE[30249]", Path: UrlForXBMC("/movies/trakt/collected"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{Label: "LOCALIZE[30250]", Path: UrlForXBMC("/movies/trakt/anticipated"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{Label: "LOCALIZE[30251]", Path: UrlForXBMC("/movies/trakt/boxoffice"), Thumbnail: config.AddonResource("img", "trakt.png")},
 		{Label: "LOCALIZE[30213]", Path: UrlForXBMC("/movies/imdb250"), Thumbnail: config.AddonResource("img", "imdb.png")},
 	}
 	for _, genre := range tmdb.GetMovieGenres(config.Get().Language) {

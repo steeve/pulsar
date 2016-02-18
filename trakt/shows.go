@@ -2,147 +2,89 @@ package trakt
 
 import (
 	"fmt"
-	"math/rand"
+  "errors"
 	"strconv"
 	"strings"
-	"time"
+	"math/rand"
 
 	"github.com/jmcvetta/napping"
 	"github.com/scakemyer/quasar/xbmc"
 )
 
-type ShowList []*Show
+func GetShow(Id string) (show *Show) {
+	endPoint := fmt.Sprintf("shows/%s", Id)
 
-type Show struct {
-	Title         string `json:"title"`
-	Year          int    `json:"year"`
-	URL           string `json:"url"`
-	FirstAired    int    `json:"first_aired"`
-	Country       string `json:"country"`
-	Overview      string `json:"overview"`
-	Runtime       int    `json:"runtime"`
-	Status        string `json:"status"`
-	Network       int    `json:"network"`
-	AirDay        string `json:"air_day"`
-	AirTime       string `json:"air_time"`
-	Certification string `json:"certification"`
-	IMDBId        string `json:"imdb_id"`
+	params := napping.Params{
+		"extended": "full,images",
+	}.AsUrlValues()
 
-	TVDBId      string
-	TVRageId    string
-	TVDBIdRaw   interface{} `json:"tvdb_id"`
-	TVRageIdRaw interface{} `json:"tvrage_id"`
+	resp, err := Get(endPoint, params)
 
-	Images   *Images  `json:"images"`
-	Watchers int      `json:"watchers"`
-	Ratings  *Ratings `json:"ratings"`
-	Genres   []string `json:"genres"`
-}
-
-type ShowSeason struct {
-	Show          *Show   `json:"-"`
-	Season        int     `json:"season"`
-	TotalEpisodes int     `json:"episodes"`
-	Images        *Images `json:"images"`
-}
-
-type ShowEpisode struct {
-	Show          *Show       `json:"-"`
-	Season        *ShowSeason `json:"-"`
-	Episode       int         `json:"episode"`
-	Number        int         `json:"number"`
-	Title         string      `json:"title"`
-	Overview      string      `json:"overview"`
-	FirstAired    int64       `json:"first_aired"`
-	FirstAiredUTC int64       `json:"first_aired_utc"`
-	Screen        string      `json:"screen"`
-	Images        *Images     `json:"images"`
-	Ratings       *Ratings    `json:"ratings"`
-}
-
-func sanitizeIds(show *Show) {
-	switch t := show.TVDBIdRaw.(type) {
-	case string:
-		show.TVDBId = t
-	case float64:
-		show.TVDBId = strconv.FormatUint(uint64(t), 10)
+	if err != nil {
+		panic(err)
 	}
 
-	switch t := show.TVRageIdRaw.(type) {
-	case string:
-		show.TVRageId = t
-	case float64:
-		show.TVRageId = strconv.FormatUint(uint64(t), 10)
-	}
-}
-
-func NewShow(TVDBId string) *Show {
-	var show *Show
-	napping.Get(fmt.Sprintf("%s/show/summary.json/%s/%s", ENDPOINT, APIKEY, TVDBId), nil, &show, nil)
-	sanitizeIds(show)
+	resp.Unmarshal(&show)
 	return show
 }
 
-func SearchShows(query string) ShowList {
-	var shows ShowList
-	napping.Get(fmt.Sprintf("%s/search/shows.json/%s", ENDPOINT, APIKEY),
-		&napping.Params{"query": query, "limit": SearchLimit},
-		&shows,
-		nil)
-	for _, show := range shows {
-		sanitizeIds(show)
+func SearchShows(query string, page string) (shows []*Shows) {
+	endPoint := "search"
+
+	params := napping.Params{
+		"page": page,
+		"limit": Limit,
+		"query": query,
+		"extended": "full,images",
+	}.AsUrlValues()
+
+	resp, err := Get(endPoint, params)
+
+	if err != nil {
+		panic(err)
 	}
+	if resp.Status() != 200 {
+		panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+	}
+
+	resp.Unmarshal(&shows)
 	return shows
 }
 
-func TrendingShows() ShowList {
-	var shows ShowList
-	napping.Get(fmt.Sprintf("%s/shows/trending.json/%s", ENDPOINT, APIKEY), nil, &shows, nil)
-	for _, show := range shows {
-		sanitizeIds(show)
+func TopShows(topCategory string, page string) (shows []*Shows) {
+	endPoint := "shows/" + topCategory
+
+	params := napping.Params{
+		"page": page,
+		"limit": Limit,
+		"extended": "full,images",
+	}.AsUrlValues()
+
+	resp, err := Get(endPoint, params)
+
+	if err != nil {
+		panic(err)
 	}
+	if resp.Status() != 200 {
+		panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+	}
+
+  if topCategory == "popular" {
+  	var showList []*Show
+  	resp.Unmarshal(&showList)
+
+    showListing := make([]*Shows, 0)
+    for _, show := range showList {
+  		showItem := Shows{
+        Show: show,
+      }
+      showListing = append(showListing, &showItem)
+    }
+    shows = showListing
+  } else {
+  	resp.Unmarshal(&shows)
+  }
 	return shows
-}
-
-func (show *Show) Seasons() []*ShowSeason {
-	var seasons []*ShowSeason
-	napping.Get(fmt.Sprintf("%s/show/seasons.json/%s/%s", ENDPOINT, APIKEY, show.TVDBId), nil, &seasons, nil)
-	for _, season := range seasons {
-		season.Show = show
-	}
-	return seasons
-}
-
-func (show *Show) Season(season int) *ShowSeason {
-	return &ShowSeason{
-		Show:   show,
-		Season: season,
-	}
-}
-
-func (season *ShowSeason) Episodes() []*ShowEpisode {
-	var episodes []*ShowEpisode
-	napping.Get(fmt.Sprintf("%s/show/season.json/%s/%s/%d", ENDPOINT, APIKEY, season.Show.TVDBId, season.Season), nil, &episodes, nil)
-
-	var airedEpisodes []*ShowEpisode
-	now := time.Now().UTC().Unix()
-	for _, episode := range episodes {
-		if episode.FirstAiredUTC <= now {
-			episode.Show = season.Show
-			episode.Season = season
-			airedEpisodes = append(airedEpisodes, episode)
-		}
-	}
-
-	return airedEpisodes
-}
-
-func (season *ShowSeason) Episode(episode int) *ShowEpisode {
-	return &ShowEpisode{
-		Show:    season.Show,
-		Season:  season,
-		Episode: episode,
-	}
 }
 
 func (show *Show) ToListItem() *xbmc.ListItem {
@@ -151,56 +93,64 @@ func (show *Show) ToListItem() *xbmc.ListItem {
 		Info: &xbmc.ListItemInfo{
 			Count:       rand.Int(),
 			Title:       show.Title,
-			Genre:       strings.Join(show.Genres, " / "),
+      Year:        show.Year,
+			Genre:       strings.Title(strings.Join(show.Genres, " / ")),
 			Plot:        show.Overview,
 			PlotOutline: show.Overview,
-			Rating:      float32(show.Ratings.Percentage) / 10,
-			Duration:    show.Runtime,
-			Code:        show.TVDBId,
+			Rating:      show.Rating,
+      Votes:       strconv.Itoa(show.Votes),
+			Duration:    show.Runtime * 60,
+			MPAA:        show.Certification,
+			Code:        show.IDs.IMDB,
+			Trailer:     show.Trailer,
 		},
 		Art: &xbmc.ListItemArt{
-			Poster: show.Images.Poster,
-			FanArt: show.Images.FanArt,
-			Banner: show.Images.Banner,
+			Poster: show.Images.Poster.Full,
+			FanArt: show.Images.FanArt.Full,
+			Banner: show.Images.Banner.Full,
+			Thumbnail: show.Images.Thumbnail.Full,
 		},
 	}
 }
 
-func (season *ShowSeason) ToListItem() *xbmc.ListItem {
-	seasonLabel := fmt.Sprintf("Season %d", season.Season)
+func (season *Season) ToListItem() *xbmc.ListItem {
+	seasonLabel := fmt.Sprintf("Season %d", season.Number)
 	return &xbmc.ListItem{
 		Label: seasonLabel,
 		Info: &xbmc.ListItemInfo{
 			Count:  rand.Int(),
 			Title:  seasonLabel,
-			Season: season.Season,
+			Season: season.Number,
+			Rating: season.Rating,
+      Votes:  strconv.Itoa(season.Votes),
 		},
 		Art: &xbmc.ListItemArt{
-			Poster: season.Images.Poster,
-			FanArt: season.Show.Images.FanArt,
-			Banner: season.Show.Images.Banner,
+			Poster: season.Images.Poster.Full,
+      Thumbnail: season.Images.Thumbnail.Full,
+			// FanArt: season.Images.FanArt.Full,
 		},
 	}
 }
 
-func (episode *ShowEpisode) ToListItem() *xbmc.ListItem {
-	title := fmt.Sprintf("%dx%02d %s", episode.Season.Season, episode.Episode, episode.Title)
+func (episode *Episode) ToListItem() *xbmc.ListItem {
+	title := fmt.Sprintf("%dx%02d %s", episode.Season, episode.Number, episode.Title)
 	return &xbmc.ListItem{
 		Label:     title,
-		Thumbnail: episode.Images.Screen,
+		Thumbnail: episode.Images.ScreenShot.Full,
 		Info: &xbmc.ListItemInfo{
 			Count:       rand.Int(),
 			Title:       title,
 			Plot:        episode.Overview,
 			PlotOutline: episode.Overview,
-			Rating:      float32(episode.Ratings.Percentage) / 10,
-			Episode:     episode.Episode,
-			Season:      episode.Season.Season,
+			Rating:      episode.Rating,
+      Votes:       strconv.Itoa(episode.Votes),
+			Episode:     episode.Number,
+			Season:      episode.Season,
 		},
 		Art: &xbmc.ListItemArt{
-			Thumbnail: episode.Images.Screen,
-			FanArt:    episode.Season.Show.Images.FanArt,
-			Banner:    episode.Season.Show.Images.Banner,
+			Thumbnail: episode.Images.ScreenShot.Full,
+			// FanArt:    episode.Season.Show.Images.FanArt.Full,
+			// Banner:    episode.Season.Show.Images.Banner.Full,
 		},
 	}
 }

@@ -10,8 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/op/go-logging"
 	"github.com/scakemyer/quasar/bittorrent"
-	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/providers"
+	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/tmdb"
 	"github.com/scakemyer/quasar/xbmc"
 )
@@ -26,6 +26,12 @@ func TVIndex(ctx *gin.Context) {
 		{Label: "LOCALIZE[30210]", Path: UrlForXBMC("/shows/popular"), Thumbnail: config.AddonResource("img", "popular.png")},
 		{Label: "LOCALIZE[30237]", Path: UrlForXBMC("/shows/recent/shows"), Thumbnail: config.AddonResource("img", "clock.png")},
 		{Label: "LOCALIZE[30238]", Path: UrlForXBMC("/shows/recent/episodes"), Thumbnail: config.AddonResource("img", "fresh.png")},
+		{Label: "LOCALIZE[30245]", Path: UrlForXBMC("/shows/trakt/popular"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{Label: "LOCALIZE[30246]", Path: UrlForXBMC("/shows/trakt/trending"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{Label: "LOCALIZE[30247]", Path: UrlForXBMC("/shows/trakt/played"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{Label: "LOCALIZE[30248]", Path: UrlForXBMC("/shows/trakt/watched"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{Label: "LOCALIZE[30249]", Path: UrlForXBMC("/shows/trakt/collected"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{Label: "LOCALIZE[30250]", Path: UrlForXBMC("/shows/trakt/anticipated"), Thumbnail: config.AddonResource("img", "trakt.png")},
 	}
 	for _, genre := range tmdb.GetTVGenres(config.Get().Language) {
 		slug, _ := genreSlugs[genre.Id]
