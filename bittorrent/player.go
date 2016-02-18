@@ -74,6 +74,11 @@ func NewBTPlayer(bts *BTService, uri string, fileIndex int, resume int, infoHash
 func (btp *BTPlayer) addTorrent() error {
 	btp.log.Info("Adding torrent")
 
+	if btp.bts.config.DownloadPath == "." {
+		xbmc.Notify("Quasar", "LOCALIZE[30113]", config.AddonIcon())
+		return fmt.Errorf("Download path empty")
+	}
+
 	if status, err := diskusage.DiskUsage(btp.bts.config.DownloadPath); err != nil {
 		btp.bts.log.Warningf("Unable to retrieve the free space for %s, continuing anyway...", btp.bts.config.DownloadPath)
 	} else {

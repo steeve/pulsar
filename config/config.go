@@ -77,9 +77,16 @@ func Reload() *Configuration {
 		}
 	}
 
+	downloadPath := filepath.Dir(xbmc.GetSettingString("download_path"))
+	if downloadPath == "." {
+		xbmc.Notify("Quasar", "LOCALIZE[30113]", filepath.Join(info.Path, "icon.png"))
+		xbmc.AddonSettings("plugin.video.quasar")
+	}
+
 	newConfig := Configuration{
-		DownloadPath:        filepath.Dir(xbmc.GetSettingString("download_path")),
+		DownloadPath:        downloadPath,
 		LibraryPath:         filepath.Dir(xbmc.GetSettingString("library_path")),
+		TorrentsPath:        filepath.Join(downloadPath, "Torrents"),
 		Info:                info,
 		Platform:            platform,
 		Language:            xbmc.GetLanguageISO_639_1(),
@@ -110,7 +117,6 @@ func Reload() *Configuration {
 		SocksLogin:    xbmc.GetSettingString("socks_login"),
 		SocksPassword: xbmc.GetSettingString("socks_password"),
 	}
-	newConfig.TorrentsPath = filepath.Join(newConfig.DownloadPath, "Torrents")
 
 	lock.Lock()
 	config = &newConfig
