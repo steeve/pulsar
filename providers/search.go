@@ -70,6 +70,26 @@ func SearchMovie(searchers []MovieSearcher, movie *tmdb.Movie) []*bittorrent.Tor
 	return processLinks(torrentsChan, SortMovies)
 }
 
+func SearchSeason(searchers []SeasonSearcher, show *tmdb.Show, season *tmdb.Season) []*bittorrent.Torrent {
+	torrentsChan := make(chan *bittorrent.Torrent)
+	go func() {
+		wg := sync.WaitGroup{}
+		for _, searcher := range searchers {
+			wg.Add(1)
+			go func(searcher SeasonSearcher) {
+				defer wg.Done()
+				for _, torrent := range searcher.SearchSeasonLinks(show, season) {
+					torrentsChan <- torrent
+				}
+			}(searcher)
+		}
+		wg.Wait()
+		close(torrentsChan)
+	}()
+
+	return processLinks(torrentsChan, SortShows)
+}
+
 func SearchEpisode(searchers []EpisodeSearcher, show *tmdb.Show, episode *tmdb.Episode) []*bittorrent.Torrent {
 	torrentsChan := make(chan *bittorrent.Torrent)
 	go func() {

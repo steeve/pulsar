@@ -26,6 +26,7 @@ const (
 
 type AddonSearcher struct {
 	MovieSearcher
+	SeasonSearcher
 	EpisodeSearcher
 
 	addonId string
@@ -85,6 +86,14 @@ func GetMovieSearchers() []MovieSearcher {
 	return searchers
 }
 
+func GetSeasonSearchers() []SeasonSearcher {
+	searchers := make([]SeasonSearcher, 0)
+	for _, searcher := range getSearchers() {
+		searchers = append(searchers, searcher.(SeasonSearcher))
+	}
+	return searchers
+}
+
 func GetEpisodeSearchers() []EpisodeSearcher {
 	searchers := make([]EpisodeSearcher, 0)
 	for _, searcher := range getSearchers() {
@@ -124,6 +133,20 @@ func (as *AddonSearcher) GetMovieSearchObject(movie *tmdb.Movie) *MovieSearchObj
 		sObject.Titles[strings.ToLower(title.ISO_3166_1)] = NormalizeTitle(title.Title)
 	}
 	return sObject
+}
+
+func (as *AddonSearcher) GetSeasonSearchObject(show *tmdb.Show, season *tmdb.Season) *EpisodeSearchObject {
+	title := show.OriginalName
+	if title == "" {
+		title = show.Name
+	}
+
+	return &EpisodeSearchObject{
+		IMDBId:         show.ExternalIDs.IMDBId,
+		TVDBId:         show.ExternalIDs.TVDBID,
+		Title:          NormalizeTitle(title),
+		Season:         season.Season,
+	}
 }
 
 func (as *AddonSearcher) GetEpisodeSearchObject(show *tmdb.Show, episode *tmdb.Episode) *EpisodeSearchObject {
@@ -180,6 +203,10 @@ func (as *AddonSearcher) SearchLinks(query string) []*bittorrent.Torrent {
 
 func (as *AddonSearcher) SearchMovieLinks(movie *tmdb.Movie) []*bittorrent.Torrent {
 	return as.call("search_movie", as.GetMovieSearchObject(movie))
+}
+
+func (as *AddonSearcher) SearchSeasonLinks(show *tmdb.Show, season *tmdb.Season) []*bittorrent.Torrent {
+	return as.call("search_season", as.GetSeasonSearchObject(show, season))
 }
 
 func (as *AddonSearcher) SearchEpisodeLinks(show *tmdb.Show, episode *tmdb.Episode) []*bittorrent.Torrent {

@@ -92,6 +92,7 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 	show := r.Group("/show")
 	{
 		show.GET("/:showId/seasons", cache.Cache(store, DefaultCacheTime), ShowSeasons)
+		show.GET("/:showId/season/:season/links", ShowSeasonLinks)
 		show.GET("/:showId/season/:season/episodes", cache.Cache(store, EpisodesCacheTime), ShowEpisodes)
 		show.GET("/:showId/season/:season/episode/:episode/play", ShowEpisodePlay)
 		show.GET("/:showId/season/:season/episode/:episode/links", ShowEpisodeLinks)
