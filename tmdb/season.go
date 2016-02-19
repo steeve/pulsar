@@ -39,12 +39,12 @@ func GetSeason(showId int, seasonNumber int, language string) *Season {
 		})
 		season.EpisodeCount = len(season.Episodes)
 
-		// Nasty hack for shows that have translations but return empty strings
+		// Fix for shows that have translations but return empty strings
 		// for episode names and overviews.
 		// We detect if the first episode has the name filled, and if not re-query
-		// with no language set
+		// with no language set.
 		// See https://github.com/scakemyer/plugin.video.quasar/issues/249
-		if season.EpisodeCount > 0 && season.Episodes[0].Name == "" {
+		if season.EpisodeCount > 0 && season.Episodes[0].Name == "" && language != "" {
 			season = GetSeason(showId, seasonNumber, "")
 		}
 
