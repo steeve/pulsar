@@ -77,7 +77,7 @@ func SearchShows(query string, language string) Shows {
 	rateLimiter.Call(func() {
 		urlValues := napping.Params{
 			"api_key": apiKey,
-			"query":query,
+			"query": query,
 		}.AsUrlValues()
 		resp, err := napping.Get(
 			tmdbEndpoint + "search/tv",
