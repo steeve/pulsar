@@ -50,9 +50,9 @@ const (
 
 var (
 	resolutionTags = map[*regexp.Regexp]int{
-		regexp.MustCompile(`\W+(480p|xvid|dvd)\W*`): Resolution480p,
-		regexp.MustCompile(`\W+(720p|hdrip)\W*`):    Resolution720p,
-		regexp.MustCompile(`\W+1080p\W*`):           Resolution1080p,
+		regexp.MustCompile(`\W+(480p|xvid|dvd|hdtv)\W*`): Resolution480p,
+		regexp.MustCompile(`\W+(720p|hdrip)\W*`):         Resolution720p,
+		regexp.MustCompile(`\W+1080p\W*`):                Resolution1080p,
 	}
 	Resolutions = []string{"", "480p", "720p", "1080p"}
 	Colors = []string{"", "FFA56F01", "FF539A02", "FF0166FC"}

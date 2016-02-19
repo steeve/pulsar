@@ -37,6 +37,12 @@ type Configuration struct {
 	SessionSave         int
 	TMDBApiKey          string
 
+	SortingModeMovies            int
+	SortingModeShows             int
+	ResolutionPreferenceMovies   int
+	ResolutionPreferenceShows    int
+	PercentageAdditionalSeeders  int
+
 	CustomProviderTimeoutEnabled bool
 	CustomProviderTimeout        int
 
@@ -107,6 +113,12 @@ func Reload() *Configuration {
 		ConnectionsLimit:    xbmc.GetSettingInt("connections_limit"),
 		SessionSave:         xbmc.GetSettingInt("session_save"),
 		TMDBApiKey:          xbmc.GetSettingString("tmdb_api_key"),
+
+		SortingModeMovies:            xbmc.GetSettingInt("sorting_mode_movies"),
+		SortingModeShows:             xbmc.GetSettingInt("sorting_mode_shows"),
+		ResolutionPreferenceMovies:   xbmc.GetSettingInt("resolution_preference_movies"),
+		ResolutionPreferenceShows:    xbmc.GetSettingInt("resolution_preference_shows"),
+		PercentageAdditionalSeeders:  xbmc.GetSettingInt("percentage_additional_seeders"),
 
 		CustomProviderTimeoutEnabled: xbmc.GetSettingBool("custom_provider_timeout_enabled"),
 		CustomProviderTimeout:        xbmc.GetSettingInt("custom_provider_timeout"),

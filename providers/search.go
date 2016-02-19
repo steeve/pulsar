@@ -6,7 +6,26 @@ import (
 
 	"github.com/op/go-logging"
 	"github.com/scakemyer/quasar/bittorrent"
+	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/tmdb"
+)
+
+const (
+	SortMovies = iota
+	SortShows
+)
+
+const (
+	SortBySeeders = iota
+	SortByResolution
+	SortBalanced
+)
+
+const (
+	Sort1080p720p480p = iota
+	Sort720p1080p480p
+	Sort720p480p1080p
+	Sort480p720p1080p
 )
 
 var log = logging.MustGetLogger("linkssearch")
@@ -28,7 +47,7 @@ func Search(searchers []Searcher, query string) []*bittorrent.Torrent {
 		close(torrentsChan)
 	}()
 
-	return processLinks(torrentsChan)
+	return processLinks(torrentsChan, SortMovies)
 }
 
 func SearchMovie(searchers []MovieSearcher, movie *tmdb.Movie) []*bittorrent.Torrent {
@@ -48,7 +67,7 @@ func SearchMovie(searchers []MovieSearcher, movie *tmdb.Movie) []*bittorrent.Tor
 		close(torrentsChan)
 	}()
 
-	return processLinks(torrentsChan)
+	return processLinks(torrentsChan, SortMovies)
 }
 
 func SearchEpisode(searchers []EpisodeSearcher, show *tmdb.Show, episode *tmdb.Episode) []*bittorrent.Torrent {
@@ -68,10 +87,10 @@ func SearchEpisode(searchers []EpisodeSearcher, show *tmdb.Show, episode *tmdb.E
 		close(torrentsChan)
 	}()
 
-	return processLinks(torrentsChan)
+	return processLinks(torrentsChan, SortShows)
 }
 
-func processLinks(torrentsChan chan *bittorrent.Torrent) []*bittorrent.Torrent {
+func processLinks(torrentsChan chan *bittorrent.Torrent, sortType int) []*bittorrent.Torrent {
 	trackers := map[string]*bittorrent.Tracker{}
 	torrentsMap := map[string]*bittorrent.Torrent{}
 
@@ -172,10 +191,60 @@ func processLinks(torrentsChan chan *bittorrent.Torrent) []*bittorrent.Torrent {
 		}
 	}
 
-	sort.Sort(sort.Reverse(BySeeds(torrents)))
+	conf := config.Get()
+	sortMode := conf.SortingModeMovies
+	resolutionPreference := conf.ResolutionPreferenceMovies
+
+	if sortType == SortShows {
+		sortMode = conf.SortingModeShows
+		resolutionPreference = conf.ResolutionPreferenceShows
+	}
+
+	seeds := func(c1, c2 *bittorrent.Torrent) bool { return c1.Seeds > c2.Seeds }
+	resolutionUp := func(c1, c2 *bittorrent.Torrent) bool { return c1.Resolution < c2.Resolution }
+	resolutionDown := func(c1, c2 *bittorrent.Torrent) bool { return c1.Resolution > c2.Resolution }
+	resolution720p1080p := func(c1, c2 *bittorrent.Torrent) bool { return Resolution720p1080p(c1) < Resolution720p1080p(c2) }
+	resolution720p480p := func(c1, c2 *bittorrent.Torrent) bool { return Resolution720p480p(c1) < Resolution720p480p(c2) }
+	balanced := func(c1, c2 *bittorrent.Torrent) bool { return float64(c1.Seeds) > Balanced(c2) }
+
+	if sortMode == SortBySeeders {
+		sort.Sort(sort.Reverse(BySeeds(torrents)))
+	} else {
+		switch resolutionPreference {
+		case Sort1080p720p480p:
+			if sortMode == SortBalanced {
+				SortBy(balanced, resolutionDown).Sort(torrents)
+			} else {
+				SortBy(resolutionDown, seeds).Sort(torrents)
+			}
+			break
+		case Sort480p720p1080p:
+			if sortMode == SortBalanced {
+				SortBy(balanced, resolutionUp).Sort(torrents)
+			} else {
+				SortBy(resolutionUp, seeds).Sort(torrents)
+			}
+			break
+		case Sort720p1080p480p:
+			if sortMode == SortBalanced {
+				SortBy(balanced, resolution720p1080p).Sort(torrents)
+			} else {
+				SortBy(resolution720p1080p, seeds).Sort(torrents)
+			}
+			break
+		case Sort720p480p1080p:
+			if sortMode == SortBalanced {
+				SortBy(balanced, resolution720p480p).Sort(torrents)
+			} else {
+				SortBy(resolution720p480p, seeds).Sort(torrents)
+			}
+			break
+		}
+	}
+
 	log.Info("Sorted torrent candidates:")
 	for _, torrent := range torrents {
-		log.Infof("%s - %s S:%d P:%d", torrent.Name, torrent.Provider, torrent.Seeds, torrent.Peers)
+		log.Infof("S:%d P:%d %s - %s", torrent.Seeds, torrent.Peers, torrent.Name, torrent.Provider)
 	}
 
 	return torrents
