@@ -2,11 +2,51 @@ package tmdb
 
 import (
 	"fmt"
+	"path"
 	"time"
+	"errors"
 	"math/rand"
 
+	"github.com/jmcvetta/napping"
+	"github.com/scakemyer/quasar/cache"
+	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/xbmc"
 )
+
+func GetEpisode(showId int, seasonNumber int, episodeNumber int, language string) *Episode {
+	var episode *Episode
+	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
+	key := fmt.Sprintf("com.tmdb.episode.%d.%d.%s", showId, seasonNumber, episodeNumber, language)
+	if err := cacheStore.Get(key, &episode); err != nil {
+		rateLimiter.Call(func() {
+			urlValues := napping.Params{
+				"api_key": apiKey,
+				"append_to_response": "credits,images,videos,external_ids",
+				"language": language,
+			}.AsUrlValues()
+			resp, err := napping.Get(
+				fmt.Sprintf("%stv/%d/season/%d/episode/%d", tmdbEndpoint, showId, seasonNumber, episodeNumber),
+				&urlValues,
+				&episode,
+				nil,
+			)
+			if err != nil {
+				panic(err)
+			}
+			if resp.Status() != 200 {
+				panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+			}
+		})
+
+		if episode != nil {
+			cacheStore.Set(key, episode, cacheTime)
+		}
+	}
+	if episode == nil {
+		return nil
+	}
+	return episode
+}
 
 func (episodes EpisodeList) ToListItems(show *Show, season *Season) []*xbmc.ListItem {
 	items := make([]*xbmc.ListItem, 0, len(episodes))
