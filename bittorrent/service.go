@@ -119,7 +119,6 @@ func NewBTService(config BTConfiguration) *BTService {
 		closing:           make(chan interface{}),
 	}
 
-	filepath.Join()
 	if _, err := os.Stat(s.config.TorrentsPath); os.IsNotExist(err) {
 		if err := os.Mkdir(s.config.TorrentsPath, 0755); err != nil{
 			s.log.Error("Unable to create Torrents folder")

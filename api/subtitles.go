@@ -1,23 +1,25 @@
 package api
 
 import (
-	"compress/gzip"
-	"fmt"
 	"io"
-	"io/ioutil"
-	"net/http"
-	"net/url"
 	"os"
-	"path/filepath"
+	"fmt"
 	"strconv"
 	"strings"
+	"net/url"
+	"net/http"
+	"compress/gzip"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
+	"github.com/op/go-logging"
 	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/osdb"
 	"github.com/scakemyer/quasar/util"
 	"github.com/scakemyer/quasar/xbmc"
 )
+
+var subLog = logging.MustGetLogger("subtitles")
 
 func appendLocalFilePayloads(playingFile string, payloads *[]osdb.SearchPayload) error {
 	file, err := os.Open(playingFile)
@@ -192,7 +194,14 @@ func SubtitleGet(ctx *gin.Context) {
 	}
 	defer reader.Close()
 
-	outFile, err := ioutil.TempFile("", "")
+	subtitlesPath := filepath.Join(config.Get().DownloadPath, "Subtitles")
+	if _, err := os.Stat(subtitlesPath); os.IsNotExist(err) {
+		if err := os.Mkdir(subtitlesPath, 0755); err != nil{
+			subLog.Error("Unable to create Subtitles folder")
+		}
+	}
+
+	outFile, err := os.Create(filepath.Join(subtitlesPath, file))
 	if err != nil {
 		ctx.AbortWithError(500, err)
 		return

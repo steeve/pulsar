@@ -1,12 +1,12 @@
 package osdb
 
 import (
-	"bytes"
-	"encoding/binary"
-	"errors"
-	"fmt"
-	"io"
 	"os"
+	"io"
+	"fmt"
+	"bytes"
+	"errors"
+	"encoding/binary"
 )
 
 const (

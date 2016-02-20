@@ -1,9 +1,9 @@
 package osdb
 
 import (
-	"fmt"
 	"io"
 	"os"
+	"fmt"
 	"strconv"
 	"strings"
 

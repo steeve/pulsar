@@ -1,16 +1,16 @@
 package osdb
 
 import (
-	"compress/gzip"
-	"crypto/md5"
-	"encoding/base64"
-	"fmt"
 	"io"
-	"net/http"
 	"os"
+	"fmt"
 	"path"
 	"strconv"
 	"strings"
+	"net/http"
+	"crypto/md5"
+	"compress/gzip"
+	"encoding/base64"
 )
 
 // A Subtitle with its many OSDB attributes...
