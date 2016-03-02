@@ -9,6 +9,8 @@ env:
   - PLATFORM=android-x86
   - PLATFORM=darwin-x64
   - PLATFORM=linux-arm
+  - PLATFORM=linux-armv7
+  - PLATFORM=linux-arm64
   - PLATFORM=linux-x64
   - PLATFORM=linux-x86
   - PLATFORM=windows-x64
@@ -24,12 +26,6 @@ before_install:
       make pull-all
     elif [ "${PLATFORM}" != "all" ]; then
       make pull
-    fi
-  - |
-    if [ "${TRAVIS_PULL_REQUEST}" = "false" ] && [ -n "${TRAVIS_TAG}" ] && [ "${PLATFORM}" = "all" ]; then
-      make envs
-    elif [ "${PLATFORM}" != "all" ]; then
-      make env
     fi
 
 install:

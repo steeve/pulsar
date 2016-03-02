@@ -12,13 +12,20 @@ endif
 
 include platform_target.mk
 
-ifeq ($(TARGET_ARCH),x86)
+ifeq ($(TARGET_ARCH), x86)
 	GOARCH = 386
-else ifeq ($(TARGET_ARCH),x64)
+else ifeq ($(TARGET_ARCH), x64)
 	GOARCH = amd64
-else ifeq ($(TARGET_ARCH),arm)
+else ifeq ($(TARGET_ARCH), arm)
 	GOARCH = arm
 	GOARM = 6
+else ifeq ($(TARGET_ARCH), armv7)
+	GOARCH = arm
+	GOARM = 7
+	PKGDIR = -pkgdir /go/pkg/linux_armv7
+else ifeq ($(TARGET_ARCH), arm64)
+	GOARCH = arm64
+	GOARM =
 endif
 
 ifeq ($(TARGET_OS), windows)
@@ -46,12 +53,13 @@ else ifeq ($(TARGET_OS), android)
 	GO_LDFLAGS = -linkmode=external -extldflags=-pie -extld=$(CC)
 endif
 
+PROJECT = quasarhq
 NAME = quasar
 GO_PKG = github.com/scakemyer/quasar
 GO = go
 GIT = git
 DOCKER = docker
-DOCKER_IMAGE = quasar
+DOCKER_IMAGE = libtorrent-go
 UPX = upx
 GIT_VERSION = $(shell $(GIT) describe --tags)
 CGO_ENABLED = 1
@@ -67,6 +75,8 @@ PLATFORMS = \
 	android-x86 \
 	darwin-x64 \
 	linux-arm \
+	linux-armv7 \
+	linux-arm64 \
 	linux-x64 \
 	linux-x86 \
 	windows-x64 \
@@ -99,7 +109,8 @@ $(BUILD_PATH)/$(OUTPUT_NAME): $(BUILD_PATH) force
 	$(GO) build -v \
 		-gcflags '$(GO_GCFLAGS)' \
 		-ldflags '$(GO_LDFLAGS)' \
-		-o '$(BUILD_PATH)/$(OUTPUT_NAME)'
+		-o '$(BUILD_PATH)/$(OUTPUT_NAME)' \
+		$(PKGDIR)
 
 vendor_darwin vendor_linux:
 
@@ -124,14 +135,6 @@ clean:
 
 distclean:
 	rm -rf build
-
-env:
-	cat Dockerfile | sed -e s/TAG/$(PLATFORM)/ | $(DOCKER) build -t $(DOCKER_IMAGE):$(PLATFORM) -
-
-envs:
-	for i in $(PLATFORMS); do \
-		$(MAKE) env PLATFORM=$$i;\
-	done
 
 build: force
 	$(DOCKER) run --rm -v $(GOPATH):/go -e GOPATH=/go -v $(shell pwd):/go/src/$(GO_PKG) -w /go/src/$(GO_PKG) $(DOCKER_IMAGE):$(TARGET_OS)-$(TARGET_ARCH) make dist TARGET_OS=$(TARGET_OS) TARGET_ARCH=$(TARGET_ARCH) GIT_VERSION=$(GIT_VERSION)
@@ -168,16 +171,10 @@ binaries:
 
 pull-all:
 	for i in $(PLATFORMS); do \
-		docker pull quasarhq/libtorrent-go:$$i; \
-		docker tag quasarhq/libtorrent-go:$$i libtorrent-go:$$i; \
+		docker pull $(PROJECT)/libtorrent-go:$$i; \
+		docker tag $(PROJECT)/libtorrent-go:$$i libtorrent-go:$$i; \
 	done
 
 pull:
-	docker pull quasarhq/libtorrent-go:$(PLATFORM)
-	docker tag quasarhq/libtorrent-go:$(PLATFORM) libtorrent-go:$(PLATFORM)
-
-push:
-	for i in $(PLATFORMS); do \
-	  docker tag quasar:$$i quasarhq/quasar:$$i; \
-	  docker push quasarhq/quasar:$$i; \
-	done
+	docker pull $(PROJECT)/libtorrent-go:$(PLATFORM)
+	docker tag $(PROJECT)/libtorrent-go:$(PLATFORM) libtorrent-go:$(PLATFORM)

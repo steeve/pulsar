@@ -24,7 +24,7 @@ Fork of the great [Pulsar daemon](https://github.com/steeve/pulsar)
 3. go get
 
     ```
-    go get github.com/scakemyer/quasar
+    go get -d github.com/scakemyer/quasar
     ```
 
     For Windows support, but required for all builds, you also need:
@@ -33,19 +33,13 @@ Fork of the great [Pulsar daemon](https://github.com/steeve/pulsar)
     go get github.com/mattn/go-isatty
     ```
 
-4. Build environments:
-
-    ```
-    make envs
-    ```
-
-5. Build libtorrent-go libraries:
+4. Build libtorrent-go libraries:
 
     ```
     make libs
     ```
 
-6. Make specific platforms, or all of them:
+5. Make specific platforms, or all of them:
 
     Linux-x64
     ```
