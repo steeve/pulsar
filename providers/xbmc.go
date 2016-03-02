@@ -15,6 +15,7 @@ import (
 	"github.com/scakemyer/quasar/bittorrent"
 	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/tmdb"
+	"github.com/scakemyer/quasar/tvdb"
 	"github.com/scakemyer/quasar/util"
 	"github.com/scakemyer/quasar/xbmc"
 )
@@ -150,11 +151,41 @@ func (as *AddonSearcher) GetSeasonSearchObject(show *tmdb.Show, season *tmdb.Sea
 }
 
 func (as *AddonSearcher) GetEpisodeSearchObject(show *tmdb.Show, episode *tmdb.Episode) *EpisodeSearchObject {
-	absoluteNumber := 0 // FIXME
-
 	title := show.OriginalName
 	if title == "" {
 		title = show.Name
+	}
+
+	// Is this an Anime?
+	absoluteNumber := 0
+	if show.ExternalIDs.TVDBID > 0 {
+		countryIsJP := false
+		for _, country := range show.OriginCountry {
+			if country == "JP" {
+				countryIsJP = true
+				break
+			}
+		}
+		genreIsAnim := false
+		for _, genre := range show.Genres {
+			if genre.Name == "Animation" {
+				genreIsAnim = true
+				break
+			}
+		}
+		if countryIsJP && genreIsAnim {
+			tvdbShow, err := tvdb.GetShow(show.ExternalIDs.TVDBID, config.Get().Language)
+			if err == nil && len(tvdbShow.Seasons) >= episode.SeasonNumber + 1 {
+				tvdbSeason := tvdbShow.Seasons[episode.SeasonNumber]
+				if len(tvdbSeason.Episodes) >= episode.EpisodeNumber {
+					tvdbEpisode := tvdbSeason.Episodes[episode.EpisodeNumber - 1]
+					if tvdbEpisode.AbsoluteNumber > 0 {
+						absoluteNumber = tvdbEpisode.AbsoluteNumber
+					}
+					title = tvdbShow.SeriesName
+				}
+			}
+		}
 	}
 
 	return &EpisodeSearchObject{
