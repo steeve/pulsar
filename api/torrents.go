@@ -3,6 +3,7 @@ package api
 import (
 	"os"
 	"fmt"
+	"time"
 	"errors"
 	"strconv"
 	"encoding/hex"
@@ -46,6 +47,15 @@ func ListTorrents(btService *bittorrent.BTService) gin.HandlerFunc {
 				ratio = float64(torrentStatus.GetAllTimeUpload()) / allTimeDownload
 			}
 
+			timeRatio := float64(0)
+			finished_time := float64(torrentStatus.GetFinishedTime())
+			download_time := float64(torrentStatus.GetActiveTime()) - finished_time
+			if download_time > 1 {
+				timeRatio = finished_time / download_time
+			}
+
+			seedingTime := time.Duration(torrentStatus.GetSeedingTime()) * time.Second
+
 			torrentAction := []string{"LOCALIZE[30231]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/torrents/pause/%d", i))}
 			sessionAction := []string{"LOCALIZE[30233]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/torrents/pause"))}
 
@@ -57,10 +67,10 @@ func ListTorrents(btService *bittorrent.BTService) gin.HandlerFunc {
 				status = "Paused"
 				sessionAction = []string{"LOCALIZE[30234]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/torrents/resume"))}
 			}
-			torrentsLog.Infof("- %s - %.2f - %s", status, ratio, torrentName)
+			torrentsLog.Infof("- %.2f%% - %s - %.2f:1 / %.2f:1 (%s) - %s", progress, status, ratio, timeRatio, seedingTime.String(), torrentName)
 
 			item := xbmc.ListItem{
-				Label: fmt.Sprintf("%.2f%% - %.2f - %s - %s", progress, ratio, status, torrentName),
+				Label: fmt.Sprintf("%.2f%% - %s - %.2f:1 / %.2f:1 (%s) - %s", progress, status, ratio, timeRatio, seedingTime.String(), torrentName),
 				Path: playUrl,
 				Info: &xbmc.ListItemInfo{
 					Title: torrentName,
