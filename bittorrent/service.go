@@ -87,6 +87,10 @@ type BTConfiguration struct {
 	LimitAfterBuffering bool
 	ConnectionsLimit    int
 	SessionSave         int
+	ShareRatioLimit     float32
+	SeedTimeRatioLimit  float32
+	SeedTimeLimit       int
+	DisableDHT          bool
 	LowerListenPort     int
 	UpperListenPort     int
 	DownloadPath        string
@@ -186,6 +190,16 @@ func (s *BTService) configure() {
 		}
 	}
 
+	if s.config.ShareRatioLimit > 0 {
+		settings.SetShareRatioLimit(s.config.ShareRatioLimit)
+	}
+	if s.config.SeedTimeRatioLimit > 0 {
+		settings.SetSeedTimeRatioLimit(s.config.SeedTimeRatioLimit)
+	}
+	if s.config.SeedTimeLimit > 0 {
+		settings.SetSeedTimeLimit(s.config.SeedTimeLimit)
+	}
+
 	settings.SetPeerTos(ipToSLowCost)
 	settings.SetTorrentConnectBoost(500)
 	settings.SetRateLimitIpOverhead(true)
@@ -273,13 +287,15 @@ func (s *BTService) LoadState(f io.Reader) error {
 }
 
 func (s *BTService) startServices() {
-	s.log.Info("Starting DHT...")
-	for _, node := range dhtBootstrapNodes {
-		pair := libtorrent.NewStdPairStringInt(node, 6881)
-		defer libtorrent.DeleteStdPairStringInt(pair)
-		s.Session.AddDhtRouter(pair)
+	if s.config.DisableDHT != true {
+		s.log.Info("Starting DHT...")
+		for _, node := range dhtBootstrapNodes {
+			pair := libtorrent.NewStdPairStringInt(node, 6881)
+			defer libtorrent.DeleteStdPairStringInt(pair)
+			s.Session.AddDhtRouter(pair)
+		}
+		s.Session.StartDht()
 	}
-	s.Session.StartDht()
 
 	s.log.Info("Starting LSD...")
 	s.Session.StartLsd()
@@ -296,8 +312,10 @@ func (s *BTService) stopServices() {
 		s.dialogProgressBG.Close()
 	}
 
-	s.log.Info("Stopping DHT...")
-	s.Session.StopDht()
+	if s.config.DisableDHT != true {
+		s.log.Info("Stopping DHT...")
+		s.Session.StopDht()
+	}
 
 	s.log.Info("Stopping LSD...")
 	s.Session.StopLsd()

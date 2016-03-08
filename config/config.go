@@ -2,6 +2,7 @@ package config
 
 import (
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"os"
@@ -31,6 +32,10 @@ type Configuration struct {
 	UploadRateLimit     int
 	DownloadRateLimit   int
 	LimitAfterBuffering bool
+	ShareRatioLimit     float32
+	SeedTimeRatioLimit  float32
+	SeedTimeLimit       int
+	DisableDHT          bool
 	BTListenPortMin     int
 	BTListenPortMax     int
 	ConnectionsLimit    int
@@ -89,6 +94,9 @@ func Reload() *Configuration {
 		xbmc.AddonSettings("plugin.video.quasar")
 	}
 
+	shareRatioLimit, _ := strconv.ParseFloat(xbmc.GetSettingString("share_ratio_limit"), 32)
+	seedTimeRatioLimit, _ := strconv.ParseFloat(xbmc.GetSettingString("seed_time_ratio_limit"), 32)
+
 	newConfig := Configuration{
 		DownloadPath:        downloadPath,
 		LibraryPath:         filepath.Dir(xbmc.GetSettingString("library_path")),
@@ -108,6 +116,10 @@ func Reload() *Configuration {
 		ChooseStreamAuto:    xbmc.GetSettingBool("choose_stream_auto"),
 		UseOriginalTitle:    xbmc.GetSettingBool("use_original_title"),
 		PreReleaseUpdates:   xbmc.GetSettingBool("pre_release_updates"),
+		ShareRatioLimit:     float32(shareRatioLimit),
+		SeedTimeRatioLimit:  float32(seedTimeRatioLimit),
+		SeedTimeLimit:       xbmc.GetSettingInt("seed_time_limit"),
+		DisableDHT:          xbmc.GetSettingBool("disable_dht"),
 		BTListenPortMin:     xbmc.GetSettingInt("listen_port_min"),
 		BTListenPortMax:     xbmc.GetSettingInt("listen_port_max"),
 		ConnectionsLimit:    xbmc.GetSettingInt("connections_limit"),
