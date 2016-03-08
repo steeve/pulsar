@@ -87,8 +87,8 @@ type BTConfiguration struct {
 	LimitAfterBuffering bool
 	ConnectionsLimit    int
 	SessionSave         int
-	ShareRatioLimit     float32
-	SeedTimeRatioLimit  float32
+	ShareRatioLimit     int
+	SeedTimeRatioLimit  int
 	SeedTimeLimit       int
 	DisableDHT          bool
 	LowerListenPort     int
@@ -191,10 +191,10 @@ func (s *BTService) configure() {
 	}
 
 	if s.config.ShareRatioLimit > 0 {
-		settings.SetShareRatioLimit(s.config.ShareRatioLimit)
+		settings.SetShareRatioLimit(float32(s.config.ShareRatioLimit))
 	}
 	if s.config.SeedTimeRatioLimit > 0 {
-		settings.SetSeedTimeRatioLimit(s.config.SeedTimeRatioLimit)
+		settings.SetSeedTimeRatioLimit(float32(s.config.SeedTimeRatioLimit))
 	}
 	if s.config.SeedTimeLimit > 0 {
 		settings.SetSeedTimeLimit(s.config.SeedTimeLimit)
