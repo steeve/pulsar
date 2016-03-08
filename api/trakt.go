@@ -42,7 +42,7 @@ func renderTraktMovies(movies []*trakt.Movies, ctx *gin.Context, page int) {
 		item.IsPlayable = true
 		items = append(items, item)
 	}
-	if page >= 0 {
+	if page >= 0 && hasNextPage > 0 {
 		path := ctx.Request.URL.Path
 		nextpage := &xbmc.ListItem{
 			Label: "LOCALIZE[30218]",
@@ -116,7 +116,7 @@ func renderTraktShows(shows []*trakt.Shows, ctx *gin.Context, page int) {
 		}
 		items = append(items, item)
 	}
-	if page >= 0 {
+	if page >= 0 && hasNextPage > 0 {
 		path := ctx.Request.URL.Path
 		nextpage := &xbmc.ListItem{
 			Label: "LOCALIZE[30218]",

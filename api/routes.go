@@ -55,13 +55,18 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 		movies.GET("/imdb250", cache.Cache(store, DefaultCacheTime), IMDBTop250)
 		movies.GET("/mostvoted", cache.Cache(store, DefaultCacheTime), MoviesMostVoted)
 		movies.GET("/genres", cache.Cache(store, IndexCacheTime), MovieGenres)
-		movies.GET("/trakt/popular", cache.Cache(store, DefaultCacheTime), TraktPopularMovies)
-		movies.GET("/trakt/trending", cache.Cache(store, DefaultCacheTime), TraktTrendingMovies)
-		movies.GET("/trakt/played", cache.Cache(store, DefaultCacheTime), TraktMostPlayedMovies)
-		movies.GET("/trakt/watched", cache.Cache(store, DefaultCacheTime), TraktMostWatchedMovies)
-		movies.GET("/trakt/collected", cache.Cache(store, DefaultCacheTime), TraktMostCollectedMovies)
-		movies.GET("/trakt/anticipated", cache.Cache(store, DefaultCacheTime), TraktMostAnticipatedMovies)
-		movies.GET("/trakt/boxoffice", cache.Cache(store, DefaultCacheTime), TraktBoxOffice)
+
+		trakt := movies.Group("/trakt")
+		{
+			trakt.GET("/", cache.Cache(store, IndexCacheTime), MoviesTrakt)
+			trakt.GET("/popular", cache.Cache(store, DefaultCacheTime), TraktPopularMovies)
+			trakt.GET("/trending", cache.Cache(store, DefaultCacheTime), TraktTrendingMovies)
+			trakt.GET("/played", cache.Cache(store, DefaultCacheTime), TraktMostPlayedMovies)
+			trakt.GET("/watched", cache.Cache(store, DefaultCacheTime), TraktMostWatchedMovies)
+			trakt.GET("/collected", cache.Cache(store, DefaultCacheTime), TraktMostCollectedMovies)
+			trakt.GET("/anticipated", cache.Cache(store, DefaultCacheTime), TraktMostAnticipatedMovies)
+			trakt.GET("/boxoffice", cache.Cache(store, DefaultCacheTime), TraktBoxOffice)
+		}
 	}
 	movie := r.Group("/movie")
 	{
@@ -82,12 +87,17 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 		shows.GET("/top", cache.Cache(store, DefaultCacheTime), TopRatedShows)
 		shows.GET("/mostvoted", cache.Cache(store, DefaultCacheTime), TVMostVoted)
 		shows.GET("/genres", cache.Cache(store, IndexCacheTime), TVGenres)
-		shows.GET("/trakt/popular", cache.Cache(store, DefaultCacheTime), TraktPopularShows)
-		shows.GET("/trakt/trending", cache.Cache(store, DefaultCacheTime), TraktTrendingShows)
-		shows.GET("/trakt/played", cache.Cache(store, DefaultCacheTime), TraktMostPlayedShows)
-		shows.GET("/trakt/watched", cache.Cache(store, DefaultCacheTime), TraktMostWatchedShows)
-		shows.GET("/trakt/collected", cache.Cache(store, DefaultCacheTime), TraktMostCollectedShows)
-		shows.GET("/trakt/anticipated", cache.Cache(store, DefaultCacheTime), TraktMostAnticipatedShows)
+
+		trakt := shows.Group("/trakt")
+		{
+			trakt.GET("/", cache.Cache(store, IndexCacheTime), TVTrakt)
+			trakt.GET("/popular", cache.Cache(store, DefaultCacheTime), TraktPopularShows)
+			trakt.GET("/trending", cache.Cache(store, DefaultCacheTime), TraktTrendingShows)
+			trakt.GET("/played", cache.Cache(store, DefaultCacheTime), TraktMostPlayedShows)
+			trakt.GET("/watched", cache.Cache(store, DefaultCacheTime), TraktMostWatchedShows)
+			trakt.GET("/collected", cache.Cache(store, DefaultCacheTime), TraktMostCollectedShows)
+			trakt.GET("/anticipated", cache.Cache(store, DefaultCacheTime), TraktMostAnticipatedShows)
+		}
 	}
 	show := r.Group("/show")
 	{
