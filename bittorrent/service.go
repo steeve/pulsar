@@ -466,6 +466,41 @@ func (s *BTService) downloadProgress() {
 						progress: progress,
 					})
 					totalProgress += progress
+				} else {
+					finished_time := torrentStatus.GetFinishedTime()
+					if s.config.SeedTimeLimit > 0 {
+						if finished_time >= s.config.SeedTimeLimit {
+							s.log.Noticef("Seeding time limit reached, pausing %s", torrentName)
+							torrentHandle.AutoManaged(false)
+							torrentHandle.Pause(1)
+							continue
+						}
+					}
+					if s.config.SeedTimeRatioLimit > 0 {
+						timeRatio := 0
+						download_time := torrentStatus.GetActiveTime() - finished_time
+						if download_time > 1 {
+							timeRatio = finished_time * 100 / download_time
+						}
+						if timeRatio >= s.config.SeedTimeRatioLimit {
+							s.log.Noticef("Seeding time ratio reached, pausing %s", torrentName)
+							torrentHandle.AutoManaged(false)
+							torrentHandle.Pause(1)
+							continue
+						}
+					}
+					if s.config.ShareRatioLimit > 0 {
+						ratio := int64(0)
+						allTimeDownload := torrentStatus.GetAllTimeDownload()
+						if allTimeDownload > 0 {
+							ratio = torrentStatus.GetAllTimeUpload() * 100 / allTimeDownload
+						}
+						if ratio >= int64(s.config.ShareRatioLimit) {
+							s.log.Noticef("Share ratio reached, pausing %s", torrentName)
+							torrentHandle.AutoManaged(false)
+							torrentHandle.Pause(1)
+						}
+					}
 				}
 			}
 
