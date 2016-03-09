@@ -22,7 +22,7 @@ type Configuration struct {
 	ProfilePath         string
 	BackgroundHandling  bool
 	KeepFilesAfterStop  bool
-	EnablePagination    bool
+	ResultsPerPage      int
 	EnableOverlayStatus bool
 	ChooseStreamAuto    bool
 	UseOriginalTitle    bool
@@ -107,7 +107,7 @@ func Reload() *Configuration {
 		LimitAfterBuffering: xbmc.GetSettingBool("limit_after_buffering"),
 		BackgroundHandling:  xbmc.GetSettingBool("background_handling"),
 		KeepFilesAfterStop:  xbmc.GetSettingBool("keep_files"),
-		EnablePagination:    xbmc.GetSettingBool("enable_pagination"),
+		ResultsPerPage:      xbmc.GetSettingInt("results_per_page"),
 		EnableOverlayStatus: xbmc.GetSettingBool("enable_overlay_status"),
 		ChooseStreamAuto:    xbmc.GetSettingBool("choose_stream_auto"),
 		UseOriginalTitle:    xbmc.GetSettingBool("use_original_title"),

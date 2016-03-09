@@ -22,7 +22,7 @@ func GetShow(showId int, language string) *Show {
 	key := fmt.Sprintf("com.tmdb.show.%d.%s", showId, language)
 	if err := cacheStore.Get(key, &show); err != nil {
 		rateLimiter.Call(func() {
-      urlValues := napping.Params{
+			urlValues := napping.Params{
 				"api_key": apiKey,
 				"append_to_response": "credits,images,alternative_titles,translations,external_ids",
 				"language": language,
@@ -72,12 +72,13 @@ func GetShows(showIds []int, language string) Shows {
 	return shows
 }
 
-func SearchShows(query string, language string) Shows {
+func SearchShows(query string, language string, page int) Shows {
 	var results EntityList
 	rateLimiter.Call(func() {
 		urlValues := napping.Params{
 			"api_key": apiKey,
 			"query": query,
+			"page": strconv.Itoa(StartPage + page),
 		}.AsUrlValues()
 		resp, err := napping.Get(
 			tmdbEndpoint + "search/tv",
@@ -100,19 +101,20 @@ func SearchShows(query string, language string) Shows {
 }
 
 func ListShowsComplete(endpoint string, params napping.Params, page int) Shows {
-	MaxPages := popularMoviesMaxPages
+	resultsPerPage := config.Get().ResultsPerPage
+	maxPages := MaxPages
 	if page >= 0 {
-		MaxPages = 1
+		maxPages = 1
 	}
-	shows := make(Shows, MaxPages * moviesPerPage)
+	shows := make(Shows, maxPages * resultsPerPage)
 
 	params["api_key"] = apiKey
 
 	wg := sync.WaitGroup{}
-	for i := 0; i < MaxPages; i++ {
+	for i := 0; i < maxPages; i++ {
 		wg.Add(1)
 		currentpage := i
-		startMoviesIndex := i * moviesPerPage
+		startIndex := i * resultsPerPage
 		if page >= 0 {
 			currentpage = page
 		}
@@ -120,12 +122,12 @@ func ListShowsComplete(endpoint string, params napping.Params, page int) Shows {
 			defer wg.Done()
 			var tmp *EntityList
 			tmpParams := napping.Params{
-				"page": strconv.Itoa(popularMoviesStartPage + page),
+				"page": strconv.Itoa(StartPage + page),
 			}
 			for k, v := range params {
 				tmpParams[k] = v
 			}
-      urlValues := tmpParams.AsUrlValues()
+			urlValues := tmpParams.AsUrlValues()
 			rateLimiter.Call(func() {
 				resp, err := napping.Get(
 					tmdbEndpoint + endpoint,
@@ -141,7 +143,7 @@ func ListShowsComplete(endpoint string, params napping.Params, page int) Shows {
 				}
 			})
 			for i, entity := range tmp.Results {
-				shows[startMoviesIndex + i] = GetShow(entity.Id, params["language"])
+				shows[startIndex + i] = GetShow(entity.Id, params["language"])
 			}
 		}(currentpage)
 	}
@@ -224,7 +226,7 @@ func MostVotedShowsComplete(genre string, language string, page int) Movies {
 func GetTVGenres(language string) []*Genre {
 	genres := GenreList{}
 	rateLimiter.Call(func() {
-    urlValues := napping.Params{
+		urlValues := napping.Params{
 			"api_key": apiKey,
 			"language": language,
 		}.AsUrlValues()

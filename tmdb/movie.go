@@ -16,12 +16,6 @@ import (
 	"github.com/scakemyer/quasar/xbmc"
 )
 
-const (
-	moviesPerPage          = 20
-	popularMoviesMaxPages  = 20
-	popularMoviesStartPage = 1
-)
-
 func GetMovie(tmdbId int, language string) *Movie {
 	return GetMovieById(strconv.Itoa(tmdbId), language)
 }
@@ -32,7 +26,7 @@ func GetMovieById(movieId string, language string) *Movie {
 	key := fmt.Sprintf("com.tmdb.movie.%s.%s", movieId, language)
 	if err := cacheStore.Get(key, &movie); err != nil {
 		rateLimiter.Call(func() {
-      urlValues := napping.Params{
+			urlValues := napping.Params{
 				"api_key": apiKey,
 				"append_to_response": "credits,images,alternative_titles,translations,external_ids,trailers",
 				"language": language,
@@ -84,7 +78,7 @@ func GetMovies(tmdbIds []int, language string) Movies {
 func GetMovieGenres(language string) []*Genre {
 	genres := GenreList{}
 	rateLimiter.Call(func() {
-    urlValues := napping.Params{
+		urlValues := napping.Params{
 			"api_key": apiKey,
 			"language": language,
 		}.AsUrlValues()
@@ -104,12 +98,14 @@ func GetMovieGenres(language string) []*Genre {
 	return genres.Genres
 }
 
-func SearchMovies(query string, language string) Movies {
+func SearchMovies(query string, language string, page int) Movies {
 	var results EntityList
+
 	rateLimiter.Call(func() {
-    urlValues := napping.Params{
+		urlValues := napping.Params{
 			"api_key": apiKey,
 			"query": query,
+			"page": strconv.Itoa(StartPage + page),
 		}.AsUrlValues()
 		resp, err := napping.Get(
 			tmdbEndpoint + "search/movie",
@@ -131,10 +127,12 @@ func SearchMovies(query string, language string) Movies {
 	return GetMovies(tmdbIds, language)
 }
 
-func GetList(listId string, language string) Movies {
+func GetList(listId string, language string, page int) Movies {
 	var results *List
+	resultsPerPage := config.Get().ResultsPerPage
+
 	rateLimiter.Call(func() {
-    urlValues := napping.Params{
+		urlValues := napping.Params{
 			"api_key": apiKey,
 		}.AsUrlValues()
 		resp, err := napping.Get(
@@ -150,9 +148,15 @@ func GetList(listId string, language string) Movies {
 			panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
 		}
 	})
-	tmdbIds := make([]int, 0, len(results.Items))
-	for _, movie := range results.Items {
+	tmdbIds := make([]int, 0, resultsPerPage)
+	for i, movie := range results.Items {
+		if i < page * resultsPerPage {
+			continue
+		}
 		tmdbIds = append(tmdbIds, movie.Id)
+		if i >= (StartPage + page) * resultsPerPage - 1 {
+			break
+		}
 	}
 	return GetMovies(tmdbIds, language)
 }
@@ -164,18 +168,20 @@ func (a ByPopularity) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByPopularity) Less(i, j int) bool { return a[i].Popularity < a[j].Popularity }
 
 func ListMoviesComplete(endpoint string, params napping.Params, page int) Movies {
-	MaxPages := popularMoviesMaxPages
+	resultsPerPage := config.Get().ResultsPerPage
+	maxPages := MaxPages
 	if page >= 0 {
-		MaxPages = 1
+		maxPages = 1
 	}
-	movies := make(Movies, MaxPages * moviesPerPage)
+	movies := make(Movies, maxPages * resultsPerPage)
+
 	params["api_key"] = apiKey
 
 	wg := sync.WaitGroup{}
-	for i := 0; i < MaxPages; i++ {
+	for i := 0; i < maxPages; i++ {
 		wg.Add(1)
 		currentpage := i
-		startMoviesIndex := i * moviesPerPage
+		startIndex := i * resultsPerPage
 		if page >= 0 {
 			currentpage = page
 		}
@@ -183,12 +189,12 @@ func ListMoviesComplete(endpoint string, params napping.Params, page int) Movies
 			defer wg.Done()
 			var tmp *EntityList
 			tmpParams := napping.Params{
-				"page": strconv.Itoa(popularMoviesStartPage + page),
+				"page": strconv.Itoa(StartPage + page),
 			}
 			for k, v := range params {
 				tmpParams[k] = v
 			}
-      urlValues := tmpParams.AsUrlValues()
+			urlValues := tmpParams.AsUrlValues()
 			rateLimiter.Call(func() {
 				resp, err := napping.Get(
 					tmdbEndpoint + endpoint,
@@ -204,7 +210,7 @@ func ListMoviesComplete(endpoint string, params napping.Params, page int) Movies
 				}
 			})
 			for i, movie := range tmp.Results {
-				movies[startMoviesIndex + i] = GetMovie(movie.Id, params["language"])
+				movies[startIndex + i] = GetMovie(movie.Id, params["language"])
 			}
 		}(currentpage)
 	}

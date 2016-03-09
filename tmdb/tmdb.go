@@ -16,6 +16,11 @@ import (
 	"github.com/scakemyer/quasar/util"
 )
 
+const (
+	MaxPages  = 20
+	StartPage = 1
+)
+
 var (
 	tmdbLog = logging.MustGetLogger("tmdb")
 )
@@ -299,17 +304,18 @@ func ImageURL(uri string, size string) string {
 
 func ListEntities(endpoint string, params napping.Params) []*Entity {
 	var wg sync.WaitGroup
-	entities := make([]*Entity, popularMoviesMaxPages * moviesPerPage)
+	resultsPerPage := config.Get().ResultsPerPage
+	entities := make([]*Entity, MaxPages * resultsPerPage)
 	params["api_key"] = apiKey
 	params["language"] = "en"
 
-	wg.Add(popularMoviesMaxPages)
-	for i := 0; i < popularMoviesMaxPages; i++ {
+	wg.Add(MaxPages)
+	for i := 0; i < MaxPages; i++ {
 		go func(page int) {
 			defer wg.Done()
 			var tmp *EntityList
 			tmpParams := napping.Params{
-				"page": strconv.Itoa(popularMoviesStartPage + page),
+				"page": strconv.Itoa(StartPage + page),
 			}
 			for k, v := range params {
 				tmpParams[k] = v
@@ -330,7 +336,7 @@ func ListEntities(endpoint string, params napping.Params) []*Entity {
 				}
 			})
 			for i, entity := range tmp.Results {
-				entities[page * moviesPerPage + i] = entity
+				entities[page * resultsPerPage + i] = entity
 			}
 		}(i)
 	}
