@@ -81,8 +81,12 @@ func renderShows(shows tmdb.Shows, ctx *gin.Context, page int, query string) {
 		}
 		item := show.ToListItem()
 		item.Path = UrlForXBMC("/show/%d/seasons", show.Id)
+		libraryAction := []string{"LOCALIZE[30252]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/show/add/%d", show.Id))}
+		if inJsonDb, err := InJsonDB(strconv.Itoa(show.Id), LShow); err == nil && inJsonDb == true {
+			libraryAction = []string{"LOCALIZE[30253]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/show/remove/%d", show.Id))}
+		}
 		item.ContextMenu = [][]string{
-			[]string{"LOCALIZE[30219]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/show/addremove/%d", show.Id))},
+			libraryAction,
 			[]string{"LOCALIZE[30035]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/setviewmode/tvshows"))},
 		}
 		items = append(items, item)

@@ -185,8 +185,10 @@ func RemoveFromJsonDB(DBPath string, ID string, ltype int) error {
 	return ioutil.WriteFile(DBPath, b, 0755)
 }
 
-func inJsonDB(DBPath string, ID string, ltype int) (bool, error) {
+func InJsonDB(ID string, ltype int) (bool, error) {
 	var db DataBase
+	LibraryPath := config.Get().LibraryPath
+	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
 
 	if _, err := os.Stat(DBPath); err == nil {
 		file, err := ioutil.ReadFile(DBPath)
@@ -209,7 +211,7 @@ func inJsonDB(DBPath string, ID string, ltype int) (bool, error) {
 			}
 		}
 	} else {
-		return false, fmt.Errorf("Unknown ltype")
+		return false, fmt.Errorf("Unknown content type")
 	}
 
 	return false, nil
@@ -265,7 +267,7 @@ func UpdateLibrary(ctx *gin.Context) {
 
 	ctx.String(200, "")
 	xbmc.VideoLibraryScan()
-	libraryLog.Info("Library Updated")
+	libraryLog.Notice("Library updated")
 }
 
 func GetLibraryPath(ctx *gin.Context) {
@@ -299,25 +301,9 @@ func GetCount(ctx *gin.Context) {
 	})
 }
 
-func AddRemoveMovie(ctx *gin.Context) {
-	LibraryPath := config.Get().LibraryPath
-	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
-	tmdbId := ctx.Params.ByName("tmdbId")
-	inJsonDb, err := inJsonDB(DBPath, tmdbId, LMovie)
-	if err != nil {
-		return
-	}
-	if inJsonDb == true {
-		RemoveMovie(ctx)
-	} else {
-		AddMovie(ctx)
-	}
-}
-
 func AddMovie(ctx *gin.Context) {
 	LibraryPath := config.Get().LibraryPath
 	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
-	tmdbId := ctx.Params.ByName("tmdbId")
 
 	if fileInfo, err := os.Stat(LibraryPath); err != nil || fileInfo.IsDir() == false || LibraryPath == "" || LibraryPath == "." {
 		xbmc.Notify("Quasar", "LOCALIZE[30220]", config.AddonIcon())
@@ -325,7 +311,9 @@ func AddMovie(ctx *gin.Context) {
 		return
 	}
 
-	if inJsonDb, err := inJsonDB(DBPath, tmdbId, LMovie); err != nil || inJsonDb == true {
+	tmdbId := ctx.Params.ByName("tmdbId")
+
+	if inJsonDb, err := InJsonDB(tmdbId, LMovie); err != nil || inJsonDb == true {
 		ctx.String(404, "")
 		return
 	}
@@ -353,7 +341,9 @@ func AddMovie(ctx *gin.Context) {
 	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
 	ctx.String(200, "")
 	xbmc.VideoLibraryScan()
-	libraryLog.Info("Movie added")
+	ClearCache(ctx)
+	xbmc.Refresh()
+	libraryLog.Notice("Movie added")
 }
 
 func WriteMovieStrm(tmdbId string, MoviesLibraryPath string) error {
@@ -401,28 +391,14 @@ func RemoveMovie(ctx *gin.Context) {
 	xbmc.Notify("Quasar", "LOCALIZE[30222]", config.AddonIcon())
 	ctx.String(200, "")
 	xbmc.VideoLibraryClean()
-	libraryLog.Info("Movie removed")
-}
-
-func AddRemoveShow(ctx *gin.Context) {
-	LibraryPath := config.Get().LibraryPath
-	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
-	showId := ctx.Params.ByName("showId")
-	inJsonDb, err := inJsonDB(DBPath, showId, LShow)
-	if err != nil {
-		return
-	}
-	if inJsonDb == true {
-		RemoveShow(ctx)
-	} else {
-		AddShow(ctx)
-	}
+	ClearCache(ctx)
+	xbmc.Refresh()
+	libraryLog.Notice("Movie removed")
 }
 
 func AddShow(ctx *gin.Context) {
 	LibraryPath := config.Get().LibraryPath
 	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
-	showId := ctx.Params.ByName("showId")
 
 	if fileInfo, err := os.Stat(LibraryPath); err != nil || fileInfo.IsDir() == false || LibraryPath == "" || LibraryPath == "." {
 		xbmc.Notify("Quasar", "LOCALIZE[30220]", config.AddonIcon())
@@ -430,7 +406,9 @@ func AddShow(ctx *gin.Context) {
 		return
 	}
 
-	if inJsonDb, err := inJsonDB(DBPath, showId, LShow); err != nil || inJsonDb == true {
+	showId := ctx.Params.ByName("showId")
+
+	if inJsonDb, err := InJsonDB(showId, LShow); err != nil || inJsonDb == true {
 		ctx.String(404, "")
 		return
 	}
@@ -438,7 +416,7 @@ func AddShow(ctx *gin.Context) {
 	ShowsLibraryPath := filepath.Join(LibraryPath, "Shows")
 	if _, err := os.Stat(ShowsLibraryPath); os.IsNotExist(err) {
 		if err := os.Mkdir(ShowsLibraryPath, 0755); err != nil{
-			libraryLog.Error("Unable to create ShowsLibraryPath")
+			libraryLog.Error("Unable to create library path for Shows")
 			ctx.String(404, "")
 			return
 		}
@@ -450,7 +428,7 @@ func AddShow(ctx *gin.Context) {
 	}
 
 	if err := UpdateJsonDB(DBPath, showId, LShow); err != nil {
-			libraryLog.Error("Unable to UpdateJsonDB")
+			libraryLog.Error("Unable to update json DB")
 			ctx.String(404, "")
 			return
 		}
@@ -458,7 +436,9 @@ func AddShow(ctx *gin.Context) {
 	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
 	ctx.String(200, "")
 	xbmc.VideoLibraryScan()
-	libraryLog.Info("Show added")
+	ClearCache(ctx)
+	xbmc.Refresh()
+	libraryLog.Notice("Show added")
 }
 
 func WriteShowStrm(showId string, ShowsLibraryPath string) error {
@@ -501,7 +481,7 @@ func WriteShowStrm(showId string, ShowsLibraryPath string) error {
 			EpisodeStrmPath := filepath.Join(ShowPath, fmt.Sprintf("%s S%02dE%02d.strm", ShowStrm, season.Season, episode.EpisodeNumber))
 			playLink := UrlForXBMC("/library/play/show/%d/season/%d/episode/%d", Id, season.Season, episode.EpisodeNumber)
 			if err := ioutil.WriteFile(EpisodeStrmPath, []byte(playLink), 0755); err != nil {
-						libraryLog.Error("Unable to write to EpisodeStrmPath")
+						libraryLog.Error("Unable to write to strm file for episode")
 						return err
 				}
 		}
@@ -539,5 +519,7 @@ func RemoveShow(ctx *gin.Context) {
 	xbmc.Notify("Quasar", "LOCALIZE[30222]", config.AddonIcon())
 	ctx.String(200, "")
 	xbmc.VideoLibraryClean()
-	libraryLog.Info("Show removed")
+	ClearCache(ctx)
+	xbmc.Refresh()
+	libraryLog.Notice("Show removed")
 }
