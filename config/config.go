@@ -26,6 +26,7 @@ type Configuration struct {
 	EnableOverlayStatus bool
 	ChooseStreamAuto    bool
 	UseOriginalTitle    bool
+	AddSpecials         bool
 	PreReleaseUpdates   bool
 	BufferSize          int
 	UploadRateLimit     int
@@ -111,6 +112,7 @@ func Reload() *Configuration {
 		EnableOverlayStatus: xbmc.GetSettingBool("enable_overlay_status"),
 		ChooseStreamAuto:    xbmc.GetSettingBool("choose_stream_auto"),
 		UseOriginalTitle:    xbmc.GetSettingBool("use_original_title"),
+		AddSpecials:         xbmc.GetSettingBool("add_specials"),
 		PreReleaseUpdates:   xbmc.GetSettingBool("pre_release_updates"),
 		ShareRatioLimit:     xbmc.GetSettingInt("share_ratio_limit"),
 		SeedTimeRatioLimit:  xbmc.GetSettingInt("seed_time_ratio_limit"),

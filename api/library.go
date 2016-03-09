@@ -458,12 +458,17 @@ func WriteShowStrm(showId string, ShowsLibraryPath string) error {
 	}
 
 	now := time.Now().UTC()
+	addSpecials := config.Get().AddSpecials
+
 	for _, season := range show.Seasons {
 		if season.EpisodeCount == 0 {
 			continue
 		}
 		firstAired, _ := time.Parse("2006-01-02", show.FirstAirDate)
 		if firstAired.After(now) {
+			continue
+		}
+		if addSpecials == false && season.Season == 0 {
 			continue
 		}
 
