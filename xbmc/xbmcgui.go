@@ -129,6 +129,18 @@ func Keyboard(args ...interface{}) string {
 	return retVal
 }
 
+func Dialog(title string, message string) bool {
+	retVal := 0
+	executeJSONRPCEx("Dialog", &retVal, Args{title, message})
+	return retVal != 0
+}
+
+func DialogConfirm(title string, message string) bool {
+	retVal := 0
+	executeJSONRPCEx("Dialog_Confirm", &retVal, Args{title, message})
+	return retVal != 0
+}
+
 func ListDialog(title string, items ...string) int {
 	retVal := -1
 	executeJSONRPCEx("Dialog_Select", &retVal, Args{title, items})

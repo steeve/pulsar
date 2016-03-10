@@ -149,7 +149,7 @@ func UpdateJsonDB(DBPath string, ID string, ltype int) error {
 		return err
 	}
 
-	return ioutil.WriteFile(DBPath, b, 0755)
+	return ioutil.WriteFile(DBPath, b, 0644)
 }
 
 func RemoveFromJsonDB(DBPath string, ID string, ltype int) error {
@@ -182,7 +182,7 @@ func RemoveFromJsonDB(DBPath string, ID string, ltype int) error {
 		return err
 	}
 
-	return ioutil.WriteFile(DBPath, b, 0755)
+	return ioutil.WriteFile(DBPath, b, 0644)
 }
 
 func InJsonDB(ID string, ltype int) (bool, error) {
@@ -359,7 +359,7 @@ func WriteMovieStrm(tmdbId string, MoviesLibraryPath string) error {
 	}
 
 	MovieStrmPath := filepath.Join(MoviePath, fmt.Sprintf("%s.strm", MovieStrm))
-	if err := ioutil.WriteFile(MovieStrmPath, []byte(UrlForXBMC("/library/play/movie/%s", tmdbId)), 0755); err != nil {
+	if err := ioutil.WriteFile(MovieStrmPath, []byte(UrlForXBMC("/library/play/movie/%s", tmdbId)), 0644); err != nil {
 				libraryLog.Error("Unable to write to strm file for movie")
 				return err
 		}
@@ -485,7 +485,7 @@ func WriteShowStrm(showId string, ShowsLibraryPath string) error {
 
 			EpisodeStrmPath := filepath.Join(ShowPath, fmt.Sprintf("%s S%02dE%02d.strm", ShowStrm, season.Season, episode.EpisodeNumber))
 			playLink := UrlForXBMC("/library/play/show/%d/season/%d/episode/%d", Id, season.Season, episode.EpisodeNumber)
-			if err := ioutil.WriteFile(EpisodeStrmPath, []byte(playLink), 0755); err != nil {
+			if err := ioutil.WriteFile(EpisodeStrmPath, []byte(playLink), 0644); err != nil {
 						libraryLog.Error("Unable to write to strm file for episode")
 						return err
 				}

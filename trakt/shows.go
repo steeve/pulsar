@@ -8,6 +8,7 @@ import (
 	"math/rand"
 
 	"github.com/jmcvetta/napping"
+	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/xbmc"
 )
 
@@ -84,6 +85,44 @@ func TopShows(topCategory string, page string) (shows []*Shows) {
   } else {
   	resp.Unmarshal(&shows)
   }
+	return shows
+}
+
+func WatchlistShows() (shows []*Shows) {
+	if config.Get().TraktToken == "" {
+		err := Authorize()
+		if err != nil {
+			return shows
+		}
+	}
+
+	endPoint := "sync/watchlist/shows"
+
+	params := napping.Params{
+		"extended": "full,images",
+	}.AsUrlValues()
+
+	resp, err := GetWithAuth(endPoint, params)
+
+	if err != nil {
+		panic(err)
+	}
+	if resp.Status() != 200 {
+		panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+	}
+
+	var watchlist []*WatchlistShow
+	resp.Unmarshal(&watchlist)
+
+	showListing := make([]*Shows, 0)
+	for _, show := range watchlist {
+		showItem := Shows{
+			Show: show.Show,
+		}
+		showListing = append(showListing, &showItem)
+	}
+	shows = showListing
+
 	return shows
 }
 

@@ -59,6 +59,7 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 		trakt := movies.Group("/trakt")
 		{
 			trakt.GET("/", cache.Cache(store, IndexCacheTime), MoviesTrakt)
+			trakt.GET("/watchlist", WatchlistMovies)
 			trakt.GET("/popular", cache.Cache(store, DefaultCacheTime), TraktPopularMovies)
 			trakt.GET("/trending", cache.Cache(store, DefaultCacheTime), TraktTrendingMovies)
 			trakt.GET("/played", cache.Cache(store, DefaultCacheTime), TraktMostPlayedMovies)
@@ -72,6 +73,8 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 	{
 		movie.GET("/:tmdbId/links", MovieLinks)
 		movie.GET("/:tmdbId/play", MoviePlay)
+		movie.GET("/:tmdbId/watchlist/add", AddMovieToWatchlist)
+		movie.GET("/:tmdbId/watchlist/remove", RemoveMovieFromWatchlist)
 	}
 
 	shows := r.Group("/shows")
@@ -91,6 +94,7 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 		trakt := shows.Group("/trakt")
 		{
 			trakt.GET("/", cache.Cache(store, IndexCacheTime), TVTrakt)
+			trakt.GET("/watchlist", WatchlistShows)
 			trakt.GET("/popular", cache.Cache(store, DefaultCacheTime), TraktPopularShows)
 			trakt.GET("/trending", cache.Cache(store, DefaultCacheTime), TraktTrendingShows)
 			trakt.GET("/played", cache.Cache(store, DefaultCacheTime), TraktMostPlayedShows)
@@ -106,7 +110,14 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 		show.GET("/:showId/season/:season/episodes", cache.Cache(store, EpisodesCacheTime), ShowEpisodes)
 		show.GET("/:showId/season/:season/episode/:episode/play", ShowEpisodePlay)
 		show.GET("/:showId/season/:season/episode/:episode/links", ShowEpisodeLinks)
+		show.GET("/:showId/watchlist/add", AddShowToWatchlist)
+		show.GET("/:showId/watchlist/remove", RemoveShowFromWatchlist)
 	}
+	// TODO
+	// episode := r.Group("/episode")
+	// {
+	// 	episode.GET("/:episodeId/watchlist/add", AddEpisodeToWatchlist)
+	// }
 
 	library := r.Group("/library")
 	{

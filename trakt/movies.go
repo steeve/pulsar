@@ -8,6 +8,7 @@ import (
 	"math/rand"
 
 	"github.com/jmcvetta/napping"
+	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/xbmc"
 )
 
@@ -88,6 +89,44 @@ func TopMovies(topCategory string, page string) (movies []*Movies) {
 	} else {
 		resp.Unmarshal(&movies)
 	}
+	return movies
+}
+
+func WatchlistMovies() (movies []*Movies) {
+	if config.Get().TraktToken == "" {
+		err := Authorize()
+		if err != nil {
+			return movies
+		}
+	}
+
+	endPoint := "sync/watchlist/movies"
+
+	params := napping.Params{
+		"extended": "full,images",
+	}.AsUrlValues()
+
+	resp, err := GetWithAuth(endPoint, params)
+
+	if err != nil {
+		panic(err)
+	}
+	if resp.Status() != 200 {
+		panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+	}
+
+	var watchlist []*WatchlistMovie
+	resp.Unmarshal(&watchlist)
+
+	movieListing := make([]*Movies, 0)
+	for _, movie := range watchlist {
+		movieItem := Movies{
+			Movie: movie.Movie,
+		}
+		movieListing = append(movieListing, &movieItem)
+	}
+	movies = movieListing
+
 	return movies
 }
 

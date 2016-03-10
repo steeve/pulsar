@@ -55,7 +55,7 @@ func MoviesIndex(ctx *gin.Context) {
 		{Label: "LOCALIZE[30236]", Path: UrlForXBMC("/movies/recent"), Thumbnail: config.AddonResource("img", "clock.png")},
 		{Label: "LOCALIZE[30211]", Path: UrlForXBMC("/movies/top"), Thumbnail: config.AddonResource("img", "top_rated.png")},
 		{Label: "LOCALIZE[30212]", Path: UrlForXBMC("/movies/mostvoted"), Thumbnail: config.AddonResource("img", "most_voted.png")},
-		{Label: "LOCALIZE[30245]", Path: UrlForXBMC("/movies/trakt/"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{Label: "LOCALIZE[30056]", Path: UrlForXBMC("/movies/trakt/"), Thumbnail: config.AddonResource("img", "trakt.png")},
 		{Label: "LOCALIZE[30213]", Path: UrlForXBMC("/movies/imdb250"), Thumbnail: config.AddonResource("img", "imdb.png")},
 	}
 	for _, genre := range tmdb.GetMovieGenres(config.Get().Language) {
@@ -74,6 +74,7 @@ func MoviesIndex(ctx *gin.Context) {
 
 func MoviesTrakt(ctx *gin.Context) {
 	items := xbmc.ListItems{
+		{Label: "LOCALIZE[30254]", Path: UrlForXBMC("/movies/trakt/watchlist"), Thumbnail: config.AddonResource("img", "trakt.png")},
 		{Label: "LOCALIZE[30210]", Path: UrlForXBMC("/movies/trakt/popular"), Thumbnail: config.AddonResource("img", "popular.png")},
 		{Label: "LOCALIZE[30246]", Path: UrlForXBMC("/movies/trakt/trending"), Thumbnail: config.AddonResource("img", "trending.png")},
 		{Label: "LOCALIZE[30247]", Path: UrlForXBMC("/movies/trakt/played"), Thumbnail: config.AddonResource("img", "most_played.png")},
@@ -103,15 +104,23 @@ func renderMovies(movies tmdb.Movies, ctx *gin.Context, page int, query string) 
 		} else {
 			item.Path = movieLinksUrl
 		}
+
 		libraryAction := []string{"LOCALIZE[30252]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/movie/add/%d", movie.Id))}
 		if inJsonDb, err := InJsonDB(strconv.Itoa(movie.Id), LMovie); err == nil && inJsonDb == true {
 			libraryAction = []string{"LOCALIZE[30253]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/movie/remove/%d", movie.Id))}
 		}
+
+		watchlistAction := []string{"LOCALIZE[30255]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/movie/%d/watchlist/add", movie.Id))}
+		if InMoviesWatchlist(movie.Id) {
+			watchlistAction = []string{"LOCALIZE[30256]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/movie/%d/watchlist/remove", movie.Id))}
+		}
+
 		item.ContextMenu = [][]string{
 			[]string{"LOCALIZE[30202]", fmt.Sprintf("XBMC.PlayMedia(%s)", movieLinksUrl)},
 			[]string{"LOCALIZE[30023]", fmt.Sprintf("XBMC.PlayMedia(%s)", playUrl)},
 			[]string{"LOCALIZE[30203]", "XBMC.Action(Info)"},
 			libraryAction,
+			watchlistAction,
 			[]string{"LOCALIZE[30034]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/setviewmode/movies"))},
 		}
 		item.Info.Trailer = UrlForHTTP("/youtube/%s", item.Info.Trailer)
