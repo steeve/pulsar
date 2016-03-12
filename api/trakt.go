@@ -13,6 +13,15 @@ import (
 	"github.com/scakemyer/quasar/xbmc"
 )
 
+func AuthorizeTrakt(ctx *gin.Context) {
+	err := trakt.Authorize()
+	if err != nil {
+		ctx.String(200, "")
+	} else {
+		ctx.String(500, "")
+	}
+}
+
 func WatchlistMovies(ctx *gin.Context) {
 	renderTraktMovies(trakt.WatchlistMovies(), ctx, 0)
 }

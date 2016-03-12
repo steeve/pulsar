@@ -8,6 +8,7 @@ import (
 	"errors"
 	"net/url"
 	"net/http"
+	"math/rand"
 
 	"github.com/jmcvetta/napping"
 	"github.com/scakemyer/quasar/config"
@@ -20,9 +21,15 @@ const (
 	ClientSecret = "83f5993015942fe1320772c9c9886dce08252fa95445afab81a1603f8671e490"
 	ApiVersion   = "2"
 	Limit        = "20"
-	UserAgent    = "Mozilla/5.0 (X11; OpenBSD i386) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.130 Safari/537.36"
-	CFCookie     = "__cfduid=dc362484670db4ca39d8c8182f7ac02621457517490; cf_clearance=18258c10923e40d094d0e92b318660fdba4faa84-1457529968-86400"
 )
+
+type Clearance struct {
+	Id        string `json:"_id"`
+	Date      string `json:"createDate"`
+	UserAgent string `json:"userAgent"`
+	Cookies   string `json:"cookies"`
+	Label     string `json:"label"`
+}
 
 type Object struct {
 	Title string `json:"title"`
@@ -194,13 +201,39 @@ type Token struct {
 	Scope        string `json:"scope"`
 }
 
+func GetClearance() (clearance *Clearance) {
+	var clearances []*Clearance
+
+	header := http.Header{
+		"Content-type": []string{"application/json"},
+	}
+	params := napping.Params{}.AsUrlValues()
+
+	req := napping.Request{
+		Url: fmt.Sprintf("%s/%s", "https://cloudhole.herokuapp.com", "clearances"),
+		Method: "GET",
+		Params: &params,
+		Header: &header,
+	}
+
+	resp, err := napping.Send(&req)
+
+	if err == nil && resp.Status() == 200 {
+		resp.Unmarshal(&clearances)
+		clearance = clearances[rand.Intn(len(clearances))]
+	}
+
+	return clearance
+}
+
 func Get(endPoint string, params url.Values) (resp *napping.Response, err error) {
+	clearance := GetClearance()
 	header := http.Header{
 		"Content-type": []string{"application/json"},
 		"trakt-api-key": []string{ClientId},
 		"trakt-api-version": []string{ApiVersion},
-		"User-Agent": []string{UserAgent},
-		"Cookie": []string{CFCookie},
+		"User-Agent": []string{clearance.UserAgent},
+		"Cookie": []string{clearance.Cookies},
 	}
 
 	req := napping.Request{
@@ -214,14 +247,14 @@ func Get(endPoint string, params url.Values) (resp *napping.Response, err error)
 }
 
 func GetWithAuth(endPoint string, params url.Values) (resp *napping.Response, err error) {
-	log.Printf("Using token: Bearer %s", config.Get().TraktToken)
+	clearance := GetClearance()
 	header := http.Header{
 		"Content-type": []string{"application/json"},
 		"Authorization": []string{fmt.Sprintf("Bearer %s", config.Get().TraktToken)},
 		"trakt-api-key": []string{ClientId},
 		"trakt-api-version": []string{ApiVersion},
-		"User-Agent": []string{UserAgent},
-		"Cookie": []string{CFCookie},
+		"User-Agent": []string{clearance.UserAgent},
+		"Cookie": []string{clearance.Cookies},
 	}
 
 	req := napping.Request{
@@ -235,14 +268,14 @@ func GetWithAuth(endPoint string, params url.Values) (resp *napping.Response, er
 }
 
 func Post(endPoint string, payload *bytes.Buffer) (resp *napping.Response, err error) {
-	log.Printf("Using token: Bearer %s", config.Get().TraktToken)
+	clearance := GetClearance()
 	header := http.Header{
 		"Content-type": []string{"application/json"},
 		"Authorization": []string{fmt.Sprintf("Bearer %s", config.Get().TraktToken)},
 		"trakt-api-key": []string{ClientId},
 		"trakt-api-version": []string{ApiVersion},
-		"User-Agent": []string{UserAgent},
-		"Cookie": []string{CFCookie},
+		"User-Agent": []string{clearance.UserAgent},
+		"Cookie": []string{clearance.Cookies},
 	}
 
 	req := napping.Request{
@@ -258,10 +291,11 @@ func Post(endPoint string, payload *bytes.Buffer) (resp *napping.Response, err e
 
 func GetCode() (code *Code, err error) {
 	endPoint := "oauth/device/code"
+	clearance := GetClearance()
 	header := http.Header{
 		"Content-type": []string{"application/json"},
-		"User-Agent": []string{UserAgent},
-		"Cookie": []string{CFCookie},
+		"User-Agent": []string{clearance.UserAgent},
+		"Cookie": []string{clearance.Cookies},
 	}
 	params := napping.Params{
 		"client_id": ClientId,
@@ -286,10 +320,11 @@ func GetCode() (code *Code, err error) {
 
 func GetToken(code string) (resp *napping.Response, err error) {
 	endPoint := "oauth/device/token"
+	clearance := GetClearance()
 	header := http.Header{
 		"Content-type": []string{"application/json"},
-		"User-Agent": []string{UserAgent},
-		"Cookie": []string{CFCookie},
+		"User-Agent": []string{clearance.UserAgent},
+		"Cookie": []string{clearance.Cookies},
 	}
 	params := napping.Params{
 		"code": code,

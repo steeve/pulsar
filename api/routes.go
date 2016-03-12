@@ -152,6 +152,11 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 		repo.HEAD("/:user/:repository/*filepath", repository.GetAddonFilesHead)
 	}
 
+	trakt := r.Group("/trakt")
+	{
+		trakt.GET("/authorize", AuthorizeTrakt)
+	}
+
 	r.GET("/setviewmode/:content_type", SetViewMode)
 
 	r.GET("/youtube/:id", PlayYoutubeVideo)
