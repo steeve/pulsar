@@ -228,7 +228,7 @@ func GetTVGenres(language string) []*Genre {
 	rateLimiter.Call(func() {
 		urlValues := napping.Params{
 			"api_key": apiKey,
-			// "language": language, // FIXME commented while TMDB fixes their shit
+			"language": language,
 		}.AsUrlValues()
 		resp, err := napping.Get(
 			tmdbEndpoint + "genre/tv/list",
