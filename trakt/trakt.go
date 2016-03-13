@@ -246,9 +246,9 @@ func Get(endPoint string, params url.Values) (resp *napping.Response, err error)
 
 	resp, err = napping.Send(&req)
 	if resp.Status() == 403 && retries < 3 {
+		retries += 1
 		newClearance()
 		resp, err = Get(endPoint, params)
-		retries += 1
 	}
 
 	return resp, err
@@ -273,9 +273,9 @@ func GetWithAuth(endPoint string, params url.Values) (resp *napping.Response, er
 
 	resp, err = napping.Send(&req)
 	if resp.Status() == 403 && retries < 3 {
+		retries += 1
 		newClearance()
 		resp, err = GetWithAuth(endPoint, params)
-		retries += 1
 	}
 
 	return resp, err
@@ -301,9 +301,9 @@ func Post(endPoint string, payload *bytes.Buffer) (resp *napping.Response, err e
 
 	resp, err = napping.Send(&req)
 	if resp.Status() == 403 && retries < 3 {
+		retries += 1
 		newClearance()
 		resp, err = Post(endPoint, payload)
-		retries += 1
 	}
 
 	return resp, err
@@ -329,9 +329,9 @@ func GetCode() (code *Code, err error) {
 
 	resp, err := napping.Send(&req)
 	if resp.Status() == 403 && retries < 3 {
+		retries += 1
 		newClearance()
 		code, err = GetCode()
-		retries += 1
 	} else {
 		resp.Unmarshal(&code)
 	}
@@ -366,9 +366,9 @@ func GetToken(code string) (resp *napping.Response, err error) {
 
 	resp, err = napping.Send(&req)
 	if resp.Status() == 403 && retries < 3 {
+		retries += 1
 		newClearance()
 		resp, err = GetToken(code)
-		retries += 1
 	}
 
 	return resp, err
