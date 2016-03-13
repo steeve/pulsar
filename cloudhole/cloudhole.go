@@ -2,8 +2,8 @@ package cloudhole
 
 import (
 	"fmt"
-  "net/http"
-  "math/rand"
+	"net/http"
+	"math/rand"
 
 	"github.com/jmcvetta/napping"
 )
@@ -20,6 +20,11 @@ type Clearance struct {
 }
 
 func GetClearance() (clearance *Clearance) {
+	if len(clearances) > 0 {
+		clearance = clearances[rand.Intn(len(clearances))]
+		return clearance
+	}
+
 	header := http.Header{
 		"Content-type": []string{"application/json"},
 	}
