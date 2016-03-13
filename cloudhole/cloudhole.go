@@ -6,13 +6,19 @@ import (
 	"math/rand"
 
 	"github.com/jmcvetta/napping"
+	"github.com/scakemyer/quasar/config"
 )
 
-var clearances []*Clearance
-var failed     bool
+var (
+	clearances         []*Clearance
+	defaultClearance = &Clearance{
+		UserAgent: "Mozilla/5.0 (X11; NetBSD amd64; rv:42.0) Gecko/20100101 Firefox/42.0",
+	}
+)
 
 type Clearance struct {
 	Id        string `json:"_id"`
+	Key       string `json:"key"`
 	Date      string `json:"createDate"`
 	UserAgent string `json:"userAgent"`
 	Cookies   string `json:"cookies"`
@@ -25,8 +31,14 @@ func GetClearance() (clearance *Clearance) {
 		return clearance
 	}
 
+	apiKey := config.Get().CloudHoleKey
+	if apiKey == "" {
+		return defaultClearance
+	}
+
 	header := http.Header{
 		"Content-type": []string{"application/json"},
+		"Authorization": []string{apiKey},
 	}
 	params := napping.Params{}.AsUrlValues()
 
@@ -41,6 +53,9 @@ func GetClearance() (clearance *Clearance) {
 
 	if err == nil && resp.Status() == 200 {
 		resp.Unmarshal(&clearances)
+		if len(clearances) == 0 {
+			return defaultClearance
+		}
 	} else if resp.Status() == 503 {
 		GetSurgeClearances()
 	}
@@ -67,7 +82,15 @@ func GetSurgeClearances() {
 
 	resp, err := napping.Send(&req)
 
+	var tmpClearances []*Clearance
 	if err == nil && resp.Status() == 200 {
-		resp.Unmarshal(&clearances)
+		resp.Unmarshal(&tmpClearances)
+	}
+
+	apiKey := config.Get().CloudHoleKey
+	for _, clearance := range tmpClearances {
+		if clearance.Key == apiKey {
+			clearances = append(clearances, clearance)
+		}
 	}
 }

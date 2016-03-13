@@ -44,6 +44,7 @@ type Configuration struct {
 	TraktUsername       string
 	TraktToken          string
 	TraktRefreshToken   string
+	CloudHoleKey        string
 
 	SortingModeMovies            int
 	SortingModeShows             int
@@ -129,6 +130,7 @@ func Reload() *Configuration {
 		TraktUsername:       xbmc.GetSettingString("trakt_username"),
 		TraktToken:          xbmc.GetSettingString("trakt_token"),
 		TraktRefreshToken:   xbmc.GetSettingString("trakt_refresh_token"),
+		CloudHoleKey:        xbmc.GetSettingString("cloudhole_key"),
 
 		SortingModeMovies:            xbmc.GetSettingInt("sorting_mode_movies"),
 		SortingModeShows:             xbmc.GetSettingInt("sorting_mode_shows"),

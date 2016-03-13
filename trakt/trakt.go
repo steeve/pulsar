@@ -24,11 +24,8 @@ const (
 )
 
 var (
-	clearance = &cloudhole.Clearance{
-		UserAgent: "Mozilla/5.0 (X11; NetBSD amd64; rv:42.0) Gecko/20100101 Firefox/42.0",
-		Cookies: "",
-	}
-	retries = 0
+	clearance = cloudhole.GetClearance()
+	retries   = 0
 )
 
 type Object struct {
@@ -222,10 +219,18 @@ type Token struct {
 	Scope        string `json:"scope"`
 }
 
-func newClearance() {
+func newClearance() error {
 	log.Printf("CloudFlared! User-Agent: %s - Cookies: %s", clearance.UserAgent, clearance.Cookies)
+
+	if config.Get().CloudHoleKey == "" {
+		retries = 3
+		return errors.New("CloudFlared! Set your CloudHole API key.")
+	}
+
 	clearance = cloudhole.GetClearance()
 	log.Printf("New clearance: %s - %s", clearance.UserAgent, clearance.Cookies)
+
+	return nil
 }
 
 func Get(endPoint string, params url.Values) (resp *napping.Response, err error) {
@@ -245,10 +250,12 @@ func Get(endPoint string, params url.Values) (resp *napping.Response, err error)
 	}
 
 	resp, err = napping.Send(&req)
-	if resp.Status() == 403 && retries < 3 {
+	if err == nil && resp.Status() == 403 && retries < 3 {
 		retries += 1
-		newClearance()
-		resp, err = Get(endPoint, params)
+		err = newClearance()
+		if err == nil {
+			resp, err = Get(endPoint, params)
+		}
 	}
 
 	return resp, err
@@ -272,10 +279,12 @@ func GetWithAuth(endPoint string, params url.Values) (resp *napping.Response, er
 	}
 
 	resp, err = napping.Send(&req)
-	if resp.Status() == 403 && retries < 3 {
+	if err == nil && resp.Status() == 403 && retries < 3 {
 		retries += 1
-		newClearance()
-		resp, err = GetWithAuth(endPoint, params)
+		err = newClearance()
+		if err == nil {
+			resp, err = GetWithAuth(endPoint, params)
+		}
 	}
 
 	return resp, err
@@ -300,10 +309,12 @@ func Post(endPoint string, payload *bytes.Buffer) (resp *napping.Response, err e
 	}
 
 	resp, err = napping.Send(&req)
-	if resp.Status() == 403 && retries < 3 {
+	if err == nil && resp.Status() == 403 && retries < 3 {
 		retries += 1
-		newClearance()
-		resp, err = Post(endPoint, payload)
+		err = newClearance()
+		if err == nil {
+			resp, err = Post(endPoint, payload)
+		}
 	}
 
 	return resp, err
@@ -328,15 +339,17 @@ func GetCode() (code *Code, err error) {
 	}
 
 	resp, err := napping.Send(&req)
-	if resp.Status() == 403 && retries < 3 {
+	if err == nil && resp.Status() == 403 && retries < 3 {
 		retries += 1
-		newClearance()
-		code, err = GetCode()
+		err = newClearance()
+		if err == nil {
+			code, err = GetCode()
+		}
 	} else {
 		resp.Unmarshal(&code)
 	}
 
-	if resp.Status() != 200 {
+	if resp.Status() != 200  && err == nil {
 		err = errors.New(fmt.Sprintf("Error %d", resp.Status()))
 	}
 
@@ -365,10 +378,12 @@ func GetToken(code string) (resp *napping.Response, err error) {
 	}
 
 	resp, err = napping.Send(&req)
-	if resp.Status() == 403 && retries < 3 {
+	if err == nil && resp.Status() == 403 && retries < 3 {
 		retries += 1
-		newClearance()
-		resp, err = GetToken(code)
+		err = newClearance()
+		if err == nil {
+			resp, err = GetToken(code)
+		}
 	}
 
 	return resp, err

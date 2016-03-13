@@ -52,7 +52,7 @@ func AddMovieToWatchlist(ctx *gin.Context) {
 	tmdbId := ctx.Params.ByName("tmdbId")
 	resp, err := trakt.AddToWatchlist("movies", tmdbId)
 	if err != nil {
-		xbmc.Notify("Quasar", fmt.Sprintf("Failed: %s", err), config.AddonIcon())
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
 	} else if resp.Status() != 201 {
 		xbmc.Notify("Quasar", fmt.Sprintf("Failed with %d status code", resp.Status()), config.AddonIcon())
 	} else {
@@ -66,7 +66,7 @@ func RemoveMovieFromWatchlist(ctx *gin.Context) {
 	tmdbId := ctx.Params.ByName("tmdbId")
 	resp, err := trakt.RemoveFromWatchlist("movies", tmdbId)
 	if err != nil {
-		xbmc.Notify("Quasar", fmt.Sprintf("Failed: %s", err), config.AddonIcon())
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
 	} else if resp.Status() != 200 {
 		xbmc.Notify("Quasar", fmt.Sprintf("Failed with %d status code", resp.Status()), config.AddonIcon())
 	} else {
@@ -80,7 +80,7 @@ func AddShowToWatchlist(ctx *gin.Context) {
 	tmdbId := ctx.Params.ByName("showId")
 	resp, err := trakt.AddToWatchlist("shows", tmdbId)
 	if err != nil {
-		xbmc.Notify("Quasar", fmt.Sprintf("Failed: %s", err), config.AddonIcon())
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
 	} else if resp.Status() != 201 {
 		xbmc.Notify("Quasar", fmt.Sprintf("Failed %d", resp.Status()), config.AddonIcon())
 	} else {
@@ -94,7 +94,7 @@ func RemoveShowFromWatchlist(ctx *gin.Context) {
 	tmdbId := ctx.Params.ByName("showId")
 	resp, err := trakt.RemoveFromWatchlist("shows", tmdbId)
 	if err != nil {
-		xbmc.Notify("Quasar", fmt.Sprintf("Failed: %s", err), config.AddonIcon())
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
 	} else if resp.Status() != 200 {
 		xbmc.Notify("Quasar", fmt.Sprintf("Failed with %d status code", resp.Status()), config.AddonIcon())
 	} else {
@@ -108,7 +108,7 @@ func AddMovieToCollection(ctx *gin.Context) {
 	tmdbId := ctx.Params.ByName("tmdbId")
 	resp, err := trakt.AddToCollection("movies", tmdbId)
 	if err != nil {
-		xbmc.Notify("Quasar", fmt.Sprintf("Failed: %s", err), config.AddonIcon())
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
 	} else if resp.Status() != 201 {
 		xbmc.Notify("Quasar", fmt.Sprintf("Failed with %d status code", resp.Status()), config.AddonIcon())
 	} else {
@@ -122,7 +122,7 @@ func RemoveMovieFromCollection(ctx *gin.Context) {
 	tmdbId := ctx.Params.ByName("tmdbId")
 	resp, err := trakt.RemoveFromCollection("movies", tmdbId)
 	if err != nil {
-		xbmc.Notify("Quasar", fmt.Sprintf("Failed: %s", err), config.AddonIcon())
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
 	} else if resp.Status() != 200 {
 		xbmc.Notify("Quasar", fmt.Sprintf("Failed with %d status code", resp.Status()), config.AddonIcon())
 	} else {
@@ -136,9 +136,9 @@ func AddShowToCollection(ctx *gin.Context) {
 	tmdbId := ctx.Params.ByName("showId")
 	resp, err := trakt.AddToCollection("shows", tmdbId)
 	if err != nil {
-		xbmc.Notify("Quasar", fmt.Sprintf("Failed: %s", err), config.AddonIcon())
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
 	} else if resp.Status() != 201 {
-		xbmc.Notify("Quasar", fmt.Sprintf("Failed %d", resp.Status()), config.AddonIcon())
+		xbmc.Notify("Quasar", fmt.Sprintf("Failed with %d status code", resp.Status()), config.AddonIcon())
 	} else {
 		xbmc.Notify("Quasar", "Show added to collection", config.AddonIcon())
 		os.RemoveAll(filepath.Join(config.Get().Info.Profile, "cache"))
@@ -150,7 +150,7 @@ func RemoveShowFromCollection(ctx *gin.Context) {
 	tmdbId := ctx.Params.ByName("showId")
 	resp, err := trakt.RemoveFromCollection("shows", tmdbId)
 	if err != nil {
-		xbmc.Notify("Quasar", fmt.Sprintf("Failed: %s", err), config.AddonIcon())
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
 	} else if resp.Status() != 200 {
 		xbmc.Notify("Quasar", fmt.Sprintf("Failed with %d status code", resp.Status()), config.AddonIcon())
 	} else {
