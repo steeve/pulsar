@@ -173,6 +173,10 @@ func RemoveShowFromCollection(ctx *gin.Context) {
 // }
 
 func InMoviesWatchlist(tmdbId int) bool {
+	if config.Get().TraktToken == "" {
+		return false
+	}
+
 	var movies []*trakt.Movies
 
 	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
@@ -191,6 +195,10 @@ func InMoviesWatchlist(tmdbId int) bool {
 }
 
 func InShowsWatchlist(tmdbId int) bool {
+	if config.Get().TraktToken == "" {
+		return false
+	}
+
 	var shows []*trakt.Shows
 
 	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
@@ -209,6 +217,10 @@ func InShowsWatchlist(tmdbId int) bool {
 }
 
 func InMoviesCollection(tmdbId int) bool {
+	if config.Get().TraktToken == "" {
+		return false
+	}
+
 	var movies []*trakt.Movies
 
 	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
@@ -227,6 +239,10 @@ func InMoviesCollection(tmdbId int) bool {
 }
 
 func InShowsCollection(tmdbId int) bool {
+	if config.Get().TraktToken == "" {
+		return false
+	}
+
 	var shows []*trakt.Shows
 
 	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
