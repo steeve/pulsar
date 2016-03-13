@@ -8,7 +8,6 @@ import (
 	"math/rand"
 
 	"github.com/jmcvetta/napping"
-	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/xbmc"
 )
 
@@ -89,11 +88,8 @@ func TopShows(topCategory string, page string) (shows []*Shows) {
 }
 
 func WatchlistShows() (shows []*Shows) {
-	if config.Get().TraktToken == "" {
-		err := Authorize()
-		if err != nil {
-			return shows
-		}
+	if err := Authorized(); err != nil {
+		return shows
 	}
 
 	endPoint := "sync/watchlist/shows"
@@ -116,6 +112,41 @@ func WatchlistShows() (shows []*Shows) {
 
 	showListing := make([]*Shows, 0)
 	for _, show := range watchlist {
+		showItem := Shows{
+			Show: show.Show,
+		}
+		showListing = append(showListing, &showItem)
+	}
+	shows = showListing
+
+	return shows
+}
+
+func CollectionShows() (shows []*Shows) {
+	if err := Authorized(); err != nil {
+		return shows
+	}
+
+	endPoint := "sync/collection/shows"
+
+	params := napping.Params{
+		"extended": "full,images",
+	}.AsUrlValues()
+
+	resp, err := GetWithAuth(endPoint, params)
+
+	if err != nil {
+		panic(err)
+	}
+	if resp.Status() != 200 {
+		panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+	}
+
+	var collection []*WatchlistShow
+	resp.Unmarshal(&collection)
+
+	showListing := make([]*Shows, 0)
+	for _, show := range collection {
 		showItem := Shows{
 			Show: show.Show,
 		}

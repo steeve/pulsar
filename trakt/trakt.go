@@ -150,6 +150,27 @@ type WatchlistEpisode struct {
 	Show     *Object  `json:"show"`
 }
 
+type CollectionMovie struct {
+	CollectedAt string `json:"collected_at"`
+	Movie       *Movie `json:"movie"`
+}
+
+type CollectionShow struct {
+	CollectedAt string             `json:"last_collected_at"`
+	Show        *Show              `json:"show"`
+	Seasons     []*CollectedSeason `json:"seasons"`
+}
+
+type CollectedSeason struct {
+	Number   int                 `json:"number"`
+	Episodes []*CollectedEpisode `json:"episodes"`
+}
+
+type CollectedEpisode struct {
+	CollectedAt string `json:"collected_at"`
+	Number      int    `json:"number"`
+}
+
 type Images struct {
 	Poster     *Sizes `json:"poster"`
 	FanArt     *Sizes `json:"fanart"`
@@ -379,12 +400,19 @@ func Authorize() error {
 	return nil
 }
 
-func AddToWatchlist(itemType string, tmdbId string) (resp *napping.Response, err error) {
+func Authorized() error {
 	if config.Get().TraktToken == "" {
 		err := Authorize()
 		if err != nil {
-			return nil, err
+			return err
 		}
+	}
+	return nil
+}
+
+func AddToWatchlist(itemType string, tmdbId string) (resp *napping.Response, err error) {
+	if err := Authorized(); err != nil {
+		return nil, err
 	}
 
 	endPoint := "sync/watchlist"
@@ -392,13 +420,28 @@ func AddToWatchlist(itemType string, tmdbId string) (resp *napping.Response, err
 }
 
 func RemoveFromWatchlist(itemType string, tmdbId string) (resp *napping.Response, err error) {
-	if config.Get().TraktToken == "" {
-		err := Authorize()
-		if err != nil {
-			return nil, err
-		}
+	if err := Authorized(); err != nil {
+		return nil, err
 	}
 
 	endPoint := "sync/watchlist/remove"
+	return Post(endPoint, bytes.NewBufferString(fmt.Sprintf(`{"%s": [{"ids": {"tmdb": %s}}]}`, itemType, tmdbId)))
+}
+
+func AddToCollection(itemType string, tmdbId string) (resp *napping.Response, err error) {
+	if err := Authorized(); err != nil {
+		return nil, err
+	}
+
+	endPoint := "sync/collection"
+	return Post(endPoint, bytes.NewBufferString(fmt.Sprintf(`{"%s": [{"ids": {"tmdb": %s}}]}`, itemType, tmdbId)))
+}
+
+func RemoveFromCollection(itemType string, tmdbId string) (resp *napping.Response, err error) {
+	if err := Authorized(); err != nil {
+		return nil, err
+	}
+
+	endPoint := "sync/collection/remove"
 	return Post(endPoint, bytes.NewBufferString(fmt.Sprintf(`{"%s": [{"ids": {"tmdb": %s}}]}`, itemType, tmdbId)))
 }

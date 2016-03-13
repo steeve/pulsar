@@ -60,6 +60,7 @@ func TVGenres(ctx *gin.Context) {
 func TVTrakt(ctx *gin.Context) {
 	items := xbmc.ListItems{
 		{Label: "LOCALIZE[30254]", Path: UrlForXBMC("/shows/trakt/watchlist"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{Label: "LOCALIZE[30257]", Path: UrlForXBMC("/shows/trakt/collection"), Thumbnail: config.AddonResource("img", "trakt.png")},
 		{Label: "LOCALIZE[30210]", Path: UrlForXBMC("/shows/trakt/popular"), Thumbnail: config.AddonResource("img", "popular.png")},
 		{Label: "LOCALIZE[30246]", Path: UrlForXBMC("/shows/trakt/trending"), Thumbnail: config.AddonResource("img", "trending.png")},
 		{Label: "LOCALIZE[30247]", Path: UrlForXBMC("/shows/trakt/played"), Thumbnail: config.AddonResource("img", "most_played.png")},
@@ -93,9 +94,15 @@ func renderShows(shows tmdb.Shows, ctx *gin.Context, page int, query string) {
 			watchlistAction = []string{"LOCALIZE[30256]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/show/%d/watchlist/remove", show.Id))}
 		}
 
+		collectionAction := []string{"LOCALIZE[30258]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/show/%d/collection/add", show.Id))}
+		if InShowsCollection(show.Id) {
+			collectionAction = []string{"LOCALIZE[30259]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/show/%d/collection/remove", show.Id))}
+		}
+
 		item.ContextMenu = [][]string{
 			libraryAction,
 			watchlistAction,
+			collectionAction,
 			[]string{"LOCALIZE[30035]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/setviewmode/tvshows"))},
 		}
 		items = append(items, item)

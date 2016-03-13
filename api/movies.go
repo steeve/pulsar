@@ -75,6 +75,7 @@ func MoviesIndex(ctx *gin.Context) {
 func MoviesTrakt(ctx *gin.Context) {
 	items := xbmc.ListItems{
 		{Label: "LOCALIZE[30254]", Path: UrlForXBMC("/movies/trakt/watchlist"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{Label: "LOCALIZE[30257]", Path: UrlForXBMC("/movies/trakt/collection"), Thumbnail: config.AddonResource("img", "trakt.png")},
 		{Label: "LOCALIZE[30210]", Path: UrlForXBMC("/movies/trakt/popular"), Thumbnail: config.AddonResource("img", "popular.png")},
 		{Label: "LOCALIZE[30246]", Path: UrlForXBMC("/movies/trakt/trending"), Thumbnail: config.AddonResource("img", "trending.png")},
 		{Label: "LOCALIZE[30247]", Path: UrlForXBMC("/movies/trakt/played"), Thumbnail: config.AddonResource("img", "most_played.png")},
@@ -115,12 +116,18 @@ func renderMovies(movies tmdb.Movies, ctx *gin.Context, page int, query string) 
 			watchlistAction = []string{"LOCALIZE[30256]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/movie/%d/watchlist/remove", movie.Id))}
 		}
 
+		collectionAction := []string{"LOCALIZE[30258]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/movie/%d/collection/add", movie.Id))}
+		if InMoviesCollection(movie.Id) {
+			collectionAction = []string{"LOCALIZE[30259]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/movie/%d/collection/remove", movie.Id))}
+		}
+
 		item.ContextMenu = [][]string{
 			[]string{"LOCALIZE[30202]", fmt.Sprintf("XBMC.PlayMedia(%s)", movieLinksUrl)},
 			[]string{"LOCALIZE[30023]", fmt.Sprintf("XBMC.PlayMedia(%s)", playUrl)},
 			[]string{"LOCALIZE[30203]", "XBMC.Action(Info)"},
 			libraryAction,
 			watchlistAction,
+			collectionAction,
 			[]string{"LOCALIZE[30034]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/setviewmode/movies"))},
 		}
 		item.Info.Trailer = UrlForHTTP("/youtube/%s", item.Info.Trailer)
