@@ -23,6 +23,14 @@ const (
 	Limit        = "20"
 )
 
+var (
+	clearance = &cloudhole.Clearance{
+		UserAgent: "Mozilla/5.0 (X11; NetBSD amd64; rv:42.0) Gecko/20100101 Firefox/42.0",
+		Cookies: "",
+	}
+	retries = 0
+)
+
 type Object struct {
 	Title string `json:"title"`
 	Year  int    `json:"year"`
@@ -214,9 +222,13 @@ type Token struct {
 	Scope        string `json:"scope"`
 }
 
+func newClearance() {
+	log.Printf("CloudFlared! User-Agent: %s - Cookies: %s", clearance.UserAgent, clearance.Cookies)
+	clearance = cloudhole.GetClearance()
+	log.Printf("New clearance: %s - %s", clearance.UserAgent, clearance.Cookies)
+}
 
 func Get(endPoint string, params url.Values) (resp *napping.Response, err error) {
-	clearance := cloudhole.GetClearance()
 	header := http.Header{
 		"Content-type": []string{"application/json"},
 		"trakt-api-key": []string{ClientId},
@@ -232,11 +244,17 @@ func Get(endPoint string, params url.Values) (resp *napping.Response, err error)
 		Header: &header,
 	}
 
-	return napping.Send(&req)
+	resp, err = napping.Send(&req)
+	if resp.Status() == 403 && retries < 3 {
+		newClearance()
+		resp, err = Get(endPoint, params)
+		retries += 1
+	}
+
+	return resp, err
 }
 
 func GetWithAuth(endPoint string, params url.Values) (resp *napping.Response, err error) {
-	clearance := cloudhole.GetClearance()
 	header := http.Header{
 		"Content-type": []string{"application/json"},
 		"Authorization": []string{fmt.Sprintf("Bearer %s", config.Get().TraktToken)},
@@ -253,11 +271,17 @@ func GetWithAuth(endPoint string, params url.Values) (resp *napping.Response, er
 		Header: &header,
 	}
 
-	return napping.Send(&req)
+	resp, err = napping.Send(&req)
+	if resp.Status() == 403 && retries < 3 {
+		newClearance()
+		resp, err = GetWithAuth(endPoint, params)
+		retries += 1
+	}
+
+	return resp, err
 }
 
 func Post(endPoint string, payload *bytes.Buffer) (resp *napping.Response, err error) {
-	clearance := cloudhole.GetClearance()
 	header := http.Header{
 		"Content-type": []string{"application/json"},
 		"Authorization": []string{fmt.Sprintf("Bearer %s", config.Get().TraktToken)},
@@ -275,12 +299,18 @@ func Post(endPoint string, payload *bytes.Buffer) (resp *napping.Response, err e
 		Header: &header,
 	}
 
-	return napping.Send(&req)
+	resp, err = napping.Send(&req)
+	if resp.Status() == 403 && retries < 3 {
+		newClearance()
+		resp, err = Post(endPoint, payload)
+		retries += 1
+	}
+
+	return resp, err
 }
 
 func GetCode() (code *Code, err error) {
 	endPoint := "oauth/device/code"
-	clearance := cloudhole.GetClearance()
 	header := http.Header{
 		"Content-type": []string{"application/json"},
 		"User-Agent": []string{clearance.UserAgent},
@@ -298,12 +328,18 @@ func GetCode() (code *Code, err error) {
 	}
 
 	resp, err := napping.Send(&req)
+	if resp.Status() == 403 && retries < 3 {
+		newClearance()
+		code, err = GetCode()
+		retries += 1
+	} else {
+		resp.Unmarshal(&code)
+	}
 
 	if resp.Status() != 200 {
 		err = errors.New(fmt.Sprintf("Error %d", resp.Status()))
 	}
 
-	resp.Unmarshal(&code)
 	return code, err
 }
 
@@ -328,7 +364,14 @@ func GetToken(code string) (resp *napping.Response, err error) {
 		Header: &header,
 	}
 
-	return napping.Send(&req)
+	resp, err = napping.Send(&req)
+	if resp.Status() == 403 && retries < 3 {
+		newClearance()
+		resp, err = GetToken(code)
+		retries += 1
+	}
+
+	return resp, err
 }
 
 func PollToken(code *Code) (token *Token, err error) {
