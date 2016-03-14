@@ -28,7 +28,7 @@ func GetShow(Id string) (show *Show) {
 	return show
 }
 
-func SearchShows(query string, page string) (shows []*Shows) {
+func SearchShows(query string, page string) (shows []*Shows, err error) {
 	endPoint := "search"
 
 	params := napping.Params{
@@ -41,17 +41,17 @@ func SearchShows(query string, page string) (shows []*Shows) {
 	resp, err := Get(endPoint, params)
 
 	if err != nil {
-		panic(err)
+		return shows, err
 	}
 	if resp.Status() != 200 {
-		panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+		return shows, errors.New(fmt.Sprintf("Bad status: %d", resp.Status()))
 	}
 
 	resp.Unmarshal(&shows)
-	return shows
+	return shows, err
 }
 
-func TopShows(topCategory string, page string) (shows []*Shows) {
+func TopShows(topCategory string, page string) (shows []*Shows, err error) {
 	endPoint := "shows/" + topCategory
 
 	params := napping.Params{
@@ -63,10 +63,10 @@ func TopShows(topCategory string, page string) (shows []*Shows) {
 	resp, err := Get(endPoint, params)
 
 	if err != nil {
-		panic(err)
+		return shows, err
 	}
 	if resp.Status() != 200 {
-		panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+		return shows, errors.New(fmt.Sprintf("Bad status: %d", resp.Status()))
 	}
 
   if topCategory == "popular" {
@@ -84,12 +84,12 @@ func TopShows(topCategory string, page string) (shows []*Shows) {
   } else {
   	resp.Unmarshal(&shows)
   }
-	return shows
+	return shows, err
 }
 
-func WatchlistShows() (shows []*Shows) {
+func WatchlistShows() (shows []*Shows, err error) {
 	if err := Authorized(); err != nil {
-		return shows
+		return shows, err
 	}
 
 	endPoint := "sync/watchlist/shows"
@@ -101,10 +101,10 @@ func WatchlistShows() (shows []*Shows) {
 	resp, err := GetWithAuth(endPoint, params)
 
 	if err != nil {
-		panic(err)
+		return shows, err
 	}
 	if resp.Status() != 200 {
-		panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+		return shows, errors.New(fmt.Sprintf("Bad status: %d", resp.Status()))
 	}
 
 	var watchlist []*WatchlistShow
@@ -119,12 +119,12 @@ func WatchlistShows() (shows []*Shows) {
 	}
 	shows = showListing
 
-	return shows
+	return shows, err
 }
 
-func CollectionShows() (shows []*Shows) {
+func CollectionShows() (shows []*Shows, err error) {
 	if err := Authorized(); err != nil {
-		return shows
+		return shows, err
 	}
 
 	endPoint := "sync/collection/shows"
@@ -136,10 +136,10 @@ func CollectionShows() (shows []*Shows) {
 	resp, err := GetWithAuth(endPoint, params)
 
 	if err != nil {
-		panic(err)
+		return shows, err
 	}
 	if resp.Status() != 200 {
-		panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+		return shows, errors.New(fmt.Sprintf("Bad status: %d", resp.Status()))
 	}
 
 	var collection []*WatchlistShow
@@ -154,7 +154,7 @@ func CollectionShows() (shows []*Shows) {
 	}
 	shows = showListing
 
-	return shows
+	return shows, err
 }
 
 func (show *Show) ToListItem() *xbmc.ListItem {

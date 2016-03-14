@@ -2,6 +2,7 @@ package cloudhole
 
 import (
 	"fmt"
+	"errors"
 	"net/http"
 	"math/rand"
 
@@ -25,15 +26,15 @@ type Clearance struct {
 	Label     string `json:"label"`
 }
 
-func GetClearance() (clearance *Clearance) {
+func GetClearance() (clearance *Clearance, err error) {
 	if len(clearances) > 0 {
 		clearance = clearances[rand.Intn(len(clearances))]
-		return clearance
+		return clearance, nil
 	}
 
 	apiKey := config.Get().CloudHoleKey
 	if apiKey == "" {
-		return defaultClearance
+		return defaultClearance, nil
 	}
 
 	header := http.Header{
@@ -53,18 +54,18 @@ func GetClearance() (clearance *Clearance) {
 
 	if err == nil && resp.Status() == 200 {
 		resp.Unmarshal(&clearances)
-		if len(clearances) == 0 {
-			return defaultClearance
-		}
 	} else if resp.Status() == 503 {
 		GetSurgeClearances()
 	}
 
 	if len(clearances) > 0 {
 		clearance = clearances[rand.Intn(len(clearances))]
+	} else {
+		err = errors.New("Failed to get new clearance.")
+		clearance = defaultClearance
 	}
 
-	return clearance
+	return clearance, err
 }
 
 func GetSurgeClearances() {

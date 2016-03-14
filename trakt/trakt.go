@@ -24,8 +24,8 @@ const (
 )
 
 var (
-	clearance = cloudhole.GetClearance()
-	retries   = 0
+	clearance, _ = cloudhole.GetClearance()
+	retries      = 0
 )
 
 type Object struct {
@@ -219,7 +219,7 @@ type Token struct {
 	Scope        string `json:"scope"`
 }
 
-func newClearance() error {
+func newClearance() (err error) {
 	log.Printf("CloudFlared! User-Agent: %s - Cookies: %s", clearance.UserAgent, clearance.Cookies)
 
 	if config.Get().CloudHoleKey == "" {
@@ -227,10 +227,14 @@ func newClearance() error {
 		return errors.New("CloudFlared! Set your CloudHole API key.")
 	}
 
-	clearance = cloudhole.GetClearance()
-	log.Printf("New clearance: %s - %s", clearance.UserAgent, clearance.Cookies)
+	clearance, err = cloudhole.GetClearance()
+	if err == nil {
+		log.Printf("New clearance: %s - %s", clearance.UserAgent, clearance.Cookies)
+	} else {
+		retries = 3
+	}
 
-	return nil
+	return err
 }
 
 func Get(endPoint string, params url.Values) (resp *napping.Response, err error) {
@@ -350,7 +354,7 @@ func GetCode() (code *Code, err error) {
 	}
 
 	if resp.Status() != 200  && err == nil {
-		err = errors.New(fmt.Sprintf("Error %d", resp.Status()))
+		err = errors.New(fmt.Sprintf("Unable to get Trakt code: %d", resp.Status()))
 	}
 
 	return code, err
@@ -358,7 +362,6 @@ func GetCode() (code *Code, err error) {
 
 func GetToken(code string) (resp *napping.Response, err error) {
 	endPoint := "oauth/device/token"
-	clearance := cloudhole.GetClearance()
 	header := http.Header{
 		"Content-type": []string{"application/json"},
 		"User-Agent": []string{clearance.UserAgent},

@@ -25,19 +25,35 @@ func AuthorizeTrakt(ctx *gin.Context) {
 }
 
 func WatchlistMovies(ctx *gin.Context) {
-	renderTraktMovies(trakt.WatchlistMovies(), ctx, 0)
+	movies, err := trakt.WatchlistMovies()
+	if err != nil {
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
+	}
+	renderTraktMovies(movies, ctx, 0)
 }
 
 func WatchlistShows(ctx *gin.Context) {
-	renderTraktShows(trakt.WatchlistShows(), ctx, 0)
+	shows, err := trakt.WatchlistShows()
+	if err != nil {
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
+	}
+	renderTraktShows(shows, ctx, 0)
 }
 
 func CollectionMovies(ctx *gin.Context) {
-	renderTraktMovies(trakt.CollectionMovies(), ctx, 0)
+	movies, err := trakt.CollectionMovies()
+	if err != nil {
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
+	}
+	renderTraktMovies(movies, ctx, 0)
 }
 
 func CollectionShows(ctx *gin.Context) {
-	renderTraktShows(trakt.CollectionShows(), ctx, 0)
+	shows, err := trakt.CollectionShows()
+	if err != nil {
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
+	}
+	renderTraktShows(shows, ctx, 0)
 }
 
 // func WatchlistSeasons(ctx *gin.Context) {
@@ -182,7 +198,7 @@ func InMoviesWatchlist(tmdbId int) bool {
 	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
 	key := fmt.Sprintf("com.trakt.watchlist.movies")
 	if err := cacheStore.Get(key, &movies); err != nil {
-		movies := trakt.WatchlistMovies()
+		movies, _ := trakt.WatchlistMovies()
 		cacheStore.Set(key, movies, 30 * time.Second)
 	}
 
@@ -204,7 +220,7 @@ func InShowsWatchlist(tmdbId int) bool {
 	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
 	key := fmt.Sprintf("com.trakt.watchlist.shows")
 	if err := cacheStore.Get(key, &shows); err != nil {
-		shows := trakt.WatchlistShows()
+		shows, _ := trakt.WatchlistShows()
 		cacheStore.Set(key, shows, 30 * time.Second)
 	}
 
@@ -226,7 +242,7 @@ func InMoviesCollection(tmdbId int) bool {
 	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
 	key := fmt.Sprintf("com.trakt.collection.movies")
 	if err := cacheStore.Get(key, &movies); err != nil {
-		movies := trakt.CollectionMovies()
+		movies, _ := trakt.CollectionMovies()
 		cacheStore.Set(key, movies, 30 * time.Second)
 	}
 
@@ -248,7 +264,7 @@ func InShowsCollection(tmdbId int) bool {
 	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
 	key := fmt.Sprintf("com.trakt.collection.shows")
 	if err := cacheStore.Get(key, &shows); err != nil {
-		shows := trakt.CollectionShows()
+		shows, _ := trakt.CollectionShows()
 		cacheStore.Set(key, shows, 30 * time.Second)
 	}
 
@@ -325,41 +341,69 @@ func renderTraktMovies(movies []*trakt.Movies, ctx *gin.Context, page int) {
 func TraktPopularMovies(ctx *gin.Context) {
 	pageParam := ctx.DefaultQuery("page", "1")
 	page, _ := strconv.Atoi(pageParam)
-	renderTraktMovies(trakt.TopMovies("popular", pageParam), ctx, page)
+	movies, err := trakt.TopMovies("popular", pageParam)
+	if err != nil {
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
+	}
+	renderTraktMovies(movies, ctx, page)
 }
 
 func TraktTrendingMovies(ctx *gin.Context) {
 	pageParam := ctx.DefaultQuery("page", "1")
 	page, _ := strconv.Atoi(pageParam)
-	renderTraktMovies(trakt.TopMovies("trending", pageParam), ctx, page)
+	movies, err := trakt.TopMovies("trending", pageParam)
+	if err != nil {
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
+	}
+	renderTraktMovies(movies, ctx, page)
 }
 
 func TraktMostPlayedMovies(ctx *gin.Context) {
 	pageParam := ctx.DefaultQuery("page", "1")
 	page, _ := strconv.Atoi(pageParam)
-	renderTraktMovies(trakt.TopMovies("played", pageParam), ctx, page)
+	movies, err := trakt.TopMovies("played", pageParam)
+	if err != nil {
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
+	}
+	renderTraktMovies(movies, ctx, page)
 }
 
 func TraktMostWatchedMovies(ctx *gin.Context) {
 	pageParam := ctx.DefaultQuery("page", "1")
 	page, _ := strconv.Atoi(pageParam)
-	renderTraktMovies(trakt.TopMovies("watched", pageParam), ctx, page)
+	movies, err := trakt.TopMovies("watched", pageParam)
+	if err != nil {
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
+	}
+	renderTraktMovies(movies, ctx, page)
 }
 
 func TraktMostCollectedMovies(ctx *gin.Context) {
 	pageParam := ctx.DefaultQuery("page", "1")
 	page, _ := strconv.Atoi(pageParam)
-	renderTraktMovies(trakt.TopMovies("collected", pageParam), ctx, page)
+	movies, err := trakt.TopMovies("collected", pageParam)
+	if err != nil {
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
+	}
+	renderTraktMovies(movies, ctx, page)
 }
 
 func TraktMostAnticipatedMovies(ctx *gin.Context) {
 	pageParam := ctx.DefaultQuery("page", "1")
 	page, _ := strconv.Atoi(pageParam)
-	renderTraktMovies(trakt.TopMovies("anticipated", pageParam), ctx, page)
+	movies, err := trakt.TopMovies("anticipated", pageParam)
+	if err != nil {
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
+	}
+	renderTraktMovies(movies, ctx, page)
 }
 
 func TraktBoxOffice(ctx *gin.Context) {
-	renderTraktMovies(trakt.TopMovies("boxoffice", "1"), ctx, 0)
+	movies, err := trakt.TopMovies("boxoffice", "1")
+	if err != nil {
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
+	}
+	renderTraktMovies(movies, ctx, 0)
 }
 
 
@@ -417,35 +461,59 @@ func renderTraktShows(shows []*trakt.Shows, ctx *gin.Context, page int) {
 func TraktPopularShows(ctx *gin.Context) {
 	pageParam := ctx.DefaultQuery("page", "1")
 	page, _ := strconv.Atoi(pageParam)
-	renderTraktShows(trakt.TopShows("popular", pageParam), ctx, page)
+	shows, err := trakt.TopShows("popular", pageParam)
+	if err != nil {
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
+	}
+	renderTraktShows(shows, ctx, page)
 }
 
 func TraktTrendingShows(ctx *gin.Context) {
 	pageParam := ctx.DefaultQuery("page", "1")
 	page, _ := strconv.Atoi(pageParam)
-	renderTraktShows(trakt.TopShows("trending", pageParam), ctx, page)
+	shows, err := trakt.TopShows("trending", pageParam)
+	if err != nil {
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
+	}
+	renderTraktShows(shows, ctx, page)
 }
 
 func TraktMostPlayedShows(ctx *gin.Context) {
 	pageParam := ctx.DefaultQuery("page", "1")
 	page, _ := strconv.Atoi(pageParam)
-	renderTraktShows(trakt.TopShows("played", pageParam), ctx, page)
+	shows, err := trakt.TopShows("played", pageParam)
+	if err != nil {
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
+	}
+	renderTraktShows(shows, ctx, page)
 }
 
 func TraktMostWatchedShows(ctx *gin.Context) {
 	pageParam := ctx.DefaultQuery("page", "1")
 	page, _ := strconv.Atoi(pageParam)
-	renderTraktShows(trakt.TopShows("watched", pageParam), ctx, page)
+	shows, err := trakt.TopShows("watched", pageParam)
+	if err != nil {
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
+	}
+	renderTraktShows(shows, ctx, page)
 }
 
 func TraktMostCollectedShows(ctx *gin.Context) {
 	pageParam := ctx.DefaultQuery("page", "1")
 	page, _ := strconv.Atoi(pageParam)
-	renderTraktShows(trakt.TopShows("collected", pageParam), ctx, page)
+	shows, err := trakt.TopShows("collected", pageParam)
+	if err != nil {
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
+	}
+	renderTraktShows(shows, ctx, page)
 }
 
 func TraktMostAnticipatedShows(ctx *gin.Context) {
 	pageParam := ctx.DefaultQuery("page", "1")
 	page, _ := strconv.Atoi(pageParam)
-	renderTraktShows(trakt.TopShows("anticipated", pageParam), ctx, page)
+	shows, err := trakt.TopShows("anticipated", pageParam)
+	if err != nil {
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
+	}
+	renderTraktShows(shows, ctx, page)
 }

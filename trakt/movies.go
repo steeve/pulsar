@@ -28,7 +28,7 @@ func GetMovie(Id string) (movie *Movie) {
 	return movie
 }
 
-func SearchMovies(query string, page string) (movies []*Movies) {
+func SearchMovies(query string, page string) (movies []*Movies, err error) {
 	endPoint := "search"
 
 	params := napping.Params{
@@ -41,10 +41,10 @@ func SearchMovies(query string, page string) (movies []*Movies) {
 	resp, err := Get(endPoint, params)
 
 	if err != nil {
-		panic(err)
+		return movies, err
 	}
 	if resp.Status() != 200 {
-		panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+		return movies, errors.New(fmt.Sprintf("Bad status: %d", resp.Status()))
 	}
 
   // TODO use response headers for pagination limits:
@@ -52,10 +52,10 @@ func SearchMovies(query string, page string) (movies []*Movies) {
   // X-Pagination-Item-Count:100
 
 	resp.Unmarshal(&movies)
-	return movies
+	return movies, err
 }
 
-func TopMovies(topCategory string, page string) (movies []*Movies) {
+func TopMovies(topCategory string, page string) (movies []*Movies, err error) {
 	endPoint := "movies/" + topCategory
 
 	params := napping.Params{
@@ -67,10 +67,10 @@ func TopMovies(topCategory string, page string) (movies []*Movies) {
 	resp, err := Get(endPoint, params)
 
 	if err != nil {
-		panic(err)
+		return movies, err
 	}
 	if resp.Status() != 200 {
-		panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+		return movies, errors.New(fmt.Sprintf("Bad status: %d", resp.Status()))
 	}
 
 	if topCategory == "popular" {
@@ -88,12 +88,12 @@ func TopMovies(topCategory string, page string) (movies []*Movies) {
 	} else {
 		resp.Unmarshal(&movies)
 	}
-	return movies
+	return movies, err
 }
 
-func WatchlistMovies() (movies []*Movies) {
+func WatchlistMovies() (movies []*Movies, err error) {
 	if err := Authorized(); err != nil {
-		return movies
+		return movies, err
 	}
 
 	endPoint := "sync/watchlist/movies"
@@ -105,10 +105,10 @@ func WatchlistMovies() (movies []*Movies) {
 	resp, err := GetWithAuth(endPoint, params)
 
 	if err != nil {
-		panic(err)
+		return movies, err
 	}
 	if resp.Status() != 200 {
-		panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+		return movies, errors.New(fmt.Sprintf("Bad status: %d", resp.Status()))
 	}
 
 	var watchlist []*WatchlistMovie
@@ -123,12 +123,12 @@ func WatchlistMovies() (movies []*Movies) {
 	}
 	movies = movieListing
 
-	return movies
+	return movies, err
 }
 
-func CollectionMovies() (movies []*Movies) {
+func CollectionMovies() (movies []*Movies, err error) {
 	if err := Authorized(); err != nil {
-		return movies
+		return movies, err
 	}
 
 	endPoint := "sync/collection/movies"
@@ -140,10 +140,10 @@ func CollectionMovies() (movies []*Movies) {
 	resp, err := GetWithAuth(endPoint, params)
 
 	if err != nil {
-		panic(err)
+		return movies, err
 	}
 	if resp.Status() != 200 {
-		panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+		return movies, errors.New(fmt.Sprintf("Bad status: %d", resp.Status()))
 	}
 
 	var collection []*CollectionMovie
@@ -158,7 +158,7 @@ func CollectionMovies() (movies []*Movies) {
 	}
 	movies = movieListing
 
-	return movies
+	return movies, err
 }
 
 func (movie *Movie) ToListItem() *xbmc.ListItem {
