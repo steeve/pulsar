@@ -16,7 +16,7 @@ import (
 )
 
 func AuthorizeTrakt(ctx *gin.Context) {
-	err := trakt.Authorize()
+	err := trakt.Authorize(true)
 	if err == nil {
 		ctx.String(200, "")
 	} else {

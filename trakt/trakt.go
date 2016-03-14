@@ -437,7 +437,7 @@ func PollToken(code *Code) (token *Token, err error) {
 	}
 }
 
-func Authorize() error {
+func Authorize(fromSettings bool) error {
 	code, err := GetCode()
 
 	if err != nil {
@@ -455,7 +455,11 @@ func Authorize() error {
 		return err
 	}
 
-	xbmc.Notify("Quasar", "Woohoo!", config.AddonIcon())
+	success := "Woohoo!"
+	if fromSettings {
+		success += " (Save your settings!)"
+	}
+	xbmc.Notify("Quasar", success, config.AddonIcon())
 	xbmc.SetSetting("trakt_token", token.AccessToken)
 	xbmc.SetSetting("trakt_refresh_token", token.RefreshToken)
 	return nil
@@ -463,7 +467,7 @@ func Authorize() error {
 
 func Authorized() error {
 	if config.Get().TraktToken == "" {
-		err := Authorize()
+		err := Authorize(false)
 		if err != nil {
 			return err
 		}
