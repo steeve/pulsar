@@ -20,7 +20,7 @@ func AuthorizeTrakt(ctx *gin.Context) {
 	if err == nil {
 		ctx.String(200, "")
 	} else {
-		ctx.String(500, "")
+		ctx.String(404, "")
 	}
 }
 
