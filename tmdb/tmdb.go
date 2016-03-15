@@ -181,11 +181,10 @@ type Credits struct {
 }
 
 type ExternalIDs struct {
-	IMDBId      string `json:"imdb_id"`
-	FreeBaseID  string `json:"freebase_id"`
-	FreeBaseMID string `json:"freebase_mid"`
-	TVDBID      int    `json:"tvdb_id"`
-	TVRageID    int    `json:"tvrage_id"`
+	IMDBId      string      `json:"imdb_id"`
+	FreeBaseID  string      `json:"freebase_id"`
+	FreeBaseMID string      `json:"freebase_mid"`
+	TVDBID      interface{} `json:"tvdb_id"`
 }
 
 type AlternativeTitle struct {

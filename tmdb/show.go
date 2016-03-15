@@ -8,12 +8,21 @@ import (
 	"strconv"
 	"strings"
 	"math/rand"
+	"encoding/json"
+	"runtime"
 
 	"github.com/jmcvetta/napping"
 	"github.com/scakemyer/quasar/cache"
 	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/xbmc"
 )
+
+func LogError(err error) {
+	if err != nil {
+		pc, fn, line, _ := runtime.Caller(1)
+		log.Errorf("in %s[%s:%d] %#v: %v)", runtime.FuncForPC(pc).Name(), fn, line, err, err)
+	}
+}
 
 func GetShow(showId int, language string) *Show {
 	var show *Show
@@ -33,7 +42,15 @@ func GetShow(showId int, language string) *Show {
 				nil,
 			)
 			if err != nil {
-				log.Error(err.Error())
+				switch e := err.(type) {
+					case *json.UnmarshalTypeError:
+						log.Errorf("UnmarshalTypeError: Value[%s] Type[%v] Offset[%d] for %d", e.Value, e.Type, e.Offset, showId)
+					case *json.InvalidUnmarshalError:
+						log.Errorf("InvalidUnmarshalError: Type[%v]", e.Type)
+					default:
+						log.Error(err.Error())
+				}
+				LogError(err)
 				xbmc.Notify("Quasar", "GetShow failed, check your logs.", config.AddonIcon())
 			} else if resp.Status() != 200 {
 				message := fmt.Sprintf("GetShow bad status: %d", resp.Status())
