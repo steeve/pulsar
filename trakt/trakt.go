@@ -357,7 +357,7 @@ func GetCode() (code *Code, err error) {
 		resp.Unmarshal(&code)
 	}
 
-	if resp.Status() != 200  && err == nil {
+	if err == nil && resp.Status() != 200 {
 		err = errors.New(fmt.Sprintf("Unable to get Trakt code: %d", resp.Status()))
 	}
 
@@ -553,8 +553,8 @@ func Scrobble(action string, contentType string, tmdbId int, runtime int) {
 	resp, err := Post(endPoint, bytes.NewBufferString(fmt.Sprintf(`{"%s": {"ids": {"tmdb": %d}}, "progress": %f}`, contentType, tmdbId, progress)))
 	if err != nil {
 		log.Error(err.Error())
-	}
-	if resp.Status() != 201 {
+		xbmc.Notify("Quasar", "Scrobble failed, check your logs.", config.AddonIcon())
+	} else if resp.Status() != 201 {
 		log.Errorf("Failed to scrobble %s #%d to %s at %f: %d", contentType, tmdbId, action, progress, resp.Status())
 	}
 }

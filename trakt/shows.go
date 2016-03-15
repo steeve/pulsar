@@ -8,6 +8,7 @@ import (
 	"math/rand"
 
 	"github.com/jmcvetta/napping"
+	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/xbmc"
 )
 
@@ -21,7 +22,8 @@ func GetShow(Id string) (show *Show) {
 	resp, err := Get(endPoint, params)
 
 	if err != nil {
-		panic(err)
+		log.Error(err.Error())
+		xbmc.Notify("Quasar", "GetShow failed, check your logs.", config.AddonIcon())
 	}
 
 	resp.Unmarshal(&show)
@@ -42,9 +44,8 @@ func SearchShows(query string, page string) (shows []*Shows, err error) {
 
 	if err != nil {
 		return shows, err
-	}
-	if resp.Status() != 200 {
-		return shows, errors.New(fmt.Sprintf("Bad status: %d", resp.Status()))
+	} else if resp.Status() != 200 {
+		return shows, errors.New(fmt.Sprintf("SearchShows bad status: %d", resp.Status()))
 	}
 
 	resp.Unmarshal(&shows)
@@ -64,9 +65,8 @@ func TopShows(topCategory string, page string) (shows []*Shows, err error) {
 
 	if err != nil {
 		return shows, err
-	}
-	if resp.Status() != 200 {
-		return shows, errors.New(fmt.Sprintf("Bad status: %d", resp.Status()))
+	} else if resp.Status() != 200 {
+		return shows, errors.New(fmt.Sprintf("TopShows bad status: %d", resp.Status()))
 	}
 
   if topCategory == "popular" {
@@ -102,9 +102,8 @@ func WatchlistShows() (shows []*Shows, err error) {
 
 	if err != nil {
 		return shows, err
-	}
-	if resp.Status() != 200 {
-		return shows, errors.New(fmt.Sprintf("Bad status: %d", resp.Status()))
+	} else if resp.Status() != 200 {
+		return shows, errors.New(fmt.Sprintf("WatchlistShows bad status: %d", resp.Status()))
 	}
 
 	var watchlist []*WatchlistShow
@@ -137,9 +136,8 @@ func CollectionShows() (shows []*Shows, err error) {
 
 	if err != nil {
 		return shows, err
-	}
-	if resp.Status() != 200 {
-		return shows, errors.New(fmt.Sprintf("Bad status: %d", resp.Status()))
+	} else if resp.Status() != 200 {
+		return shows, errors.New(fmt.Sprintf("CollectionShows bad status: %d", resp.Status()))
 	}
 
 	var collection []*WatchlistShow

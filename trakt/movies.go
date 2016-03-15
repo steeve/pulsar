@@ -8,6 +8,7 @@ import (
 	"math/rand"
 
 	"github.com/jmcvetta/napping"
+	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/xbmc"
 )
 
@@ -21,7 +22,8 @@ func GetMovie(Id string) (movie *Movie) {
 	resp, err := Get(endPoint, params)
 
 	if err != nil {
-		panic(err)
+		log.Error(err.Error())
+		xbmc.Notify("Quasar", "GetMovie failed, check your logs.", config.AddonIcon())
 	}
 
 	resp.Unmarshal(&movie)
@@ -42,9 +44,8 @@ func SearchMovies(query string, page string) (movies []*Movies, err error) {
 
 	if err != nil {
 		return movies, err
-	}
-	if resp.Status() != 200 {
-		return movies, errors.New(fmt.Sprintf("Bad status: %d", resp.Status()))
+	} else if resp.Status() != 200 {
+		return movies, errors.New(fmt.Sprintf("SearchMovies bad status: %d", resp.Status()))
 	}
 
   // TODO use response headers for pagination limits:
@@ -68,9 +69,8 @@ func TopMovies(topCategory string, page string) (movies []*Movies, err error) {
 
 	if err != nil {
 		return movies, err
-	}
-	if resp.Status() != 200 {
-		return movies, errors.New(fmt.Sprintf("Bad status: %d", resp.Status()))
+	} else if resp.Status() != 200 {
+		return movies, errors.New(fmt.Sprintf("TopMovies bad status: %d", resp.Status()))
 	}
 
 	if topCategory == "popular" {
@@ -106,9 +106,8 @@ func WatchlistMovies() (movies []*Movies, err error) {
 
 	if err != nil {
 		return movies, err
-	}
-	if resp.Status() != 200 {
-		return movies, errors.New(fmt.Sprintf("Bad status: %d", resp.Status()))
+	} else if resp.Status() != 200 {
+		return movies, errors.New(fmt.Sprintf("WatchlistMovies bad status: %d", resp.Status()))
 	}
 
 	var watchlist []*WatchlistMovie
@@ -141,9 +140,8 @@ func CollectionMovies() (movies []*Movies, err error) {
 
 	if err != nil {
 		return movies, err
-	}
-	if resp.Status() != 200 {
-		return movies, errors.New(fmt.Sprintf("Bad status: %d", resp.Status()))
+	} else if resp.Status() != 200 {
+		return movies, errors.New(fmt.Sprintf("CollectionMovies bad status: %d", resp.Status()))
 	}
 
 	var collection []*CollectionMovie

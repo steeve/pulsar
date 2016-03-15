@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"path"
 	"time"
-	"errors"
 	"math/rand"
 
 	"github.com/jmcvetta/napping"
@@ -31,10 +30,12 @@ func GetSeason(showId int, seasonNumber int, language string) *Season {
 				nil,
 			)
 			if err != nil {
-				panic(err)
-			}
-			if resp.Status() != 200 {
-				panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+				log.Error(err.Error())
+				xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
+			} else if resp.Status() != 200 {
+				message := fmt.Sprintf("GetSeason bad status: %d", resp.Status())
+				log.Error(message)
+				xbmc.Notify("Quasar", message, config.AddonIcon())
 			}
 		})
 		season.EpisodeCount = len(season.Episodes)

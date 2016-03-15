@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 	"path"
-	"errors"
 	"strconv"
 	"math/rand"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/scakemyer/quasar/cache"
 	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/util"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
 const (
@@ -265,7 +265,12 @@ func CheckApiKey() {
 			if apiKey == apiKeys[index] {
 				apiKeys = append(apiKeys[:index], apiKeys[index + 1:]...)
 			}
-			apiKey = apiKeys[rand.Intn(len(apiKeys))]
+			if len(apiKeys) > 0 {
+				apiKey = apiKeys[rand.Intn(len(apiKeys))]
+			} else {
+				result = false
+				break
+			}
 		}
 	}
 	if result == false {
@@ -288,9 +293,10 @@ func tmdbCheck(key string) bool {
 	)
 
 	if err != nil {
-		panic(err)
-	}
-	if resp.Status() != 200 {
+		log.Error(err.Error())
+		xbmc.Notify("Quasar", "TMDB check failed, check your logs.", config.AddonIcon())
+		return false
+	} else if resp.Status() != 200 {
 		return false
 	}
 
@@ -328,10 +334,12 @@ func ListEntities(endpoint string, params napping.Params) []*Entity {
 					nil,
 				)
 				if err != nil {
-					panic(err)
-				}
-				if resp.Status() != 200 {
-					panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+					log.Error(err.Error())
+					xbmc.Notify("Quasar", "ListEntities failed, check your logs.", config.AddonIcon())
+				} else if resp.Status() != 200 {
+					message := fmt.Sprintf("ListEntities bad status: %d", resp.Status())
+					log.Error(message)
+					xbmc.Notify("Quasar", message, config.AddonIcon())
 				}
 			})
 			for i, entity := range tmp.Results {
@@ -362,10 +370,12 @@ func Find(externalId string, externalSource string) *FindResult {
 				nil,
 			)
 			if err != nil {
-				panic(err)
-			}
-			if resp.Status() != 200 {
-				panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+				log.Error(err.Error())
+				xbmc.Notify("Quasar", "Failed Find call, check your logs.", config.AddonIcon())
+			} else if resp.Status() != 200 {
+				message := fmt.Sprintf("Find call bad status: %d", resp.Status())
+				log.Error(message)
+				xbmc.Notify("Quasar", message, config.AddonIcon())
 			}
 			cacheStore.Set(key, result, 365 * 24 * time.Hour)
 		})

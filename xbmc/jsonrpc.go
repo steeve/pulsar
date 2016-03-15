@@ -41,7 +41,8 @@ func executeJSONRPC(method string, retVal interface{}, args []interface{}) error
 	}
 	conn, err := getConnection(XBMCJSONRPCHosts...)
 	if err != nil {
-		panic(err)
+		log.Error(err.Error())
+		Notify("Quasar", "executeJSONRPC failed, check your logs.", "")
 	}
 	defer conn.Close()
 
@@ -55,7 +56,8 @@ func executeJSONRPCEx(method string, retVal interface{}, args []interface{}) err
 	}
 	conn, err := getConnection(XBMCExJSONRPCHosts...)
 	if err != nil {
-		panic(err)
+		log.Error(err.Error())
+		Notify("Quasar", "executeJSONRPCEx failed, check your logs.", "")
 	}
 	defer conn.Close()
 

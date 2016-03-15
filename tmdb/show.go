@@ -5,7 +5,6 @@ import (
 	"path"
 	"sync"
 	"time"
-	"errors"
 	"strconv"
 	"strings"
 	"math/rand"
@@ -34,10 +33,12 @@ func GetShow(showId int, language string) *Show {
 				nil,
 			)
 			if err != nil {
-				panic(err)
-			}
-			if resp.Status() != 200 {
-				panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+				log.Error(err.Error())
+				xbmc.Notify("Quasar", "GetShow failed, check your logs.", config.AddonIcon())
+			} else if resp.Status() != 200 {
+				message := fmt.Sprintf("GetShow bad status: %d", resp.Status())
+				log.Error(message)
+				xbmc.Notify("Quasar", message, config.AddonIcon())
 			}
 		})
 		if show != nil {
@@ -87,10 +88,12 @@ func SearchShows(query string, language string, page int) Shows {
 			nil,
 		)
 		if err != nil {
-			panic(err)
-		}
-		if resp.Status() != 200 {
-			panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+			log.Error(err.Error())
+			xbmc.Notify("Quasar", "SearchShows failed, check your logs.", config.AddonIcon())
+		} else if resp.Status() != 200 {
+			message := fmt.Sprintf("SearchShows bad status: %d", resp.Status())
+			log.Error(message)
+			xbmc.Notify("Quasar", message, config.AddonIcon())
 		}
 	})
 	tmdbIds := make([]int, 0, len(results.Results))
@@ -136,14 +139,17 @@ func ListShowsComplete(endpoint string, params napping.Params, page int) Shows {
 					nil,
 				)
 				if err != nil {
-					panic(err)
-				}
-				if resp.Status() != 200 {
-					panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+					log.Error(err.Error())
+					xbmc.Notify("Quasar", "ListShows failed, check your logs.", config.AddonIcon())
+				} else if resp.Status() != 200 {
+					message := fmt.Sprintf("ListShows bad status: %d", resp.Status())
+					xbmc.Notify("Quasar", message, config.AddonIcon())
 				}
 			})
-			for i, entity := range tmp.Results {
-				shows[startIndex + i] = GetShow(entity.Id, params["language"])
+			if tmp != nil {
+				for i, entity := range tmp.Results {
+					shows[startIndex + i] = GetShow(entity.Id, params["language"])
+				}
 			}
 		}(currentpage)
 	}
@@ -237,10 +243,12 @@ func GetTVGenres(language string) []*Genre {
 			nil,
 		)
 		if err != nil {
-			panic(err)
-		}
-		if resp.Status() != 200 {
-			panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+			log.Error(err.Error())
+			xbmc.Notify("Quasar", "GetTVGenres failed, check your logs.", config.AddonIcon())
+		} else if resp.Status() != 200 {
+			message := fmt.Sprintf("GetTVGenres bad status: %d", resp.Status())
+			log.Error(message)
+			xbmc.Notify("Quasar", message, config.AddonIcon())
 		}
 	})
 	return genres.Genres

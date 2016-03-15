@@ -5,7 +5,6 @@ import (
 	"path"
 	"sync"
 	"time"
-	"errors"
 	"strconv"
 	"strings"
 	"math/rand"
@@ -38,10 +37,12 @@ func GetMovieById(movieId string, language string) *Movie {
 				nil,
 			)
 			if err != nil {
-				panic(err)
-			}
-			if resp.Status() != 200 {
-				panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+				log.Error(err.Error())
+				xbmc.Notify("Quasar", "GetMovie failed, check your logs.", config.AddonIcon())
+			} else if resp.Status() != 200 {
+				message := fmt.Sprintf("GetMovie bad status: %d", resp.Status())
+				log.Error(message)
+				xbmc.Notify("Quasar", message, config.AddonIcon())
 			}
 			if movie != nil {
 				cacheStore.Set(key, movie, cacheTime)
@@ -89,10 +90,12 @@ func GetMovieGenres(language string) []*Genre {
 			nil,
 		)
 		if err != nil {
-			panic(err)
-		}
-		if resp.Status() != 200 {
-			panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+			log.Error(err.Error())
+			xbmc.Notify("Quasar", "GetMovieGenres failed, check your logs.", config.AddonIcon())
+		} else if resp.Status() != 200 {
+			message := fmt.Sprintf("GetMovieGenres bad status: %d", resp.Status())
+			log.Error(message)
+			xbmc.Notify("Quasar", message, config.AddonIcon())
 		}
 	})
 	return genres.Genres
@@ -114,10 +117,12 @@ func SearchMovies(query string, language string, page int) Movies {
 			nil,
 		)
 		if err != nil {
-			panic(err)
-		}
-		if resp.Status() != 200 {
-			panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+			log.Error(err.Error())
+			xbmc.Notify("Quasar", "SearchMovies failed, check your logs.", config.AddonIcon())
+		} else if resp.Status() != 200 {
+			message := fmt.Sprintf("SearchMovies bad status: %d", resp.Status())
+			log.Error(message)
+			xbmc.Notify("Quasar", message, config.AddonIcon())
 		}
 	})
 	tmdbIds := make([]int, 0, len(results.Results))
@@ -142,10 +147,12 @@ func GetList(listId string, language string, page int) Movies {
 			nil,
 		)
 		if err != nil {
-			panic(err)
-		}
-		if resp.Status() != 200 {
-			panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+			log.Error(err.Error())
+			xbmc.Notify("Quasar", "GetList failed, check your logs.", config.AddonIcon())
+		} else if resp.Status() != 200 {
+			message := fmt.Sprintf("GetList bad status: %d", resp.Status())
+			log.Error(message)
+			xbmc.Notify("Quasar", message, config.AddonIcon())
 		}
 	})
 	tmdbIds := make([]int, 0, resultsPerPage)
@@ -203,14 +210,18 @@ func ListMoviesComplete(endpoint string, params napping.Params, page int) Movies
 					nil,
 				)
 				if err != nil {
-					panic(err)
-				}
-				if resp.Status() != 200 {
-					panic(errors.New(fmt.Sprintf("Bad status: %d", resp.Status())))
+					log.Error(err.Error())
+					xbmc.Notify("Quasar", "ListMovies failed, check your logs.", config.AddonIcon())
+				} else if resp.Status() != 200 {
+					message := fmt.Sprintf("ListMovies bad status: %d", resp.Status())
+					log.Error(message)
+					xbmc.Notify("Quasar", message, config.AddonIcon())
 				}
 			})
-			for i, movie := range tmp.Results {
-				movies[startIndex + i] = GetMovie(movie.Id, params["language"])
+			if tmp != nil {
+				for i, movie := range tmp.Results {
+					movies[startIndex + i] = GetMovie(movie.Id, params["language"])
+				}
 			}
 		}(currentpage)
 	}
