@@ -17,6 +17,7 @@ import (
 	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/broadcast"
 	"github.com/scakemyer/quasar/diskusage"
+	"github.com/scakemyer/quasar/trakt"
 	"github.com/scakemyer/quasar/xbmc"
 )
 
@@ -29,39 +30,59 @@ const (
 
 type BTPlayer struct {
 	bts                      *BTService
+	log                      *logging.Logger
+	dialogProgress           *xbmc.DialogProgress
+	overlayStatus            *xbmc.OverlayStatus
 	uri                      string
-	fileIndex                int
 	infoHash                 string
+	fastResumeFile           string
+	contentType              string
+	fileIndex                int
+	resumeIndex              int
+	tmdbId                   int
+	runtime                  int
+	scrobble                 bool
+	deleteAfter              bool
+	backgroundHandling       bool
+	overlayStatusEnabled     bool
 	torrentHandle            libtorrent.TorrentHandle
 	torrentInfo              libtorrent.TorrentInfo
 	chosenFile               libtorrent.FileEntry
 	lastStatus               libtorrent.TorrentStatus
-	log                      *logging.Logger
 	bufferPiecesProgress     map[int]float64
 	bufferPiecesProgressLock sync.RWMutex
-	dialogProgress           *xbmc.DialogProgress
-	overlayStatus            *xbmc.OverlayStatus
 	torrentName              string
-	deleteAfter              bool
-	backgroundHandling       bool
-	resume                   int
-	fastResumeFile           string
 	notEnoughSpace           bool
 	diskStatus               *diskusage.DiskStatus
-	closing                  chan interface{}
 	bufferEvents             *broadcast.Broadcaster
+	closing                  chan interface{}
 }
 
-func NewBTPlayer(bts *BTService, uri string, fileIndex int, resume int, infoHash string) *BTPlayer {
+type BTPlayerParams struct {
+	URI          string
+	InfoHash     string
+	FileIndex    int
+	ResumeIndex  int
+	ContentType  string
+	TMDBId       int
+	Runtime      int
+}
+
+func NewBTPlayer(bts *BTService, params BTPlayerParams) *BTPlayer {
 	btp := &BTPlayer{
-		bts:                  bts,
-		uri:                  uri,
-		infoHash:             infoHash,
-		fileIndex:            fileIndex,
 		log:                  logging.MustGetLogger("btplayer"),
+		bts:                  bts,
+		uri:                  params.URI,
+		infoHash:             params.InfoHash,
+		fileIndex:            params.FileIndex,
+		resumeIndex:          params.ResumeIndex,
+		overlayStatusEnabled: config.Get().EnableOverlayStatus == true,
 		backgroundHandling:   config.Get().BackgroundHandling == true,
 		deleteAfter:          config.Get().KeepFilesAfterStop == false,
-		resume:               resume,
+		scrobble:             config.Get().Scrobble == true && params.TMDBId > 0 && config.Get().TraktToken != "",
+		contentType:          params.ContentType,
+		tmdbId:               params.TMDBId,
+		runtime:              params.Runtime * 60,
 		fastResumeFile:       "",
 		notEnoughSpace:       false,
 		closing:              make(chan interface{}),
@@ -155,8 +176,8 @@ func (btp *BTPlayer) resumeTorrent(torrentIndex int) error {
 }
 
 func (btp *BTPlayer) Buffer() error {
-	if btp.resume >= 0 {
-		if err := btp.resumeTorrent(btp.resume); err != nil {
+	if btp.resumeIndex >= 0 {
+		if err := btp.resumeTorrent(btp.resumeIndex); err != nil {
 			return err
 		}
 	} else {
@@ -189,14 +210,16 @@ func (btp *BTPlayer) CheckAvailableSpace() bool {
 	if btp.diskStatus != nil {
 		status := btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
 		sizeLeft := btp.torrentInfo.TotalSize() - status.GetTotalDone()
+		availableSpace := btp.diskStatus.Free
 
 		btp.log.Infof("Checking for sufficient space on %s...", btp.bts.config.DownloadPath)
 		btp.log.Infof("Total size of download: %d", btp.torrentInfo.TotalSize())
 		btp.log.Infof("All time download: %d", status.GetAllTimeDownload())
 		btp.log.Infof("Size total done: %d", status.GetTotalDone())
-		btp.log.Infof("Size left: %d", sizeLeft)
+		btp.log.Infof("Size left to download: %d", sizeLeft)
+		btp.log.Infof("Available space: %d", availableSpace)
 
-		if btp.diskStatus.Free < sizeLeft {
+		if availableSpace < sizeLeft {
 			btp.log.Errorf("Unsufficient free space on %s. Has %d, needs %d.", btp.bts.config.DownloadPath, btp.diskStatus.Free, sizeLeft)
 			xbmc.Notify("Quasar", "LOCALIZE[30207]", config.AddonIcon())
 			btp.bufferEvents.Broadcast(errors.New("Not enough space on download destination."))
@@ -545,6 +568,11 @@ playbackWaitLoop:
 
 	btp.log.Info("Playback loop")
 	overlayStatusActive := false
+	playing := true
+	btp.log.Infof("Got runtime: %d", btp.runtime)
+	if btp.scrobble {
+		trakt.Scrobble("start", btp.contentType, btp.tmdbId, btp.runtime)
+	}
 
 playbackLoop:
 	for {
@@ -553,16 +581,26 @@ playbackLoop:
 		}
 		select {
 		case <-oneSecond.C:
-			if xbmc.PlayerIsPaused() && config.Get().EnableOverlayStatus == true {
-				status := btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
-				progress := float64(status.GetProgress())
-				line1, line2, line3 := btp.statusStrings(progress, status)
-				btp.overlayStatus.Update(int(progress), line1, line2, line3)
-				if overlayStatusActive == false {
-					btp.overlayStatus.Show()
-					overlayStatusActive = true
+			if xbmc.PlayerIsPaused() {
+				if btp.scrobble && playing == true {
+					playing = false
+					trakt.Scrobble("pause", btp.contentType, btp.tmdbId, btp.runtime)
+				}
+				if btp.overlayStatusEnabled == true {
+					status := btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
+					progress := float64(status.GetProgress())
+					line1, line2, line3 := btp.statusStrings(progress, status)
+					btp.overlayStatus.Update(int(progress), line1, line2, line3)
+					if overlayStatusActive == false {
+						btp.overlayStatus.Show()
+						overlayStatusActive = true
+					}
 				}
 			} else {
+				if btp.scrobble && playing == false {
+					playing = true
+					trakt.Scrobble("start", btp.contentType, btp.tmdbId, btp.runtime)
+				}
 				if overlayStatusActive == true {
 					btp.overlayStatus.Hide()
 					overlayStatusActive = false
@@ -572,6 +610,9 @@ playbackLoop:
 	}
 	if overlayStatusActive == true {
 		btp.overlayStatus.Close()
+	}
+	if btp.scrobble {
+		trakt.Scrobble("stop", btp.contentType, btp.tmdbId, btp.runtime)
 	}
 	btp.setRateLimiting(false)
 }

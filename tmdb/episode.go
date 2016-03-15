@@ -89,6 +89,11 @@ func (episodes EpisodeList) ToListItems(show *Show, season *Season) []*xbmc.List
 func (episode *Episode) ToListItem(show *Show) *xbmc.ListItem {
 	episodeLabel := fmt.Sprintf("%dx%02d %s", episode.SeasonNumber, episode.EpisodeNumber, episode.Name)
 
+	runtime := 1800
+	if len(show.EpisodeRunTime) > 0 {
+		runtime = show.EpisodeRunTime[len(show.EpisodeRunTime) - 1] * 60
+	}
+
 	item := &xbmc.ListItem{
 		Label: episodeLabel,
 		Info: &xbmc.ListItemInfo{
@@ -102,6 +107,7 @@ func (episode *Episode) ToListItem(show *Show) *xbmc.ListItem {
 			PlotOutline:   episode.Overview,
 			Rating:        episode.VoteAverage,
 			Aired:         episode.AirDate,
+			Duration:      runtime,
 		},
 		Art: &xbmc.ListItemArt{},
 	}

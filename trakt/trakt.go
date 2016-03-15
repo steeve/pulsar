@@ -2,13 +2,15 @@ package trakt
 
 import (
 	"fmt"
-	"log"
+	"math"
 	"time"
 	"bytes"
 	"errors"
+	"strconv"
 	"net/url"
 	"net/http"
 
+	"github.com/op/go-logging"
 	"github.com/jmcvetta/napping"
 	"github.com/scakemyer/quasar/cloudhole"
 	"github.com/scakemyer/quasar/config"
@@ -22,6 +24,8 @@ const (
 	ApiVersion   = "2"
 	Limit        = "20"
 )
+
+var log = logging.MustGetLogger("trakt")
 
 var (
 	clearance, _ = cloudhole.GetClearance()
@@ -220,7 +224,7 @@ type Token struct {
 }
 
 func newClearance() (err error) {
-	log.Printf("CloudFlared! User-Agent: %s - Cookies: %s", clearance.UserAgent, clearance.Cookies)
+	log.Warningf("CloudFlared! User-Agent: %s - Cookies: %s", clearance.UserAgent, clearance.Cookies)
 
 	if config.Get().CloudHoleKey == "" {
 		retries = 3
@@ -229,7 +233,7 @@ func newClearance() (err error) {
 
 	clearance, err = cloudhole.GetClearance()
 	if err == nil {
-		log.Printf("New clearance: %s - %s", clearance.UserAgent, clearance.Cookies)
+		log.Noticef("New clearance: %s - %s", clearance.UserAgent, clearance.Cookies)
 	} else {
 		retries = 3
 	}
@@ -444,7 +448,7 @@ func Authorize(fromSettings bool) error {
 		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
 		return err
 	}
-	log.Printf("Got code for %s: %s", code.VerificationURL, code.UserCode)
+	log.Noticef("Got code for %s: %s", code.VerificationURL, code.UserCode)
 
 	xbmc.Dialog("LOCALIZE[30058]", fmt.Sprintf("Visit %s and enter your code: %s", code.VerificationURL, code.UserCode))
 
@@ -509,4 +513,48 @@ func RemoveFromCollection(itemType string, tmdbId string) (resp *napping.Respons
 
 	endPoint := "sync/collection/remove"
 	return Post(endPoint, bytes.NewBufferString(fmt.Sprintf(`{"%s": [{"ids": {"tmdb": %s}}]}`, itemType, tmdbId)))
+}
+
+func Scrobble(action string, contentType string, tmdbId int, runtime int) {
+	if err := Authorized(); err != nil {
+		return
+	}
+	log.Notice(action, contentType, tmdbId)
+
+	retVal := xbmc.GetWatchTimes()
+
+	errStr := retVal["error"]
+	watchedTime, _ := strconv.ParseFloat(retVal["watchedTime"], 64)
+	videoDuration, _ := strconv.ParseFloat(retVal["videoDuration"], 64)
+	if errStr != "" {
+		log.Error(errStr)
+		return
+	}
+
+	if videoDuration == 0 {
+		if runtime != 0 {
+			videoDuration = float64(runtime)
+			log.Warningf("Using specified runtime of %d", runtime)
+		} else {
+			if contentType == "movie" {
+				videoDuration = 7200
+			} else {
+				videoDuration = 2700
+			}
+			log.Warningf("Using fallback runtime of %d", videoDuration)
+		}
+	}
+
+	progress := watchedTime / math.Floor(videoDuration) * 100
+
+	log.Infof("Watched: %fs, duration: %fs, progress: %f%", watchedTime, videoDuration, progress)
+
+	endPoint := fmt.Sprintf("scrobble/%s", action)
+	resp, err := Post(endPoint, bytes.NewBufferString(fmt.Sprintf(`{"%s": {"ids": {"tmdb": %d}}, "progress": %f}`, contentType, tmdbId, progress)))
+	if err != nil {
+		log.Error(err.Error())
+	}
+	if resp.Status() != 201 {
+		log.Errorf("Failed to scrobble %s #%d to %s at %f: %d", contentType, tmdbId, action, progress, resp.Status())
+	}
 }

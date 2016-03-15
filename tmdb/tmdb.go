@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	tmdbLog = logging.MustGetLogger("tmdb")
+	log = logging.MustGetLogger("tmdb")
 )
 
 type Movies []*Movie
@@ -74,7 +74,6 @@ type Show struct {
 	OriginalName        string       `json:"original_name"`
 	OriginCountry       []string     `json:"origin_country"`
 	Overview            string       `json:"overview"`
-	EpisodeRuntime      []int        `json:"runtime"`
 	RawPopularity       interface{}  `json:"popularity"`
 	Popularity          float64      `json:"-"`
 	ProductionCompanies []*IdName    `json:"production_companies"`
@@ -247,7 +246,7 @@ var (
 var rateLimiter = util.NewRateLimiter(burstRate, burstTime, simultaneousConnections)
 
 func CheckApiKey() {
-	tmdbLog.Info("Checking TMDB API key...")
+	log.Info("Checking TMDB API key...")
 
 	customApiKey := config.Get().TMDBApiKey
 	if customApiKey != "" {
@@ -259,10 +258,10 @@ func CheckApiKey() {
 	for index := len(apiKeys) - 1; index >= 0; index-- {
 		result = tmdbCheck(apiKey)
 		if result {
-			tmdbLog.Noticef("TMDB API key check passed, using %s...", apiKey[:7])
+			log.Noticef("TMDB API key check passed, using %s...", apiKey[:7])
 			break
 		} else {
-			tmdbLog.Warningf("TMDB API key failed: %s", apiKey)
+			log.Warningf("TMDB API key failed: %s", apiKey)
 			if apiKey == apiKeys[index] {
 				apiKeys = append(apiKeys[:index], apiKeys[index + 1:]...)
 			}
@@ -270,7 +269,7 @@ func CheckApiKey() {
 		}
 	}
 	if result == false {
-		tmdbLog.Error("No valid TMDB API key found")
+		log.Error("No valid TMDB API key found")
 	}
 }
 

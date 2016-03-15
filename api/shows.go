@@ -336,9 +336,19 @@ func showEpisodeLinks(showId int, seasonNumber int, episodeNumber int) ([]*bitto
 }
 
 func ShowEpisodeLinks(ctx *gin.Context) {
-	showId, _ := strconv.Atoi(ctx.Params.ByName("showId"))
+	tmdbId := ctx.Params.ByName("showId")
+	showId, _ := strconv.Atoi(tmdbId)
 	seasonNumber, _ := strconv.Atoi(ctx.Params.ByName("season"))
 	episodeNumber, _ := strconv.Atoi(ctx.Params.ByName("episode"))
+
+	show := tmdb.GetShow(showId, "")
+	episode := tmdb.GetEpisode(showId, seasonNumber, episodeNumber, "")
+
+	runtime := 45
+	if len(show.EpisodeRunTime) > 0 {
+		runtime = show.EpisodeRunTime[len(show.EpisodeRunTime) - 1]
+	}
+
 	torrents, longName, err := showEpisodeLinks(showId, seasonNumber, episodeNumber)
 	if err != nil {
 		ctx.Error(err)
@@ -393,15 +403,29 @@ func ShowEpisodeLinks(ctx *gin.Context) {
 
 	choice := xbmc.ListDialogLarge("LOCALIZE[30228]", longName, choices...)
 	if choice >= 0 {
-		rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[choice].Magnet())
+		rUrl := UrlQuery(
+			UrlForXBMC("/play"), "uri", torrents[choice].Magnet(),
+			                     "tmdb", strconv.Itoa(episode.Id),
+			                     "type", "episode",
+			                     "runtime", strconv.Itoa(runtime))
 		ctx.Redirect(302, rUrl)
 	}
 }
 
 func ShowEpisodePlay(ctx *gin.Context) {
-	showId, _ := strconv.Atoi(ctx.Params.ByName("showId"))
+	tmdbId := ctx.Params.ByName("showId")
+	showId, _ := strconv.Atoi(tmdbId)
 	seasonNumber, _ := strconv.Atoi(ctx.Params.ByName("season"))
 	episodeNumber, _ := strconv.Atoi(ctx.Params.ByName("episode"))
+
+	show := tmdb.GetShow(showId, "")
+	episode := tmdb.GetEpisode(showId, seasonNumber, episodeNumber, "")
+
+	runtime := 45
+	if len(show.EpisodeRunTime) > 0 {
+		runtime = show.EpisodeRunTime[len(show.EpisodeRunTime) - 1]
+	}
+
 	torrents, _, err := showEpisodeLinks(showId, seasonNumber, episodeNumber)
 	if err != nil {
 		ctx.Error(err)
@@ -413,6 +437,9 @@ func ShowEpisodePlay(ctx *gin.Context) {
 		return
 	}
 
-	rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[0].Magnet())
+	rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[0].Magnet(),
+	                                      "tmdb", strconv.Itoa(episode.Id),
+	                                      "type", "episode",
+	                                      "runtime", strconv.Itoa(runtime))
 	ctx.Redirect(302, rUrl)
 }

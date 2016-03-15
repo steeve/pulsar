@@ -8,8 +8,8 @@ import (
 	"encoding/hex"
 
 	"github.com/gin-gonic/gin"
-	"github.com/scakemyer/quasar/bittorrent"
 	"github.com/scakemyer/libtorrent-go"
+	"github.com/scakemyer/quasar/bittorrent"
 	"github.com/scakemyer/quasar/util"
 	"github.com/scakemyer/quasar/xbmc"
 )
@@ -19,6 +19,9 @@ func Play(btService *bittorrent.BTService) gin.HandlerFunc {
 		uri := ctx.Request.URL.Query().Get("uri")
 		index := ctx.Request.URL.Query().Get("index")
 		resume := ctx.Request.URL.Query().Get("resume")
+		contentType := ctx.Request.URL.Query().Get("type")
+		tmdb := ctx.Request.URL.Query().Get("tmdb")
+		runtime := ctx.Request.URL.Query().Get("runtime")
 
 		if uri == "" && resume == "" {
 			return
@@ -40,6 +43,22 @@ func Play(btService *bittorrent.BTService) gin.HandlerFunc {
 			}
 		}
 
+		tmdbId := -1
+		if tmdb != "" {
+			id, err := strconv.Atoi(tmdb)
+			if err == nil && id >= 0 {
+				tmdbId = id
+			}
+		}
+
+		runTime := -1
+		if tmdb != "" {
+			runtimeInt, err := strconv.Atoi(runtime)
+			if err == nil && runtimeInt >= 0 {
+				runTime = runtimeInt
+			}
+		}
+
 		magnet := ""
 		infoHash := ""
 		if uri != "" {
@@ -52,7 +71,17 @@ func Play(btService *bittorrent.BTService) gin.HandlerFunc {
 			magnet += "&" + boosters.Encode()
 		}
 
-		player := bittorrent.NewBTPlayer(btService, magnet, fileIndex, resumeIndex, infoHash)
+		params := bittorrent.BTPlayerParams{
+			URI: magnet,
+			InfoHash: infoHash,
+			FileIndex: fileIndex,
+			ResumeIndex: resumeIndex,
+			ContentType: contentType,
+			TMDBId: tmdbId,
+			Runtime: runTime,
+		}
+
+		player := bittorrent.NewBTPlayer(btService, params)
 		if player.Buffer() != nil {
 			return
 		}

@@ -40,11 +40,12 @@ type Configuration struct {
 	BTListenPortMax     int
 	ConnectionsLimit    int
 	SessionSave         int
-	TMDBApiKey          string
+	Scrobble            bool
 	TraktUsername       string
 	TraktToken          string
 	TraktRefreshToken   string
 	CloudHoleKey        string
+	TMDBApiKey          string
 
 	SortingModeMovies            int
 	SortingModeShows             int
@@ -126,11 +127,12 @@ func Reload() *Configuration {
 		BTListenPortMax:     xbmc.GetSettingInt("listen_port_max"),
 		ConnectionsLimit:    xbmc.GetSettingInt("connections_limit"),
 		SessionSave:         xbmc.GetSettingInt("session_save"),
-		TMDBApiKey:          xbmc.GetSettingString("tmdb_api_key"),
+		Scrobble:            xbmc.GetSettingBool("trakt_scrobble"),
 		TraktUsername:       xbmc.GetSettingString("trakt_username"),
 		TraktToken:          xbmc.GetSettingString("trakt_token"),
 		TraktRefreshToken:   xbmc.GetSettingString("trakt_refresh_token"),
 		CloudHoleKey:        xbmc.GetSettingString("cloudhole_key"),
+		TMDBApiKey:          xbmc.GetSettingString("tmdb_api_key"),
 
 		SortingModeMovies:            xbmc.GetSettingInt("sorting_mode_movies"),
 		SortingModeShows:             xbmc.GetSettingInt("sorting_mode_shows"),

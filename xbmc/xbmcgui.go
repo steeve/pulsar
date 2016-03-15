@@ -171,6 +171,12 @@ func PlayerIsPaused() bool {
 	return retVal != 0
 }
 
+func GetWatchTimes() map[string]string {
+	var retVal map[string]string
+	executeJSONRPCEx("Player_WatchTimes", &retVal, nil)
+	return retVal
+}
+
 func CloseAllDialogs() bool {
 	retVal := 0
 	executeJSONRPCEx("Dialog_CloseAll", &retVal, nil)
