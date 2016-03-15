@@ -547,7 +547,7 @@ func Scrobble(action string, contentType string, tmdbId int, runtime int) {
 
 	progress := watchedTime / math.Floor(videoDuration) * 100
 
-	log.Infof("Watched: %fs, duration: %fs, progress: %f%", watchedTime, videoDuration, progress)
+	log.Infof("Watched: %fs, duration: %fs, progress: %f%%", watchedTime, videoDuration, progress)
 
 	endPoint := fmt.Sprintf("scrobble/%s", action)
 	resp, err := Post(endPoint, bytes.NewBufferString(fmt.Sprintf(`{"%s": {"ids": {"tmdb": %d}}, "progress": %f}`, contentType, tmdbId, progress)))
