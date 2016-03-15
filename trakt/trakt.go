@@ -30,6 +30,8 @@ var log = logging.MustGetLogger("trakt")
 var (
 	clearance, _ = cloudhole.GetClearance()
 	retries      = 0
+	scrobbleTime = float64(0)
+	scrobbleEnd  = float64(0)
 )
 
 type Object struct {
@@ -519,7 +521,9 @@ func Scrobble(action string, contentType string, tmdbId int, runtime int) {
 	if err := Authorized(); err != nil {
 		return
 	}
-	log.Notice(action, contentType, tmdbId)
+	if action != "update" {
+		log.Notice(action, contentType, tmdbId)
+	}
 
 	retVal := xbmc.GetWatchTimes()
 
@@ -527,27 +531,37 @@ func Scrobble(action string, contentType string, tmdbId int, runtime int) {
 	watchedTime, _ := strconv.ParseFloat(retVal["watchedTime"], 64)
 	videoDuration, _ := strconv.ParseFloat(retVal["videoDuration"], 64)
 	if errStr != "" {
-		log.Error(errStr)
+		log.Warning(errStr)
+	} else {
+		scrobbleTime = watchedTime
+		scrobbleEnd = videoDuration
+	}
+	if action == "update" {
 		return
 	}
 
-	if videoDuration == 0 {
+	if scrobbleEnd == 0 {
 		if runtime != 0 {
-			videoDuration = float64(runtime)
+			scrobbleEnd = float64(runtime)
 			log.Warningf("Using specified runtime of %d", runtime)
 		} else {
 			if contentType == "movie" {
-				videoDuration = 7200
+				scrobbleEnd = 7200
 			} else {
-				videoDuration = 2700
+				scrobbleEnd = 2700
 			}
 			log.Warningf("Using fallback runtime of %d", videoDuration)
 		}
 	}
 
-	progress := watchedTime / math.Floor(videoDuration) * 100
+	progress := scrobbleTime / math.Floor(scrobbleEnd) * 100
 
-	log.Infof("Watched: %fs, duration: %fs, progress: %f%%", watchedTime, videoDuration, progress)
+	log.Infof("Progress: %f%%, watched: %fs, duration: %fs", progress, scrobbleTime, scrobbleEnd)
+
+	if action == "stop" {
+		scrobbleTime = 0
+		scrobbleEnd = 0
+	}
 
 	endPoint := fmt.Sprintf("scrobble/%s", action)
 	resp, err := Post(endPoint, bytes.NewBufferString(fmt.Sprintf(`{"%s": {"ids": {"tmdb": %d}}, "progress": %f}`, contentType, tmdbId, progress)))

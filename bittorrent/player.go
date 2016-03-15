@@ -578,6 +578,8 @@ playbackLoop:
 	for {
 		if xbmc.PlayerIsPlaying() == false {
 			break playbackLoop
+		} else if btp.scrobble {
+			trakt.Scrobble("update", btp.contentType, btp.tmdbId, btp.runtime)
 		}
 		select {
 		case <-oneSecond.C:
@@ -608,11 +610,11 @@ playbackLoop:
 			}
 		}
 	}
-	if overlayStatusActive == true {
-		btp.overlayStatus.Close()
-	}
+
+	btp.overlayStatus.Close()
+	btp.setRateLimiting(false)
+
 	if btp.scrobble {
 		trakt.Scrobble("stop", btp.contentType, btp.tmdbId, btp.runtime)
 	}
-	btp.setRateLimiting(false)
 }
