@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/op/go-logging"
 	"github.com/scakemyer/quasar/bittorrent"
 	"github.com/scakemyer/quasar/providers"
 	"github.com/scakemyer/quasar/config"
@@ -16,9 +15,6 @@ import (
 	"github.com/scakemyer/quasar/xbmc"
 )
 
-var (
-	showsLog = logging.MustGetLogger("shows")
-)
 
 func TVIndex(ctx *gin.Context) {
 	items := xbmc.ListItems{
@@ -163,9 +159,15 @@ func TVMostVoted(ctx *gin.Context) {
 func SearchShows(ctx *gin.Context) {
 	query := ctx.Request.URL.Query().Get("q")
 	if query == "" {
-		query = xbmc.Keyboard("", "LOCALIZE[30201]")
-		if query == "" {
-			return
+		if len(searchHistory) > 0 && xbmc.DialogConfirm("Quasar", "LOCALIZE[30262]") {
+			choice := xbmc.ListDialog("LOCALIZE[30261]", searchHistory...)
+			query = searchHistory[choice]
+		} else {
+			query = xbmc.Keyboard("", "LOCALIZE[30201]")
+			if query == "" {
+				return
+			}
+			searchHistory = append(searchHistory, query)
 		}
 	}
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "0"))

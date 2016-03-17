@@ -190,9 +190,15 @@ func MoviesMostVoted(ctx *gin.Context) {
 func SearchMovies(ctx *gin.Context) {
 	query := ctx.Request.URL.Query().Get("q")
 	if query == "" {
-		query = xbmc.Keyboard("", "LOCALIZE[30206]")
-		if query == "" {
-			return
+		if len(searchHistory) > 0 && xbmc.DialogConfirm("Quasar", "LOCALIZE[30262]") {
+			choice := xbmc.ListDialog("LOCALIZE[30261]", searchHistory...)
+			query = searchHistory[choice]
+		} else {
+			query = xbmc.Keyboard("", "LOCALIZE[30206]")
+			if query == "" {
+				return
+			}
+			searchHistory = append(searchHistory, query)
 		}
 	}
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "0"))

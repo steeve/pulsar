@@ -9,10 +9,19 @@ import (
 	"github.com/scakemyer/quasar/xbmc"
 )
 
-func Search(c *gin.Context) {
-	query := xbmc.Keyboard("", "LOCALIZE[30209]")
-	if query == "" {
-		return
+var searchHistory []string
+
+func Search(ctx *gin.Context) {
+	query := ctx.Request.URL.Query().Get("q")
+	if len(searchHistory) > 0 && xbmc.DialogConfirm("Quasar", "LOCALIZE[30262]") {
+		choice := xbmc.ListDialog("LOCALIZE[30261]", searchHistory...)
+		query = searchHistory[choice]
+	} else {
+		query = xbmc.Keyboard("", "LOCALIZE[30209]")
+		if query == "" {
+			return
+		}
+		searchHistory = append(searchHistory, query)
 	}
 
 	log.Println("Searching providers for:", query)
@@ -30,5 +39,5 @@ func Search(c *gin.Context) {
 		items = append(items, item)
 	}
 
-	c.JSON(200, xbmc.NewView("", items))
+	ctx.JSON(200, xbmc.NewView("", items))
 }
