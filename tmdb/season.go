@@ -105,7 +105,7 @@ func (season *Season) ToListItem(show *Show) *xbmc.ListItem {
 			Title:         name,
 			OriginalTitle: name,
 			Season:        season.Season,
-			TVShowTitle:   show.Title,
+			TVShowTitle:   show.OriginalName,
 		},
 		Art: &xbmc.ListItemArt{},
 	}

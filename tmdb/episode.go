@@ -103,7 +103,7 @@ func (episode *Episode) ToListItem(show *Show) *xbmc.ListItem {
 			OriginalTitle: episode.Name,
 			Season:        episode.SeasonNumber,
 			Episode:       episode.EpisodeNumber,
-			TVShowTitle:   show.Title,
+			TVShowTitle:   show.OriginalName,
 			Plot:          episode.Overview,
 			PlotOutline:   episode.Overview,
 			Rating:        episode.VoteAverage,
