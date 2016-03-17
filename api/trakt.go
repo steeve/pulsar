@@ -20,7 +20,8 @@ func AuthorizeTrakt(ctx *gin.Context) {
 	if err == nil {
 		ctx.String(200, "")
 	} else {
-		ctx.String(404, "")
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
+		ctx.String(200, "")
 	}
 }
 

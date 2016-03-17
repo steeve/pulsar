@@ -452,7 +452,9 @@ func Authorize(fromSettings bool) error {
 	}
 	log.Noticef("Got code for %s: %s", code.VerificationURL, code.UserCode)
 
-	xbmc.Dialog("LOCALIZE[30058]", fmt.Sprintf("Visit %s and enter your code: %s", code.VerificationURL, code.UserCode))
+	if xbmc.Dialog("LOCALIZE[30058]", fmt.Sprintf("Visit %s and enter your code: %s", code.VerificationURL, code.UserCode)) == false {
+		return errors.New("Authentication canceled.")
+	}
 
 	token, err := PollToken(code)
 
