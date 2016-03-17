@@ -19,6 +19,41 @@ import (
 
 var torrentsLog = logging.MustGetLogger("torrents")
 
+type TorrentMap struct {
+	tmdbId  string
+	torrent *bittorrent.Torrent
+}
+var TorrentsMap []*TorrentMap
+
+func AddToTorrentsMap(tmdbId string, torrent *bittorrent.Torrent) {
+	inTorrentsMap := false
+	for _, torrentMap := range TorrentsMap {
+		if tmdbId == torrentMap.tmdbId {
+			inTorrentsMap = true
+		}
+	}
+	if inTorrentsMap == false {
+		torrentMap := &TorrentMap{
+			tmdbId: tmdbId,
+			torrent: torrent,
+		}
+		TorrentsMap = append(TorrentsMap, torrentMap)
+	}
+}
+
+func InTorrentsMap(tmdbId string) (torrents []*bittorrent.Torrent) {
+	for index, torrentMap := range TorrentsMap {
+		if tmdbId == torrentMap.tmdbId {
+			if xbmc.DialogConfirm("Quasar", "LOCALIZE[30260]") {
+				torrents = append(torrents, torrentMap.torrent)
+			} else {
+				TorrentsMap = append(TorrentsMap[:index], TorrentsMap[index + 1:]...)
+			}
+		}
+	}
+	return torrents
+}
+
 func ListTorrents(btService *bittorrent.BTService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		btService.Session.GetTorrents()

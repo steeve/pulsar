@@ -212,24 +212,28 @@ func MovieGenres(ctx *gin.Context) {
 	ctx.JSON(200, xbmc.NewView("", items))
 }
 
-func movieLinks(tmdbId string) ([]*bittorrent.Torrent, string) {
+func movieLinks(tmdbId string) []*bittorrent.Torrent {
 	log.Println("Searching links for:", tmdbId)
 
 	movie := tmdb.GetMovieById(tmdbId, config.Get().Language)
 
 	log.Printf("Resolved %s to %s", tmdbId, movie.Title)
 
+	if torrents := InTorrentsMap(tmdbId); len(torrents) > 0 {
+		return torrents
+	}
+
 	searchers := providers.GetMovieSearchers()
 	if len(searchers) == 0 {
 		xbmc.Notify("Quasar", "LOCALIZE[30204]", config.AddonIcon())
 	}
 
-	return providers.SearchMovie(searchers, movie), movie.Title
+	return providers.SearchMovie(searchers, movie)
 }
 
 func MovieLinks(ctx *gin.Context) {
 	tmdbId := ctx.Params.ByName("tmdbId")
-	torrents, movieTitle := movieLinks(tmdbId)
+	torrents := movieLinks(tmdbId)
 
 	if len(torrents) == 0 {
 		xbmc.Notify("Quasar", "LOCALIZE[30205]", config.AddonIcon())
@@ -277,14 +281,16 @@ func MovieLinks(ctx *gin.Context) {
 		choices = append(choices, label)
 	}
 
-	movie := tmdb.GetMovieById(tmdbId, "")
+	movie := tmdb.GetMovieById(tmdbId, config.Get().Language)
 	runtime := 120
 	if movie.Runtime > 0 {
 		runtime = movie.Runtime
 	}
 
-	choice := xbmc.ListDialogLarge("LOCALIZE[30228]", movieTitle, choices...)
+	choice := xbmc.ListDialogLarge("LOCALIZE[30228]", movie.Title, choices...)
 	if choice >= 0 {
+		AddToTorrentsMap(tmdbId, torrents[choice])
+
 		rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[choice].Magnet(),
 		                                      "tmdb", tmdbId,
 		                                      "type", "movie",
@@ -295,7 +301,7 @@ func MovieLinks(ctx *gin.Context) {
 
 func MoviePlay(ctx *gin.Context) {
 	tmdbId := ctx.Params.ByName("tmdbId")
-	torrents, _ := movieLinks(tmdbId)
+	torrents := movieLinks(tmdbId)
 	if len(torrents) == 0 {
 		xbmc.Notify("Quasar", "LOCALIZE[30205]", config.AddonIcon())
 		return
@@ -308,6 +314,9 @@ func MoviePlay(ctx *gin.Context) {
 	}
 
 	sort.Sort(sort.Reverse(providers.ByQuality(torrents)))
+
+	AddToTorrentsMap(tmdbId, torrents[0])
+
 	rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[0].Magnet(),
 	                                      "tmdb", tmdbId,
 	                                      "type", "movie",
