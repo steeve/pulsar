@@ -104,6 +104,7 @@ const (
 
 	CodecXVid
 	CodecH264
+	CodecH265
 
 	CodecMp3
 	CodecAAC
@@ -116,6 +117,7 @@ const (
 var (
 	videoTags = map[*regexp.Regexp]int{
 		regexp.MustCompile(`\W+([hx]264|1080p|hdrip)\W*`): CodecH264,
+		regexp.MustCompile(`\W+([hx]265|hevc)\W*`):        CodecH265,
 		regexp.MustCompile(`\W+xvid\W*`):                  CodecXVid,
 	}
 	audioTags = map[*regexp.Regexp]int{
@@ -126,7 +128,7 @@ var (
 		regexp.MustCompile(`\W+dts\W+hd\W*`):         CodecDTSHD,
 		regexp.MustCompile(`\W+dts\W+hd\W+ma\W*`):    CodecDTSHDMA,
 	}
-	Codecs = []string{"", "Xvid", "h264", "MP3", "AAC", "AC3", "DTS", "DTS HD", "DTS HD MA"}
+	Codecs = []string{"", "Xvid", "H.264", "H.265", "MP3", "AAC", "AC3", "DTS", "DTS HD", "DTS HD MA"}
 )
 
 var (
