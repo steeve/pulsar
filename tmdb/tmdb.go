@@ -18,7 +18,8 @@ import (
 
 const (
 	MaxPages  = 20
-	StartPage = 1
+	startPage = 1
+	resultsPerPage = 20
 )
 
 var (
@@ -308,7 +309,6 @@ func ImageURL(uri string, size string) string {
 
 func ListEntities(endpoint string, params napping.Params) []*Entity {
 	var wg sync.WaitGroup
-	resultsPerPage := config.Get().ResultsPerPage
 	entities := make([]*Entity, MaxPages * resultsPerPage)
 	params["api_key"] = apiKey
 	params["language"] = "en"
@@ -319,7 +319,7 @@ func ListEntities(endpoint string, params napping.Params) []*Entity {
 			defer wg.Done()
 			var tmp *EntityList
 			tmpParams := napping.Params{
-				"page": strconv.Itoa(StartPage + page),
+				"page": strconv.Itoa(startPage + page),
 			}
 			for k, v := range params {
 				tmpParams[k] = v

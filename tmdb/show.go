@@ -96,7 +96,7 @@ func SearchShows(query string, language string, page int) Shows {
 		urlValues := napping.Params{
 			"api_key": apiKey,
 			"query": query,
-			"page": strconv.Itoa(StartPage + page),
+			"page": strconv.Itoa(startPage + page),
 		}.AsUrlValues()
 		resp, err := napping.Get(
 			tmdbEndpoint + "search/tv",
@@ -121,7 +121,6 @@ func SearchShows(query string, language string, page int) Shows {
 }
 
 func ListShowsComplete(endpoint string, params napping.Params, page int) Shows {
-	resultsPerPage := config.Get().ResultsPerPage
 	maxPages := MaxPages
 	if page >= 0 {
 		maxPages = 1
@@ -142,7 +141,7 @@ func ListShowsComplete(endpoint string, params napping.Params, page int) Shows {
 			defer wg.Done()
 			var tmp *EntityList
 			tmpParams := napping.Params{
-				"page": strconv.Itoa(StartPage + page),
+				"page": strconv.Itoa(startPage + page),
 			}
 			for k, v := range params {
 				tmpParams[k] = v

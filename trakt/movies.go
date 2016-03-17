@@ -35,7 +35,7 @@ func SearchMovies(query string, page string) (movies []*Movies, err error) {
 
 	params := napping.Params{
 		"page": page,
-		"limit": Limit,
+		"limit": strconv.Itoa(config.Get().ResultsPerPage),
 		"query": query,
 		"extended": "full,images",
 	}.AsUrlValues()
@@ -61,7 +61,7 @@ func TopMovies(topCategory string, page string) (movies []*Movies, err error) {
 
 	params := napping.Params{
 		"page": page,
-		"limit": Limit,
+		"limit": strconv.Itoa(config.Get().ResultsPerPage),
 		"extended": "full,images",
 	}.AsUrlValues()
 

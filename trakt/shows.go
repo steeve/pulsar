@@ -35,7 +35,7 @@ func SearchShows(query string, page string) (shows []*Shows, err error) {
 
 	params := napping.Params{
 		"page": page,
-		"limit": Limit,
+		"limit": strconv.Itoa(config.Get().ResultsPerPage),
 		"query": query,
 		"extended": "full,images",
 	}.AsUrlValues()
@@ -57,7 +57,7 @@ func TopShows(topCategory string, page string) (shows []*Shows, err error) {
 
 	params := napping.Params{
 		"page": page,
-		"limit": Limit,
+		"limit": strconv.Itoa(config.Get().ResultsPerPage),
 		"extended": "full,images",
 	}.AsUrlValues()
 

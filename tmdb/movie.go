@@ -108,7 +108,7 @@ func SearchMovies(query string, language string, page int) Movies {
 		urlValues := napping.Params{
 			"api_key": apiKey,
 			"query": query,
-			"page": strconv.Itoa(StartPage + page),
+			"page": strconv.Itoa(startPage + page),
 		}.AsUrlValues()
 		resp, err := napping.Get(
 			tmdbEndpoint + "search/movie",
@@ -134,7 +134,7 @@ func SearchMovies(query string, language string, page int) Movies {
 
 func GetList(listId string, language string, page int) Movies {
 	var results *List
-	resultsPerPage := config.Get().ResultsPerPage
+	listResultsPerPage := config.Get().ResultsPerPage
 
 	rateLimiter.Call(func() {
 		urlValues := napping.Params{
@@ -155,13 +155,13 @@ func GetList(listId string, language string, page int) Movies {
 			xbmc.Notify("Quasar", message, config.AddonIcon())
 		}
 	})
-	tmdbIds := make([]int, 0, resultsPerPage)
+	tmdbIds := make([]int, 0, listResultsPerPage)
 	for i, movie := range results.Items {
-		if i < page * resultsPerPage {
+		if i < page * listResultsPerPage {
 			continue
 		}
 		tmdbIds = append(tmdbIds, movie.Id)
-		if i >= (StartPage + page) * resultsPerPage - 1 {
+		if i >= (startPage + page) * listResultsPerPage - 1 {
 			break
 		}
 	}
@@ -175,7 +175,6 @@ func (a ByPopularity) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByPopularity) Less(i, j int) bool { return a[i].Popularity < a[j].Popularity }
 
 func ListMoviesComplete(endpoint string, params napping.Params, page int) Movies {
-	resultsPerPage := config.Get().ResultsPerPage
 	maxPages := MaxPages
 	if page >= 0 {
 		maxPages = 1
@@ -196,7 +195,7 @@ func ListMoviesComplete(endpoint string, params napping.Params, page int) Movies
 			defer wg.Done()
 			var tmp *EntityList
 			tmpParams := napping.Params{
-				"page": strconv.Itoa(StartPage + page),
+				"page": strconv.Itoa(startPage + page),
 			}
 			for k, v := range params {
 				tmpParams[k] = v
