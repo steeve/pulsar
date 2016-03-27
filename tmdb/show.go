@@ -120,61 +120,38 @@ func SearchShows(query string, language string, page int) Shows {
 	return GetShows(tmdbIds, language)
 }
 
-func ListShowsComplete(endpoint string, params napping.Params, page int) Shows {
-	maxPages := MaxPages
-	if page >= 0 {
-		maxPages = 1
-	}
-	shows := make(Shows, maxPages * resultsPerPage)
+func ListShows(endpoint string, params napping.Params, page int) (shows Shows) {
+	var results *EntityList
 
+	params["page"] = strconv.Itoa(startPage + page)
 	params["api_key"] = apiKey
+	p := params.AsUrlValues()
 
-	wg := sync.WaitGroup{}
-	for i := 0; i < maxPages; i++ {
-		wg.Add(1)
-		currentpage := i
-		startIndex := i * resultsPerPage
-		if page >= 0 {
-			currentpage = page
+	rateLimiter.Call(func() {
+		resp, err := napping.Get(
+			tmdbEndpoint + endpoint,
+			&p,
+			&results,
+			nil,
+		)
+		if err != nil {
+			log.Error(err.Error())
+			xbmc.Notify("Quasar", "ListShows failed, check your logs.", config.AddonIcon())
+		} else if resp.Status() != 200 {
+			message := fmt.Sprintf("ListShows bad status: %d", resp.Status())
+			log.Error(message)
+			xbmc.Notify("Quasar", message, config.AddonIcon())
 		}
-		go func(page int) {
-			defer wg.Done()
-			var tmp *EntityList
-			tmpParams := napping.Params{
-				"page": strconv.Itoa(startPage + page),
-			}
-			for k, v := range params {
-				tmpParams[k] = v
-			}
-			urlValues := tmpParams.AsUrlValues()
-			rateLimiter.Call(func() {
-				resp, err := napping.Get(
-					tmdbEndpoint + endpoint,
-					&urlValues,
-					&tmp,
-					nil,
-				)
-				if err != nil {
-					log.Error(err.Error())
-					xbmc.Notify("Quasar", "ListShows failed, check your logs.", config.AddonIcon())
-				} else if resp.Status() != 200 {
-					message := fmt.Sprintf("ListShows bad status: %d", resp.Status())
-					xbmc.Notify("Quasar", message, config.AddonIcon())
-				}
-			})
-			if tmp != nil {
-				for i, entity := range tmp.Results {
-					shows[startIndex + i] = GetShow(entity.Id, params["language"])
-				}
-			}
-		}(currentpage)
+	})
+	if results != nil {
+		for _, show := range results.Results {
+			shows = append(shows, GetShow(show.Id, params["language"]))
+		}
 	}
-	wg.Wait()
-
 	return shows
 }
 
-func PopularShowsComplete(genre string, language string, page int) Shows {
+func PopularShows(genre string, language string, page int) Shows {
 	var p napping.Params
 	if genre == "" {
 		p = napping.Params{
@@ -190,10 +167,10 @@ func PopularShowsComplete(genre string, language string, page int) Shows {
 			"with_genres":        genre,
 		}
 	}
-	return ListShowsComplete("discover/tv", p, page)
+	return ListShows("discover/tv", p, page)
 }
 
-func RecentShowsComplete(genre string, language string, page int) Shows {
+func RecentShows(genre string, language string, page int) Shows {
 	var p napping.Params
 	if genre == "" {
 		p = napping.Params{
@@ -209,10 +186,10 @@ func RecentShowsComplete(genre string, language string, page int) Shows {
 			"with_genres":        genre,
 		}
 	}
-	return ListShowsComplete("discover/tv", p, page)
+	return ListShows("discover/tv", p, page)
 }
 
-func RecentEpisodesComplete(genre string, language string, page int) Shows {
+func RecentEpisodes(genre string, language string, page int) Shows {
 	var p napping.Params
 
 	if genre == "" {
@@ -229,15 +206,15 @@ func RecentEpisodesComplete(genre string, language string, page int) Shows {
 			"with_genres":        genre,
 		}
 	}
-	return ListShowsComplete("discover/tv", p, page)
+	return ListShows("discover/tv", p, page)
 }
 
-func TopRatedShowsComplete(genre string, language string, page int) Shows {
-	return ListShowsComplete("tv/top_rated", napping.Params{"language": language}, page)
+func TopRatedShows(genre string, language string, page int) Shows {
+	return ListShows("tv/top_rated", napping.Params{"language": language}, page)
 }
 
-func MostVotedShowsComplete(genre string, language string, page int) Movies {
-	return ListMoviesComplete("discover/tv", napping.Params{
+func MostVotedShows(genre string, language string, page int) Shows {
+	return ListShows("discover/tv", napping.Params{
 		"language":           language,
 		"sort_by":            "vote_count.desc",
 		"first_air_date.lte": time.Now().UTC().Format("2006-01-02"),

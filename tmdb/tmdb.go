@@ -58,6 +58,8 @@ type Movie struct {
 
 	Credits *Credits `json:"credits,omitempty"`
 	Images  *Images  `json:"images,omitempty"`
+
+	ReleaseDates *ReleaseDatesResults `json:"release_dates"`
 }
 
 type Show struct {
@@ -224,6 +226,23 @@ type Trailer struct {
 	Size   string `json:"size"`
 	Source string `json:"source"`
 	Type   string `json:"type"`
+}
+
+type ReleaseDatesResults struct {
+	Results []*ReleaseDates `json:"results"`
+}
+
+type ReleaseDates struct {
+	ISO_3166_1   string         `json:"iso_3166_1"`
+	ReleaseDates []*ReleaseDate `json:"release_dates"`
+}
+
+type ReleaseDate struct {
+	Certification string `json:"certification"`
+	ISO_639_1     string `json:"iso_639_1"`
+	Note          string `json:"note"`
+	ReleaseDate   string `json:"release_date"`
+	Type          int    `json:"type"`
 }
 
 const (

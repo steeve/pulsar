@@ -15,6 +15,12 @@ import (
 	"github.com/scakemyer/quasar/xbmc"
 )
 
+// Unused...
+type ByPopularity Movies
+func (a ByPopularity) Len() int           { return len(a) }
+func (a ByPopularity) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByPopularity) Less(i, j int) bool { return a[i].Popularity < a[j].Popularity }
+
 func GetMovie(tmdbId int, language string) *Movie {
 	return GetMovieById(strconv.Itoa(tmdbId), language)
 }
@@ -27,7 +33,7 @@ func GetMovieById(movieId string, language string) *Movie {
 		rateLimiter.Call(func() {
 			urlValues := napping.Params{
 				"api_key": apiKey,
-				"append_to_response": "credits,images,alternative_titles,translations,external_ids,trailers",
+				"append_to_response": "credits,images,alternative_titles,translations,external_ids,trailers,release_dates",
 				"language": language,
 			}.AsUrlValues()
 			resp, err := napping.Get(
@@ -168,67 +174,38 @@ func GetList(listId string, language string, page int) Movies {
 	return GetMovies(tmdbIds, language)
 }
 
-type ByPopularity Movies
+func ListMovies(endpoint string, params napping.Params, page int) (movies Movies) {
+	var results *EntityList
 
-func (a ByPopularity) Len() int           { return len(a) }
-func (a ByPopularity) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByPopularity) Less(i, j int) bool { return a[i].Popularity < a[j].Popularity }
-
-func ListMoviesComplete(endpoint string, params napping.Params, page int) Movies {
-	maxPages := MaxPages
-	if page >= 0 {
-		maxPages = 1
-	}
-	movies := make(Movies, maxPages * resultsPerPage)
-
+	params["page"] = strconv.Itoa(startPage + page)
 	params["api_key"] = apiKey
+	p := params.AsUrlValues()
 
-	wg := sync.WaitGroup{}
-	for i := 0; i < maxPages; i++ {
-		wg.Add(1)
-		currentpage := i
-		startIndex := i * resultsPerPage
-		if page >= 0 {
-			currentpage = page
+	rateLimiter.Call(func() {
+		resp, err := napping.Get(
+			tmdbEndpoint + endpoint,
+			&p,
+			&results,
+			nil,
+		)
+		if err != nil {
+			log.Error(err.Error())
+			xbmc.Notify("Quasar", "ListMovies failed, check your logs.", config.AddonIcon())
+		} else if resp.Status() != 200 {
+			message := fmt.Sprintf("ListMovies bad status: %d", resp.Status())
+			log.Error(message)
+			xbmc.Notify("Quasar", message, config.AddonIcon())
 		}
-		go func(page int) {
-			defer wg.Done()
-			var tmp *EntityList
-			tmpParams := napping.Params{
-				"page": strconv.Itoa(startPage + page),
-			}
-			for k, v := range params {
-				tmpParams[k] = v
-			}
-			urlValues := tmpParams.AsUrlValues()
-			rateLimiter.Call(func() {
-				resp, err := napping.Get(
-					tmdbEndpoint + endpoint,
-					&urlValues,
-					&tmp,
-					nil,
-				)
-				if err != nil {
-					log.Error(err.Error())
-					xbmc.Notify("Quasar", "ListMovies failed, check your logs.", config.AddonIcon())
-				} else if resp.Status() != 200 {
-					message := fmt.Sprintf("ListMovies bad status: %d", resp.Status())
-					log.Error(message)
-					xbmc.Notify("Quasar", message, config.AddonIcon())
-				}
-			})
-			if tmp != nil {
-				for i, movie := range tmp.Results {
-					movies[startIndex + i] = GetMovie(movie.Id, params["language"])
-				}
-			}
-		}(currentpage)
+	})
+	if results != nil {
+		for _, movie := range results.Results {
+			movies = append(movies, GetMovie(movie.Id, params["language"]))
+		}
 	}
-	wg.Wait()
 	return movies
 }
 
-func PopularMoviesComplete(genre string, language string, page int) Movies {
+func PopularMovies(genre string, language string, page int) Movies {
 	var p napping.Params
 	if genre == "" {
 		p = napping.Params{
@@ -244,10 +221,10 @@ func PopularMoviesComplete(genre string, language string, page int) Movies {
 			"with_genres":              genre,
 		}
 	}
-	return ListMoviesComplete("discover/movie", p, page)
+	return ListMovies("discover/movie", p, page)
 }
 
-func RecentMoviesComplete(genre string, language string, page int) Movies {
+func RecentMovies(genre string, language string, page int) Movies {
 	var p napping.Params
 	if genre == "" {
 		p = napping.Params{
@@ -265,14 +242,14 @@ func RecentMoviesComplete(genre string, language string, page int) Movies {
 			"with_genres":              genre,
 		}
 	}
-	return ListMoviesComplete("discover/movie", p, page)
+	return ListMovies("discover/movie", p, page)
 }
 
-func TopRatedMoviesComplete(genre string, language string, page int) Movies {
-	return ListMoviesComplete("movie/top_rated", napping.Params{"language": language}, page)
+func TopRatedMovies(genre string, language string, page int) Movies {
+	return ListMovies("movie/top_rated", napping.Params{"language": language}, page)
 }
 
-func MostVotedMoviesComplete(genre string, language string, page int) Movies {
+func MostVotedMovies(genre string, language string, page int) Movies {
 	var p napping.Params
 	if genre == "" {
 		p = napping.Params{
@@ -288,7 +265,7 @@ func MostVotedMoviesComplete(genre string, language string, page int) Movies {
 			"with_genres":              genre,
 		}
 	}
-	return ListMoviesComplete("discover/movie", p, page)
+	return ListMovies("discover/movie", p, page)
 }
 
 func (movie *Movie) ToListItem() *xbmc.ListItem {

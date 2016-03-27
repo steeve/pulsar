@@ -51,11 +51,11 @@ var genreSlugs = map[int]string{
 func MoviesIndex(ctx *gin.Context) {
 	items := xbmc.ListItems{
 		{Label: "LOCALIZE[30209]", Path: UrlForXBMC("/movies/search"), Thumbnail: config.AddonResource("img", "search.png")},
+		{Label: "LOCALIZE[30056]", Path: UrlForXBMC("/movies/trakt/"), Thumbnail: config.AddonResource("img", "trakt.png")},
 		{Label: "LOCALIZE[30210]", Path: UrlForXBMC("/movies/popular"), Thumbnail: config.AddonResource("img", "popular.png")},
-		{Label: "LOCALIZE[30236]", Path: UrlForXBMC("/movies/recent"), Thumbnail: config.AddonResource("img", "clock.png")},
 		{Label: "LOCALIZE[30211]", Path: UrlForXBMC("/movies/top"), Thumbnail: config.AddonResource("img", "top_rated.png")},
 		{Label: "LOCALIZE[30212]", Path: UrlForXBMC("/movies/mostvoted"), Thumbnail: config.AddonResource("img", "most_voted.png")},
-		{Label: "LOCALIZE[30056]", Path: UrlForXBMC("/movies/trakt/"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{Label: "LOCALIZE[30236]", Path: UrlForXBMC("/movies/recent"), Thumbnail: config.AddonResource("img", "clock.png")},
 		{Label: "LOCALIZE[30213]", Path: UrlForXBMC("/movies/imdb250"), Thumbnail: config.AddonResource("img", "imdb.png")},
 	}
 	for _, genre := range tmdb.GetMovieGenres(config.Get().Language) {
@@ -156,7 +156,7 @@ func PopularMovies(ctx *gin.Context) {
 		genre = ""
 	}
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "0"))
-	renderMovies(tmdb.PopularMoviesComplete(genre, config.Get().Language, page), ctx, page, "")
+	renderMovies(tmdb.PopularMovies(genre, config.Get().Language, page), ctx, page, "")
 }
 
 func RecentMovies(ctx *gin.Context) {
@@ -165,7 +165,7 @@ func RecentMovies(ctx *gin.Context) {
 		genre = ""
 	}
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "0"))
-	renderMovies(tmdb.RecentMoviesComplete(genre, config.Get().Language, page), ctx, page, "")
+	renderMovies(tmdb.RecentMovies(genre, config.Get().Language, page), ctx, page, "")
 }
 
 func TopRatedMovies(ctx *gin.Context) {
@@ -174,7 +174,7 @@ func TopRatedMovies(ctx *gin.Context) {
 		genre = ""
 	}
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "0"))
-	renderMovies(tmdb.TopRatedMoviesComplete(genre, config.Get().Language, page), ctx, page, "")
+	renderMovies(tmdb.TopRatedMovies(genre, config.Get().Language, page), ctx, page, "")
 }
 
 func IMDBTop250(ctx *gin.Context) {
@@ -184,7 +184,7 @@ func IMDBTop250(ctx *gin.Context) {
 
 func MoviesMostVoted(ctx *gin.Context) {
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "0"))
-	renderMovies(tmdb.MostVotedMoviesComplete("", config.Get().Language, page), ctx, page, "")
+	renderMovies(tmdb.MostVotedMovies("", config.Get().Language, page), ctx, page, "")
 }
 
 func SearchMovies(ctx *gin.Context) {

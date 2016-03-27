@@ -19,10 +19,12 @@ import (
 func TVIndex(ctx *gin.Context) {
 	items := xbmc.ListItems{
 		{Label: "LOCALIZE[30209]", Path: UrlForXBMC("/shows/search"), Thumbnail: config.AddonResource("img", "search.png")},
-		{Label: "LOCALIZE[30210]", Path: UrlForXBMC("/shows/popular"), Thumbnail: config.AddonResource("img", "popular.png")},
-		{Label: "LOCALIZE[30237]", Path: UrlForXBMC("/shows/recent/shows"), Thumbnail: config.AddonResource("img", "clock.png")},
-		{Label: "LOCALIZE[30238]", Path: UrlForXBMC("/shows/recent/episodes"), Thumbnail: config.AddonResource("img", "fresh.png")},
 		{Label: "LOCALIZE[30056]", Path: UrlForXBMC("/shows/trakt/"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{Label: "LOCALIZE[30238]", Path: UrlForXBMC("/shows/recent/episodes"), Thumbnail: config.AddonResource("img", "fresh.png")},
+		{Label: "LOCALIZE[30237]", Path: UrlForXBMC("/shows/recent/shows"), Thumbnail: config.AddonResource("img", "clock.png")},
+		{Label: "LOCALIZE[30210]", Path: UrlForXBMC("/shows/popular"), Thumbnail: config.AddonResource("img", "popular.png")},
+		{Label: "LOCALIZE[30211]", Path: UrlForXBMC("/shows/top"), Thumbnail: config.AddonResource("img", "top_rated.png")},
+		{Label: "LOCALIZE[30212]", Path: UrlForXBMC("/shows/mostvoted"), Thumbnail: config.AddonResource("img", "most_voted.png")},
 	}
 	for _, genre := range tmdb.GetTVGenres(config.Get().Language) {
 		slug, _ := genreSlugs[genre.Id]
@@ -125,7 +127,7 @@ func PopularShows(ctx *gin.Context) {
 		genre = ""
 	}
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "0"))
-	renderShows(tmdb.PopularShowsComplete(genre, config.Get().Language, page), ctx, page, "")
+	renderShows(tmdb.PopularShows(genre, config.Get().Language, page), ctx, page, "")
 }
 
 func RecentShows(ctx *gin.Context) {
@@ -134,7 +136,7 @@ func RecentShows(ctx *gin.Context) {
 		genre = ""
 	}
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "0"))
-	renderShows(tmdb.RecentShowsComplete(genre, config.Get().Language, page), ctx, page, "")
+	renderShows(tmdb.RecentShows(genre, config.Get().Language, page), ctx, page, "")
 }
 
 func RecentEpisodes(ctx *gin.Context) {
@@ -143,17 +145,17 @@ func RecentEpisodes(ctx *gin.Context) {
 		genre = ""
 	}
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "0"))
-	renderShows(tmdb.RecentEpisodesComplete(genre, config.Get().Language, page), ctx, page, "")
+	renderShows(tmdb.RecentEpisodes(genre, config.Get().Language, page), ctx, page, "")
 }
 
 func TopRatedShows(ctx *gin.Context) {
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "0"))
-	renderShows(tmdb.TopRatedShowsComplete("", config.Get().Language, page), ctx, page, "")
+	renderShows(tmdb.TopRatedShows("", config.Get().Language, page), ctx, page, "")
 }
 
 func TVMostVoted(ctx *gin.Context) {
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "0"))
-	renderMovies(tmdb.MostVotedShowsComplete("", config.Get().Language, page), ctx, page, "")
+	renderShows(tmdb.MostVotedShows("", config.Get().Language, page), ctx, page, "")
 }
 
 func SearchShows(ctx *gin.Context) {
