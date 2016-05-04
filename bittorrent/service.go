@@ -179,11 +179,11 @@ func (s *BTService) configure() {
 
 	if s.config.LimitAfterBuffering == false {
 		if s.config.MaxDownloadRate > 0 {
-			s.log.Infof("Rate limiting download to %dkb/s", s.config.MaxDownloadRate / 1024)
+			s.log.Infof("Rate limiting download to %dkB/s", s.config.MaxDownloadRate / 1024)
 			settings.SetDownloadRateLimit(s.config.MaxDownloadRate)
 		}
 		if s.config.MaxUploadRate > 0 {
-			s.log.Infof("Rate limiting upload to %dkb/s", s.config.MaxUploadRate / 1024)
+			s.log.Infof("Rate limiting upload to %dkB/s", s.config.MaxUploadRate / 1024)
 			// If we have an upload rate, use the nicer bittyrant choker
 			settings.SetChokingAlgorithm(int(libtorrent.SessionSettingsBittyrantChoker))
 			settings.SetUploadRateLimit(s.config.MaxUploadRate)

@@ -300,7 +300,7 @@ func (btp *BTPlayer) statusStrings(progress float64, status libtorrent.TorrentSt
 	if btp.torrentInfo != nil && btp.torrentInfo.Swigcptr() != 0 {
 		line1 += " - " + humanize.Bytes(uint64(btp.torrentInfo.TotalSize()))
 	}
-	line2 := fmt.Sprintf("D:%.0fkb/s U:%.0fkb/s S:%d/%d P:%d/%d",
+	line2 := fmt.Sprintf("D:%.0fkB/s U:%.0fkB/s S:%d/%d P:%d/%d",
 		float64(status.GetDownloadRate())/1024,
 		float64(status.GetUploadRate())/1024,
 		status.GetNumSeeds(),
@@ -516,12 +516,12 @@ func (btp *BTPlayer) setRateLimiting(enable bool) {
 		settings := btp.bts.Session.Settings()
 		if enable == true {
 			if btp.bts.config.MaxDownloadRate > 0 {
-				btp.log.Infof("Buffer filled, rate limiting download to %dkb/s", btp.bts.config.MaxDownloadRate/1024)
+				btp.log.Infof("Buffer filled, rate limiting download to %dkB/s", btp.bts.config.MaxDownloadRate/1024)
 				settings.SetDownloadRateLimit(btp.bts.config.MaxDownloadRate)
 			}
 			if btp.bts.config.MaxUploadRate > 0 {
 				// If we have an upload rate, use the nicer bittyrant choker
-				btp.log.Infof("Buffer filled, rate limiting upload to %dkb/s", btp.bts.config.MaxUploadRate/1024)
+				btp.log.Infof("Buffer filled, rate limiting upload to %dkB/s", btp.bts.config.MaxUploadRate/1024)
 				settings.SetUploadRateLimit(btp.bts.config.MaxUploadRate)
 			}
 		} else {
