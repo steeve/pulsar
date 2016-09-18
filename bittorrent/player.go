@@ -300,12 +300,13 @@ func (btp *BTPlayer) statusStrings(progress float64, status libtorrent.TorrentSt
 	if btp.torrentInfo != nil && btp.torrentInfo.Swigcptr() != 0 {
 		line1 += " - " + humanize.Bytes(uint64(btp.torrentInfo.TotalSize()))
 	}
+	seeders := status.GetNumSeeds()
 	line2 := fmt.Sprintf("D:%.0fkB/s U:%.0fkB/s S:%d/%d P:%d/%d",
 		float64(status.GetDownloadRate())/1024,
 		float64(status.GetUploadRate())/1024,
-		status.GetNumSeeds(),
+		seeders,
 		status.GetNumComplete(),
-		status.GetNumPeers(),
+		status.GetNumPeers() - seeders,
 		status.GetNumIncomplete(),
 	)
 	line3 := status.GetName()
