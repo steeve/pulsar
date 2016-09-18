@@ -40,7 +40,7 @@ func getLastRelease(user string, repository string) (string, string) {
 		if config.Get().PreReleaseUpdates == false {
 			log.Info("Getting latest main release")
 			latestRelease, _, _ := client.Repositories.GetLatestRelease(user, repository)
-			lastRelease = *latestRelease
+			lastRelease = latestRelease
 		}
 		log.Infof("Last release: %s on %s", *lastRelease.TagName, *lastRelease.TargetCommitish)
 		return *lastRelease.TagName, *lastRelease.TargetCommitish
@@ -54,7 +54,7 @@ func getReleaseByTag(user string, repository string, tagName string) *github.Rep
 	releases, _, _ := client.Repositories.ListReleases(user, repository, nil)
 	for _, release := range releases {
 		if *release.TagName == tagName {
-			return &release
+			return release
 		}
 	}
 	return nil
