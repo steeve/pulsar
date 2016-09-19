@@ -1,7 +1,7 @@
 sudo: required
 language: go
 go:
-  - 1.6
+  - 1.7
 
 env:
   - PLATFORM=android-arm
@@ -15,38 +15,22 @@ env:
   - PLATFORM=linux-x86
   - PLATFORM=windows-x64
   - PLATFORM=windows-x86
-  - PLATFORM=all
 
 services:
   - docker
 
 before_install:
-  - |
-    if [ "${TRAVIS_PULL_REQUEST}" = "false" ] && [ -n "${TRAVIS_TAG}" ] && [ "${PLATFORM}" = "all" ]; then
-      make pull-all
-    elif [ "${PLATFORM}" != "all" ]; then
-      make pull
-    fi
+  - make pull
 
 install:
   - go get -d ./...
   - go get -d github.com/scakemyer/libtorrent-go
 
 script:
+  - make libs
+  - make $PLATFORM
   - |
-    if [ "${TRAVIS_PULL_REQUEST}" = "false" ] && [ -n "${TRAVIS_TAG}" ] && [ "${PLATFORM}" = "all" ]; then
-      make libs
-    elif [ "${PLATFORM}" != "all" ]; then
-      make libs
-    fi
-  - |
-    if [ "${TRAVIS_PULL_REQUEST}" = "false" ] && [ -n "${TRAVIS_TAG}" ] && [ "${PLATFORM}" = "all" ]; then
-      make $PLATFORM
-    elif [ "${PLATFORM}" != "all" ]; then
-      make $PLATFORM
-    fi
-  - |
-    if [ "${TRAVIS_PULL_REQUEST}" = "false" ] && [ -n "${TRAVIS_TAG}" ] && [ "${PLATFORM}" = "all" ]; then
+    if [ "${TRAVIS_PULL_REQUEST}" = "false" ] && [ -n "${TRAVIS_TAG}" ]; then
       # Push binaries to quasar-binaries repo
       make binaries
       cd binaries && git remote add binaries https://$GH_TOKEN@github.com/scakemyer/quasar-binaries
