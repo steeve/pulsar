@@ -475,6 +475,9 @@ func WriteShowStrm(showId string, ShowsLibraryPath string) error {
 		episodes := tmdb.GetSeason(Id, season.Season, "en").Episodes
 
 		for _, episode := range episodes {
+			if episode == nil {
+				continue
+			}
 			if episode.AirDate == "" {
 				continue
 			}

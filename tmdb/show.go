@@ -62,9 +62,7 @@ func GetShow(showId int, language string) *Show {
 			cacheStore.Set(key, show, cacheTime)
 		}
 	}
-	if show == nil {
-		return nil
-	}
+
 	switch t := show.RawPopularity.(type) {
 	case string:
 		if popularity, err := strconv.ParseFloat(t, 64); err == nil {
@@ -73,6 +71,7 @@ func GetShow(showId int, language string) *Show {
 	case float64:
 		show.Popularity = t
 	}
+
 	return show
 }
 

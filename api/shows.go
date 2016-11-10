@@ -181,6 +181,11 @@ func ShowSeasons(ctx *gin.Context) {
 
 	show := tmdb.GetShow(showId, config.Get().Language)
 
+	if show == nil {
+		ctx.Error(errors.New("Unable to find show"))
+		return
+	}
+
 	items := show.Seasons.ToListItems(show)
 	reversedItems := make(xbmc.ListItems, 0)
 	for i := len(items) - 1; i >= 0; i-- {
@@ -201,8 +206,19 @@ func ShowEpisodes(ctx *gin.Context) {
 	showId, _ := strconv.Atoi(ctx.Params.ByName("showId"))
 	seasonNumber, _ := strconv.Atoi(ctx.Params.ByName("season"))
 	language := config.Get().Language
+
 	show := tmdb.GetShow(showId, language)
+	if show == nil {
+		ctx.Error(errors.New("Unable to find show"))
+		return
+	}
+
 	season := tmdb.GetSeason(showId, seasonNumber, language)
+	if season == nil {
+		ctx.Error(errors.New("Unable to find season"))
+		return
+	}
+
 	items := season.Episodes.ToListItems(show, season)
 
 	for _, item := range items {
@@ -237,6 +253,10 @@ func showSeasonLinks(showId int, seasonNumber int) ([]*bittorrent.Torrent, error
 	log.Println("Searching links for TMDB Id:", showId)
 
 	show := tmdb.GetShow(showId, config.Get().Language)
+	if show == nil {
+		return nil, errors.New("Unable to find show")
+	}
+
 	season := tmdb.GetSeason(showId, seasonNumber, config.Get().Language)
 	if season == nil {
 		return nil, errors.New("Unable to find season")
@@ -261,7 +281,17 @@ func ShowSeasonLinks(ctx *gin.Context) {
 	seasonNumber, _ := strconv.Atoi(ctx.Params.ByName("season"))
 
 	show := tmdb.GetShow(showId, "")
+	if show == nil {
+		ctx.Error(errors.New("Unable to find show"))
+		return
+	}
+
 	season := tmdb.GetSeason(showId, seasonNumber,"")
+	if season == nil {
+		ctx.Error(errors.New("Unable to find season"))
+		return
+	}
+
 	longName := fmt.Sprintf("%s Season %02d", show.Name, seasonNumber)
 
 	torrents, err := showSeasonLinks(showId, seasonNumber)
@@ -329,6 +359,10 @@ func showEpisodeLinks(showId int, seasonNumber int, episodeNumber int) ([]*bitto
 	log.Println("Searching links for TMDB Id:", showId)
 
 	show := tmdb.GetShow(showId, config.Get().Language)
+	if show == nil {
+		return nil, errors.New("Unable to find show")
+	}
+
 	season := tmdb.GetSeason(showId, seasonNumber, config.Get().Language)
 	if season == nil {
 		return nil, errors.New("Unable to find season")
@@ -357,7 +391,17 @@ func ShowEpisodeLinks(ctx *gin.Context) {
 	episodeNumber, _ := strconv.Atoi(ctx.Params.ByName("episode"))
 
 	show := tmdb.GetShow(showId, "")
+	if show == nil {
+		ctx.Error(errors.New("Unable to find show"))
+		return
+	}
+
 	episode := tmdb.GetEpisode(showId, seasonNumber, episodeNumber, "")
+	if episode == nil {
+		ctx.Error(errors.New("Unable to find episode"))
+		return
+	}
+
 	longName := fmt.Sprintf("%s S%02dE%02d", show.Name, seasonNumber, episodeNumber)
 
 	runtime := 45
@@ -437,7 +481,16 @@ func ShowEpisodePlay(ctx *gin.Context) {
 	episodeNumber, _ := strconv.Atoi(ctx.Params.ByName("episode"))
 
 	show := tmdb.GetShow(showId, "")
+	if show == nil {
+		ctx.Error(errors.New("Unable to find show"))
+		return
+	}
+
 	episode := tmdb.GetEpisode(showId, seasonNumber, episodeNumber, "")
+	if episode == nil {
+		ctx.Error(errors.New("Unable to find episode"))
+		return
+	}
 
 	runtime := 45
 	if len(show.EpisodeRunTime) > 0 {

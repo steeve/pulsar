@@ -57,9 +57,6 @@ func GetSeason(showId int, seasonNumber int, language string) *Season {
 			cacheStore.Set(key, season, cacheTime)
 		}
 	}
-	if season == nil {
-		return nil
-	}
 	return season
 }
 

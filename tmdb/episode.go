@@ -43,9 +43,6 @@ func GetEpisode(showId int, seasonNumber int, episodeNumber int, language string
 			cacheStore.Set(key, episode, cacheTime)
 		}
 	}
-	if episode == nil {
-		return nil
-	}
 	return episode
 }
 
