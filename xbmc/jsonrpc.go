@@ -13,11 +13,9 @@ var Results map[string]chan interface{}
 
 var (
 	XBMCJSONRPCHosts = []string{
-		net.JoinHostPort("::1", "9090"),
 		net.JoinHostPort("127.0.0.1", "9090"),
 	}
 	XBMCExJSONRPCHosts = []string{
-		net.JoinHostPort("::1", "65252"),
 		net.JoinHostPort("127.0.0.1", "65252"),
 	}
 )
