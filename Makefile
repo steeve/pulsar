@@ -156,6 +156,8 @@ checksum: $(BUILD_PATH)/$(OUTPUT_NAME)
 
 ifeq ($(TARGET_ARCH), arm)
 dist: quasar vendor_$(TARGET_OS) strip checksum
+else ifeq ($(TARGET_OS), darwin)
+dist: quasar vendor_$(TARGET_OS) strip checksum
 else
 dist: quasar vendor_$(TARGET_OS) strip upx checksum
 endif
