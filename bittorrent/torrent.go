@@ -53,9 +53,11 @@ var (
 		regexp.MustCompile(`\W+(480p|xvid|dvd|hdtv)\W*`): Resolution480p,
 		regexp.MustCompile(`\W+(720p|hdrip)\W*`):         Resolution720p,
 		regexp.MustCompile(`\W+1080p\W*`):                Resolution1080p,
+		regexp.MustCompile(`\W+1440p\W*`):                Resolution1440p,
+		regexp.MustCompile(`\W+(4K|2160p)\W*`):           Resolution4k2k,
 	}
-	Resolutions = []string{"", "480p", "720p", "1080p"}
-	Colors = []string{"", "FFA56F01", "FF539A02", "FF0166FC"}
+	Resolutions = []string{"", "480p", "720p", "1080p", "1440p", "4K"}
+	Colors = []string{"", "FFA56F01", "FF539A02", "FF0166FC", "FFF15052", "FF6BB9EC"}
 )
 
 const (
@@ -140,7 +142,7 @@ var (
 )
 
 const (
-	torCache = "http://torcache.net/torrent/%s.torrent"
+	torCache = "http://itorrents.org/torrent/%s.torrent"
 )
 
 // Used to avoid infinite recursion in UnmarshalJSON
@@ -327,6 +329,14 @@ func (t *Torrent) StreamInfo() *xbmc.StreamInfo {
 	case Resolution1080p:
 		sie.Video.Width = 1920
 		sie.Video.Height = 1080
+		break
+	case Resolution1440p:
+		sie.Video.Width = 2560
+		sie.Video.Height = 1440
+		break
+	case Resolution4k2k:
+		sie.Video.Width = 3840
+		sie.Video.Height = 2160
 		break
 	}
 
