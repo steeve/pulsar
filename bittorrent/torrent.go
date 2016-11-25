@@ -12,9 +12,13 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/op/go-logging"
+	"github.com/scakemyer/quasar/cloudhole"
 	"github.com/scakemyer/quasar/xbmc"
 	"github.com/zeebo/bencode"
 )
+
+var log = logging.MustGetLogger("torrent")
 
 type Torrent struct {
 	URI       string   `json:"uri"`
@@ -211,6 +215,17 @@ func (t *Torrent) Resolve() error {
 		for _, part := range parts[1:] {
 			keyVal := strings.SplitN(part, "=", 2)
 			req.Header.Add(keyVal[0], keyVal[1])
+		}
+	}
+
+	// Use CloudHole if we have a clearance
+	clearance, _ := cloudhole.GetClearance()
+	if clearance.Cookies != "" {
+		req.Header.Set("User-Agent", clearance.UserAgent)
+		if cookies := req.Header.Get("Cookie"); cookies != "" {
+			req.Header.Set("Cookie", cookies + "; " + clearance.Cookies)
+		} else {
+			req.Header.Add("Cookie", clearance.Cookies)
 		}
 	}
 

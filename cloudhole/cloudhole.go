@@ -63,6 +63,7 @@ func GetClearance() (clearance *Clearance, err error) {
 	} else {
 		err = errors.New("Failed to get new clearance.")
 		clearance = defaultClearance
+		clearances = append(clearances, defaultClearance)
 	}
 
 	return clearance, err
