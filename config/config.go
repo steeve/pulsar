@@ -44,6 +44,7 @@ type Configuration struct {
 	TraktUsername       string
 	TraktToken          string
 	TraktRefreshToken   string
+	UseCloudHole        bool
 	CloudHoleKey        string
 	TMDBApiKey          string
 
@@ -131,6 +132,7 @@ func Reload() *Configuration {
 		TraktUsername:       xbmc.GetSettingString("trakt_username"),
 		TraktToken:          xbmc.GetSettingString("trakt_token"),
 		TraktRefreshToken:   xbmc.GetSettingString("trakt_refresh_token"),
+		UseCloudHole:        xbmc.GetSettingBool("use_cloudhole"),
 		CloudHoleKey:        xbmc.GetSettingString("cloudhole_key"),
 		TMDBApiKey:          xbmc.GetSettingString("tmdb_api_key"),
 

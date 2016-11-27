@@ -7,15 +7,21 @@ import (
 	"math/rand"
 
 	"github.com/jmcvetta/napping"
+	"github.com/scakemyer/quasar/xbmc"
 	"github.com/scakemyer/quasar/config"
 )
 
 var (
+	apiKey           = ""
 	clearances         []*Clearance
 	defaultClearance = &Clearance{
 		UserAgent: "Mozilla/5.0 (X11; NetBSD amd64; rv:42.0) Gecko/20100101 Firefox/42.0",
 	}
 )
+
+type ApiKey struct {
+	Key       string `json:"key"`
+}
 
 type Clearance struct {
 	Id        string `json:"_id"`
@@ -26,6 +32,11 @@ type Clearance struct {
 	Label     string `json:"label"`
 }
 
+func ResetClearances() {
+	apiKey     = ""
+	clearances = []*Clearance{}
+}
+
 func GetClearance() (clearance *Clearance, err error) {
 	if len(clearances) > 0 {
 		clearance = clearances[rand.Intn(len(clearances))]
@@ -33,6 +44,32 @@ func GetClearance() (clearance *Clearance, err error) {
 	}
 
 	apiKey := config.Get().CloudHoleKey
+
+	// Get our CloudHole key if not specified
+	if apiKey == "" {
+		header := http.Header{
+			"Content-type": []string{"application/json"},
+		}
+		params := napping.Params{}.AsUrlValues()
+
+		req := napping.Request{
+			Url: fmt.Sprintf("%s/%s", "https://cloudhole.herokuapp.com", "key"),
+			Method: "GET",
+			Params: &params,
+			Header: &header,
+		}
+
+		resp, err := napping.Send(&req)
+
+		if err == nil && resp.Status() == 200 {
+			newKey := &ApiKey{ Key: "" }
+			resp.Unmarshal(&newKey)
+			apiKey = newKey.Key
+			xbmc.SetSetting("cloudhole_key", apiKey)
+		}
+	}
+
+	// Still empty, return default clearance
 	if apiKey == "" {
 		return defaultClearance, nil
 	}
