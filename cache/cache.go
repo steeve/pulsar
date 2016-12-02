@@ -23,7 +23,7 @@ var (
 	ErrCacheMiss    = errors.New("cache: key not found.")
 	ErrNotStored    = errors.New("cache: not stored.")
 	ErrNotSupport   = errors.New("cache: not support.")
-	log             = logging.MustGetLogger("btplayer")
+	log             = logging.MustGetLogger("cache")
 )
 
 type CacheStore interface {
@@ -88,7 +88,7 @@ func (w *cachedWriter) Write(data []byte) (int, error) {
 		}
 		err = store.Set(w.key, val, w.expire)
 		if err != nil {
-			// need logger
+			log.Error(err)
 		}
 	}
 	return ret, err
@@ -111,7 +111,7 @@ func Cache(store CacheStore, expire time.Duration) gin.HandlerFunc {
 			// replace writer
 			writer := ctx.Writer
 			ctx.Writer = newCachedWriter(store, expire, ctx.Writer, key)
-			ctx.Next()
+			// ctx.Next()
 			ctx.Writer = writer
 		}
 	}

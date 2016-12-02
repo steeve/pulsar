@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/op/go-logging"
+	"github.com/scakemyer/quasar/cloudhole"
 	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/xbmc"
 )
@@ -13,6 +14,7 @@ import (
 var cmdLog = logging.MustGetLogger("cmd")
 
 func ClearCache(ctx *gin.Context) {
+	cloudhole.ResetClearances()
 	os.RemoveAll(filepath.Join(config.Get().Info.Profile, "cache"))
 	xbmc.Notify("Quasar", "LOCALIZE[30200]", config.AddonIcon())
 }

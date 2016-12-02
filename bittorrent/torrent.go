@@ -14,6 +14,7 @@ import (
 
 	"github.com/op/go-logging"
 	"github.com/scakemyer/quasar/cloudhole"
+	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/xbmc"
 	"github.com/zeebo/bencode"
 )
@@ -218,14 +219,16 @@ func (t *Torrent) Resolve() error {
 		}
 	}
 
-	// Use CloudHole if we have a clearance
-	clearance, _ := cloudhole.GetClearance()
-	if clearance.Cookies != "" {
-		req.Header.Set("User-Agent", clearance.UserAgent)
-		if cookies := req.Header.Get("Cookie"); cookies != "" {
-			req.Header.Set("Cookie", cookies + "; " + clearance.Cookies)
-		} else {
-			req.Header.Add("Cookie", clearance.Cookies)
+	// Use CloudHole if enabled and if we have a clearance
+	if config.Get().UseCloudHole == true {
+		clearance, _ := cloudhole.GetClearance()
+		if clearance.Cookies != "" {
+			req.Header.Set("User-Agent", clearance.UserAgent)
+			if cookies := req.Header.Get("Cookie"); cookies != "" {
+				req.Header.Set("Cookie", cookies + "; " + clearance.Cookies)
+			} else {
+				req.Header.Add("Cookie", clearance.Cookies)
+			}
 		}
 	}
 

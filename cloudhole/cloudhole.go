@@ -35,6 +35,7 @@ type Clearance struct {
 func ResetClearances() {
 	apiKey     = ""
 	clearances = []*Clearance{}
+	xbmc.SetSetting("cloudhole_key", "")
 }
 
 func GetClearance() (clearance *Clearance, err error) {
