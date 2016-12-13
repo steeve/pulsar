@@ -152,13 +152,13 @@ func strInterfaceToInt(t interface{}) (i int) {
 	return i
 }
 
-func (as *AddonSearcher) GetSeasonSearchObject(show *tmdb.Show, season *tmdb.Season) *EpisodeSearchObject {
+func (as *AddonSearcher) GetSeasonSearchObject(show *tmdb.Show, season *tmdb.Season) *SeasonSearchObject {
 	title := show.OriginalName
 	if title == "" {
 		title = show.Name
 	}
 
-	return &EpisodeSearchObject{
+	return &SeasonSearchObject{
 		IMDBId:         show.ExternalIDs.IMDBId,
 		TVDBId:         strInterfaceToInt(show.ExternalIDs.TVDBID),
 		Title:          NormalizeTitle(title),
