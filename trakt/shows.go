@@ -159,18 +159,21 @@ func (show *Show) ToListItem() *xbmc.ListItem {
 	return &xbmc.ListItem{
 		Label: show.Title,
 		Info: &xbmc.ListItemInfo{
-			Count:       rand.Int(),
-			Title:       show.Title,
-      Year:        show.Year,
-			Genre:       strings.Title(strings.Join(show.Genres, " / ")),
-			Plot:        show.Overview,
-			PlotOutline: show.Overview,
-			Rating:      show.Rating,
-      Votes:       strconv.Itoa(show.Votes),
-			Duration:    show.Runtime * 60,
-			MPAA:        show.Certification,
-			Code:        show.IDs.IMDB,
-			Trailer:     show.Trailer,
+			Count:         rand.Int(),
+			Title:         show.Title,
+			OriginalTitle: show.Title,
+      Year:          show.Year,
+			Genre:         strings.Title(strings.Join(show.Genres, " / ")),
+			Plot:          show.Overview,
+			PlotOutline:   show.Overview,
+			Rating:        show.Rating,
+      Votes:         strconv.Itoa(show.Votes),
+			Duration:      show.Runtime * 60,
+			MPAA:          show.Certification,
+			Code:          show.IDs.IMDB,
+			IMDBNumber:    show.IDs.IMDB,
+			Trailer:       show.Trailer,
+			DBTYPE:        "tvshow",
 		},
 		Art: &xbmc.ListItemArt{
 			Poster: show.Images.Poster.Full,
@@ -181,16 +184,20 @@ func (show *Show) ToListItem() *xbmc.ListItem {
 	}
 }
 
-func (season *Season) ToListItem() *xbmc.ListItem {
+func (season *Season) ToListItem(show *Show) *xbmc.ListItem {
 	seasonLabel := fmt.Sprintf("Season %d", season.Number)
 	return &xbmc.ListItem{
 		Label: seasonLabel,
 		Info: &xbmc.ListItemInfo{
-			Count:  rand.Int(),
-			Title:  seasonLabel,
-			Season: season.Number,
-			Rating: season.Rating,
-      Votes:  strconv.Itoa(season.Votes),
+			Count:         rand.Int(),
+			Title:         seasonLabel,
+			OriginalTitle: seasonLabel,
+			Season:        season.Number,
+			Rating:        season.Rating,
+      Votes:         strconv.Itoa(season.Votes),
+			Code:          show.IDs.IMDB,
+			IMDBNumber:    show.IDs.IMDB,
+			DBTYPE:        "season",
 		},
 		Art: &xbmc.ListItemArt{
 			Poster: season.Images.Poster.Full,
@@ -200,20 +207,24 @@ func (season *Season) ToListItem() *xbmc.ListItem {
 	}
 }
 
-func (episode *Episode) ToListItem() *xbmc.ListItem {
+func (episode *Episode) ToListItem(show *Show) *xbmc.ListItem {
 	title := fmt.Sprintf("%dx%02d %s", episode.Season, episode.Number, episode.Title)
 	return &xbmc.ListItem{
 		Label:     title,
 		Thumbnail: episode.Images.ScreenShot.Full,
 		Info: &xbmc.ListItemInfo{
-			Count:       rand.Int(),
-			Title:       title,
-			Plot:        episode.Overview,
-			PlotOutline: episode.Overview,
-			Rating:      episode.Rating,
-      Votes:       strconv.Itoa(episode.Votes),
-			Episode:     episode.Number,
-			Season:      episode.Season,
+			Count:         rand.Int(),
+			Title:         title,
+			OriginalTitle: episode.Title,
+			Plot:          episode.Overview,
+			PlotOutline:   episode.Overview,
+			Rating:        episode.Rating,
+      Votes:         strconv.Itoa(episode.Votes),
+			Episode:       episode.Number,
+			Season:        episode.Season,
+			Code:          show.IDs.IMDB,
+			IMDBNumber:    show.IDs.IMDB,
+			DBTYPE:        "episode",
 		},
 		Art: &xbmc.ListItemArt{
 			Thumbnail: episode.Images.ScreenShot.Full,

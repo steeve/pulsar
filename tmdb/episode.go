@@ -106,6 +106,9 @@ func (episode *Episode) ToListItem(show *Show) *xbmc.ListItem {
 			Rating:        episode.VoteAverage,
 			Aired:         episode.AirDate,
 			Duration:      runtime,
+			Code:          show.ExternalIDs.IMDBId,
+			IMDBNumber:    show.ExternalIDs.IMDBId,
+			DBTYPE:        "episode",
 		},
 		Art: &xbmc.ListItemArt{},
 	}

@@ -264,11 +264,13 @@ func (show *Show) ToListItem() *xbmc.ListItem {
 			Plot:          show.Overview,
 			PlotOutline:   show.Overview,
 			Code:          show.ExternalIDs.IMDBId,
+			IMDBNumber:    show.ExternalIDs.IMDBId,
 			Date:          show.FirstAirDate,
 			Votes:         strconv.Itoa(show.VoteCount),
 			Rating:        show.VoteAverage,
 			TVShowTitle:   show.OriginalName,
 			Premiered:     show.FirstAirDate,
+			DBTYPE:        "tvshow",
 		},
 		Art: &xbmc.ListItemArt{
 			FanArt: ImageURL(show.BackdropPath, "w1280"),

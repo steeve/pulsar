@@ -288,9 +288,11 @@ func (movie *Movie) ToListItem() *xbmc.ListItem {
 			TagLine:       movie.TagLine,
 			Duration:      movie.Runtime * 60,
 			Code:          movie.IMDBId,
+			IMDBNumber:    movie.IMDBId,
 			Date:          movie.ReleaseDate,
 			Votes:         strconv.Itoa(movie.VoteCount),
 			Rating:        movie.VoteAverage,
+			DBTYPE:        "movie",
 		},
 		Art: &xbmc.ListItemArt{
 			FanArt: ImageURL(movie.BackdropPath, "w1280"),

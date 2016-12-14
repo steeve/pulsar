@@ -75,6 +75,8 @@ type ListItemInfo struct {
 	Votes         string         `json:"votes,omitempty"`
 	Trailer       string         `json:"trailer,omitempty"`
 	DateAdded     string         `json:"dateadded,omitempty"`
+	DBTYPE        string         `json:"dbtype,omitempty"`
+	IMDBNumber    string         `json:"imdbnumber,omitempty"`
 
 	// Music Values
 	Lyrics string `json:"lyrics,omitempty"`
