@@ -38,11 +38,9 @@ func getLastRelease(user string, repository string) (string, string) {
 	if len(releases) > 0 {
 		lastRelease := releases[0]
 		if config.Get().PreReleaseUpdates == false {
-			log.Info("Getting latest main release")
 			latestRelease, _, _ := client.Repositories.GetLatestRelease(user, repository)
 			lastRelease = latestRelease
 		}
-		log.Infof("Last release: %s on %s", *lastRelease.TagName, *lastRelease.TargetCommitish)
 		return *lastRelease.TagName, *lastRelease.TargetCommitish
 	}
 	log.Warning("Unable to find a last tag, using master.")
@@ -99,9 +97,9 @@ func GetAddonFiles(ctx *gin.Context) {
 	user := ctx.Params.ByName("user")
 	repository := ctx.Params.ByName("repository")
 	filepath := ctx.Params.ByName("filepath")[1:] // strip the leading "/"
-	log.Info("Request for: " + filepath)
 
 	lastReleaseTag, lastReleaseBranch := getLastRelease(user, repository)
+	log.Infof("Last release: %s on %s", lastReleaseTag, lastReleaseBranch)
 
 	switch filepath {
 	case "addons.xml":

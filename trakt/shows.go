@@ -155,6 +155,42 @@ func CollectionShows() (shows []*Shows, err error) {
 	return shows, err
 }
 
+func ListItemsShows(listId string, page string) (shows []*Shows, err error) {
+	endPoint := fmt.Sprintf("users/%s/lists/%s/items/shows", config.Get().TraktUsername, listId)
+
+	params := napping.Params{
+		"page": page,
+		"limit": strconv.Itoa(config.Get().ResultsPerPage),
+		"extended": "full,images",
+	}.AsUrlValues()
+
+	var resp *napping.Response
+
+	if erra := Authorized(); erra != nil {
+		resp, err = Get(endPoint, params)
+	} else {
+		resp, err = GetWithAuth(endPoint, params)
+	}
+
+	if err != nil || resp.Status() != 200 {
+		return shows, err
+	}
+
+	var list []*ListItem
+	err = resp.Unmarshal(&list)
+
+	showListing := make([]*Shows, 0)
+	for _, show := range list {
+		showItem := Shows{
+			Show: show.Show,
+		}
+		showListing = append(showListing, &showItem)
+	}
+	shows = showListing
+
+	return shows, err
+}
+
 func (show *Show) ToListItem() *xbmc.ListItem {
 	return &xbmc.ListItem{
 		Label: show.Title,

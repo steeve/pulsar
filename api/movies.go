@@ -11,6 +11,7 @@ import (
 	"github.com/scakemyer/quasar/bittorrent"
 	"github.com/scakemyer/quasar/providers"
 	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/trakt"
 	"github.com/scakemyer/quasar/tmdb"
 	"github.com/scakemyer/quasar/xbmc"
 )
@@ -74,8 +75,7 @@ func MoviesIndex(ctx *gin.Context) {
 
 func MoviesTrakt(ctx *gin.Context) {
 	items := xbmc.ListItems{
-		{Label: "LOCALIZE[30254]", Path: UrlForXBMC("/movies/trakt/watchlist"), Thumbnail: config.AddonResource("img", "trakt.png")},
-		{Label: "LOCALIZE[30257]", Path: UrlForXBMC("/movies/trakt/collection"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{Label: "LOCALIZE[30263]", Path: UrlForXBMC("/movies/trakt/lists/"), Thumbnail: config.AddonResource("img", "trakt.png")},
 		{Label: "LOCALIZE[30210]", Path: UrlForXBMC("/movies/trakt/popular"), Thumbnail: config.AddonResource("img", "popular.png")},
 		{Label: "LOCALIZE[30246]", Path: UrlForXBMC("/movies/trakt/trending"), Thumbnail: config.AddonResource("img", "trending.png")},
 		{Label: "LOCALIZE[30247]", Path: UrlForXBMC("/movies/trakt/played"), Thumbnail: config.AddonResource("img", "most_played.png")},
@@ -84,6 +84,23 @@ func MoviesTrakt(ctx *gin.Context) {
 		{Label: "LOCALIZE[30250]", Path: UrlForXBMC("/movies/trakt/anticipated"), Thumbnail: config.AddonResource("img", "most_anticipated.png")},
 		{Label: "LOCALIZE[30251]", Path: UrlForXBMC("/movies/trakt/boxoffice"), Thumbnail: config.AddonResource("img", "box_office.png")},
 	}
+	ctx.JSON(200, xbmc.NewView("", items))
+}
+
+func MoviesTraktLists(ctx *gin.Context) {
+	items := xbmc.ListItems{
+		{Label: "LOCALIZE[30254]", Path: UrlForXBMC("/movies/trakt/lists/watchlist"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{Label: "LOCALIZE[30257]", Path: UrlForXBMC("/movies/trakt/lists/collection"), Thumbnail: config.AddonResource("img", "trakt.png")},
+	}
+
+	for _, list := range trakt.Userlists() {
+		items = append(items, &xbmc.ListItem{
+			Label: list.Name,
+			Path:  UrlForXBMC("/movies/trakt/lists/id/%d", list.IDs.Trakt),
+			Thumbnail: config.AddonResource("img", "trakt.png"),
+		})
+	}
+
 	ctx.JSON(200, xbmc.NewView("", items))
 }
 

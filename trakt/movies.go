@@ -159,6 +159,68 @@ func CollectionMovies() (movies []*Movies, err error) {
 	return movies, err
 }
 
+func Userlists() (lists []*List) {
+	endPoint := fmt.Sprintf("users/%s/lists", config.Get().TraktUsername)
+
+	params := napping.Params{}.AsUrlValues()
+
+	var resp *napping.Response
+	var err error
+
+	if erra := Authorized(); erra != nil {
+		resp, err = Get(endPoint, params)
+	} else {
+		resp, err = GetWithAuth(endPoint, params)
+	}
+
+	if err != nil || resp.Status() != 200 {
+		return lists
+	}
+
+	resp.Unmarshal(&lists)
+
+	return lists
+}
+
+func ListItemsMovies(listId string, page string) (movies []*Movies, err error) {
+	endPoint := fmt.Sprintf("users/%s/lists/%s/items/movies", config.Get().TraktUsername, listId)
+
+	params := napping.Params{
+		"page": page,
+		"limit": strconv.Itoa(config.Get().ResultsPerPage),
+		"extended": "full,images",
+	}.AsUrlValues()
+
+	var resp *napping.Response
+
+	if erra := Authorized(); erra != nil {
+		resp, err = Get(endPoint, params)
+	} else {
+		resp, err = GetWithAuth(endPoint, params)
+	}
+
+	if err != nil || resp.Status() != 200 {
+		return movies, err
+	}
+
+	var list []*ListItem
+	err = resp.Unmarshal(&list)
+
+	movieListing := make([]*Movies, 0)
+	for _, movie := range list {
+		if movie.Movie == nil {
+			continue
+		}
+		movieItem := Movies{
+			Movie: movie.Movie,
+		}
+		movieListing = append(movieListing, &movieItem)
+	}
+	movies = movieListing
+
+	return movies, err
+}
+
 func (movie *Movie) ToListItem() *xbmc.ListItem {
 	return &xbmc.ListItem{
 		Label: movie.Title,

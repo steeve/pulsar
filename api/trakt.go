@@ -57,6 +57,28 @@ func CollectionShows(ctx *gin.Context) {
 	renderTraktShows(shows, ctx, 0)
 }
 
+func UserlistMovies(ctx *gin.Context) {
+	listId := ctx.Params.ByName("listId")
+	pageParam := ctx.DefaultQuery("page", "1")
+	page, _ := strconv.Atoi(pageParam)
+	movies, err := trakt.ListItemsMovies(listId, pageParam)
+	if err != nil {
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
+	}
+	renderTraktMovies(movies, ctx, page)
+}
+
+func UserlistShows(ctx *gin.Context) {
+	listId := ctx.Params.ByName("listId")
+	pageParam := ctx.DefaultQuery("page", "1")
+	page, _ := strconv.Atoi(pageParam)
+	shows, err := trakt.ListItemsShows(listId, pageParam)
+	if err != nil {
+		xbmc.Notify("Quasar", err.Error(), config.AddonIcon())
+	}
+	renderTraktShows(shows, ctx, page)
+}
+
 // func WatchlistSeasons(ctx *gin.Context) {
 // 	renderTraktSeasons(trakt.Watchlist("seasons", pageParam), ctx, page)
 // }

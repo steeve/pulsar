@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	ApiUrl       = "https://api-v2launch.trakt.tv"
+	ApiUrl       = "https://api.trakt.tv"
 	ClientId     = "4407ab20a3a971e7c92d4996b36b76d0312ea085cb139d7c38a1a4c9f8428f60"
 	ClientSecret = "83f5993015942fe1320772c9c9886dce08252fa95445afab81a1603f8671e490"
 	ApiVersion   = "2"
@@ -222,6 +222,32 @@ type Token struct {
 	ExpiresIn    int    `json:"expires_in"`
 	RefreshToken string `json:"refresh_token"`
 	Scope        string `json:"scope"`
+}
+
+type List struct {
+	Name           string `json:"name"`
+	Description    string `json:"description"`
+	Privacy        string `json:"privacy"`
+	DisplayNumbers bool   `json:"display_numbers"`
+	AllowComments  bool   `json:"allow_comments"`
+	SortBy         string `json:"sort_by"`
+	SortHow        string `json:"sort_how"`
+	CreatedAt      string `json:"created_at"`
+	UpdatedAt      string `json:"updated_at"`
+	ItemCount      int    `json:"item_count"`
+	CommentCount   int    `json:"comment_count"`
+	Likes          int    `json:"likes"`
+	IDs            *IDs
+}
+
+type ListItem struct {
+	Rank      int      `json:"rank"`
+	ListedAt  string   `json:"listed_at"`
+	Type      string   `json:"type"`
+	Movie     *Movie   `json:"movie"`
+	Show      *Show    `json:"show"`
+	// Season    *Season  `json:"season"`
+	// Episode   *Episode `json:"episode"`
 }
 
 func newClearance() (err error) {
