@@ -177,7 +177,7 @@ func ListItemsShows(listId string, page string) (shows []*Shows, err error) {
 	}
 
 	var list []*ListItem
-	err = resp.Unmarshal(&list)
+	resp.Unmarshal(&list)
 
 	showListing := make([]*Shows, 0)
 	for _, show := range list {
