@@ -71,8 +71,8 @@ func TVTrakt(ctx *gin.Context) {
 
 func TVTraktLists(ctx *gin.Context) {
 	items := xbmc.ListItems{
-		{Label: "LOCALIZE[30254]", Path: UrlForXBMC("/shows/trakt/watchlist"), Thumbnail: config.AddonResource("img", "trakt.png")},
-		{Label: "LOCALIZE[30257]", Path: UrlForXBMC("/shows/trakt/collection"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{Label: "LOCALIZE[30254]", Path: UrlForXBMC("/shows/trakt/lists/watchlist"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{Label: "LOCALIZE[30257]", Path: UrlForXBMC("/shows/trakt/lists/collection"), Thumbnail: config.AddonResource("img", "trakt.png")},
 	}
 
 	for _, list := range trakt.Userlists() {
