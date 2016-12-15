@@ -412,6 +412,100 @@ func AddMovieList(ctx *gin.Context) {
 	libraryLog.Notice("Movie list added")
 }
 
+func AddMovieCollection(ctx *gin.Context) {
+	LibraryPath := config.Get().LibraryPath
+	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
+
+	if checkLibraryPath(LibraryPath) == false {
+		ctx.String(404, "")
+		return
+	}
+
+	MoviesLibraryPath := filepath.Join(LibraryPath, "Movies")
+	if checkMoviesPath(MoviesLibraryPath) == false {
+		ctx.String(404, "")
+		return
+	}
+
+	movies, err := trakt.CollectionMovies()
+	if err != nil {
+		libraryLog.Error(err)
+		ctx.String(404, "")
+		return
+	}
+
+	for _, movie := range movies {
+		title := movie.Movie.Title
+		tmdbId := strconv.Itoa(movie.Movie.IDs.TMDB)
+		if inJsonDb, err := InJsonDB(tmdbId, LMovie); err != nil || inJsonDb == true {
+			libraryLog.Warningf("%s already in library", title)
+			continue
+		}
+		if err := WriteMovieStrm(tmdbId, MoviesLibraryPath); err != nil {
+			libraryLog.Error("Unable to write strm file for %s", title)
+			continue
+		}
+		if err := UpdateJsonDB(DBPath, tmdbId, LMovie); err != nil {
+			libraryLog.Error("Unable to update json DB")
+			continue
+		}
+	}
+
+	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
+	ctx.String(200, "")
+	xbmc.VideoLibraryScan()
+	// ClearCache(ctx)
+	xbmc.Refresh()
+	libraryLog.Notice("Movie collection added")
+}
+
+func AddMovieWatchlist(ctx *gin.Context) {
+	LibraryPath := config.Get().LibraryPath
+	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
+
+	if checkLibraryPath(LibraryPath) == false {
+		ctx.String(404, "")
+		return
+	}
+
+	MoviesLibraryPath := filepath.Join(LibraryPath, "Movies")
+	if checkMoviesPath(MoviesLibraryPath) == false {
+		ctx.String(404, "")
+		return
+	}
+
+	movies, err := trakt.WatchlistMovies()
+	if err != nil {
+		libraryLog.Error(err)
+		ctx.String(404, "")
+		return
+	}
+
+	for _, movie := range movies {
+		title := movie.Movie.Title
+		tmdbId := strconv.Itoa(movie.Movie.IDs.TMDB)
+		if inJsonDb, err := InJsonDB(tmdbId, LMovie); err != nil || inJsonDb == true {
+			libraryLog.Warningf("%s already in library", title)
+			continue
+		}
+		if err := WriteMovieStrm(tmdbId, MoviesLibraryPath); err != nil {
+			libraryLog.Error("Unable to write strm file for %s", title)
+			continue
+		}
+		if err := UpdateJsonDB(DBPath, tmdbId, LMovie); err != nil {
+			libraryLog.Error("Unable to update json DB")
+			continue
+		}
+	}
+
+	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
+	ctx.String(200, "")
+	xbmc.VideoLibraryScan()
+	// ClearCache(ctx)
+	xbmc.Refresh()
+	libraryLog.Notice("Movie watchlist added")
+}
+
 func WriteMovieStrm(tmdbId string, MoviesLibraryPath string) error {
 	movie := tmdb.GetMovieById(tmdbId, "en")
 	MovieStrm := toFileName(fmt.Sprintf("%s (%s)", movie.OriginalTitle, strings.Split(movie.ReleaseDate, "-")[0]))
@@ -549,6 +643,100 @@ func AddShowList(ctx *gin.Context) {
 	// ClearCache(ctx)
 	xbmc.Refresh()
 	libraryLog.Notice("Show list added")
+}
+
+func AddShowCollection(ctx *gin.Context) {
+	LibraryPath := config.Get().LibraryPath
+	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
+
+	if checkLibraryPath(LibraryPath) == false {
+		ctx.String(404, "")
+		return
+	}
+
+	ShowsLibraryPath := filepath.Join(LibraryPath, "Shows")
+	if checkShowsPath(ShowsLibraryPath) == false {
+		ctx.String(404, "")
+		return
+	}
+
+	shows, err := trakt.CollectionShows()
+	if err != nil {
+		libraryLog.Error(err)
+		ctx.String(404, "")
+		return
+	}
+
+	for _, show := range shows {
+		title := show.Show.Title
+		tmdbId := strconv.Itoa(show.Show.IDs.TMDB)
+		if inJsonDb, err := InJsonDB(tmdbId, LShow); err != nil || inJsonDb == true {
+			libraryLog.Warningf("%s already in library", title)
+			continue
+		}
+		if err := WriteShowStrm(tmdbId, ShowsLibraryPath); err != nil {
+			libraryLog.Error("Unable to write strm file for %s", title)
+			continue
+		}
+		if err := UpdateJsonDB(DBPath, tmdbId, LShow); err != nil {
+			libraryLog.Error("Unable to update json DB")
+			continue
+		}
+	}
+
+	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
+	ctx.String(200, "")
+	xbmc.VideoLibraryScan()
+	// ClearCache(ctx)
+	xbmc.Refresh()
+	libraryLog.Notice("Show collection added")
+}
+
+func AddShowWatchlist(ctx *gin.Context) {
+	LibraryPath := config.Get().LibraryPath
+	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
+
+	if checkLibraryPath(LibraryPath) == false {
+		ctx.String(404, "")
+		return
+	}
+
+	ShowsLibraryPath := filepath.Join(LibraryPath, "Shows")
+	if checkShowsPath(ShowsLibraryPath) == false {
+		ctx.String(404, "")
+		return
+	}
+
+	shows, err := trakt.WatchlistShows()
+	if err != nil {
+		libraryLog.Error(err)
+		ctx.String(404, "")
+		return
+	}
+
+	for _, show := range shows {
+		title := show.Show.Title
+		tmdbId := strconv.Itoa(show.Show.IDs.TMDB)
+		if inJsonDb, err := InJsonDB(tmdbId, LShow); err != nil || inJsonDb == true {
+			libraryLog.Warningf("%s already in library", title)
+			continue
+		}
+		if err := WriteShowStrm(tmdbId, ShowsLibraryPath); err != nil {
+			libraryLog.Error("Unable to write strm file for %s", title)
+			continue
+		}
+		if err := UpdateJsonDB(DBPath, tmdbId, LShow); err != nil {
+			libraryLog.Error("Unable to update json DB")
+			continue
+		}
+	}
+
+	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
+	ctx.String(200, "")
+	xbmc.VideoLibraryScan()
+	// ClearCache(ctx)
+	xbmc.Refresh()
+	libraryLog.Notice("Show watchlist added")
 }
 
 func WriteShowStrm(showId string, ShowsLibraryPath string) error {

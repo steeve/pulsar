@@ -71,8 +71,22 @@ func TVTrakt(ctx *gin.Context) {
 
 func TVTraktLists(ctx *gin.Context) {
 	items := xbmc.ListItems{
-		{Label: "LOCALIZE[30254]", Path: UrlForXBMC("/shows/trakt/lists/watchlist"), Thumbnail: config.AddonResource("img", "trakt.png")},
-		{Label: "LOCALIZE[30257]", Path: UrlForXBMC("/shows/trakt/lists/collection"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{
+			Label: "LOCALIZE[30254]",
+			Path: UrlForXBMC("/shows/trakt/lists/watchlist"),
+			Thumbnail: config.AddonResource("img", "trakt.png"),
+			ContextMenu: [][]string{
+				[]string{"LOCALIZE[30252]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/show/watchlist/add"))},
+			},
+		},
+		{
+			Label: "LOCALIZE[30257]",
+			Path: UrlForXBMC("/shows/trakt/lists/collection"),
+			Thumbnail: config.AddonResource("img", "trakt.png"),
+			ContextMenu: [][]string{
+				[]string{"LOCALIZE[30252]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/show/collection/add"))},
+			},
+		},
 	}
 
 	for _, list := range trakt.Userlists() {
@@ -80,10 +94,9 @@ func TVTraktLists(ctx *gin.Context) {
 			Label: list.Name,
 			Path:  UrlForXBMC("/shows/trakt/lists/id/%d", list.IDs.Trakt),
 			Thumbnail: config.AddonResource("img", "trakt.png"),
-		}
-		libraryAction := []string{"LOCALIZE[30252]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/show/list/add/%d", list.IDs.Trakt))}
-		item.ContextMenu = [][]string{
-			libraryAction,
+			ContextMenu: [][]string{
+				[]string{"LOCALIZE[30252]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/show/list/add/%d", list.IDs.Trakt))},
+			},
 		}
 		items = append(items, item)
 	}
