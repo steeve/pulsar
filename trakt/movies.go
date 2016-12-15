@@ -185,11 +185,15 @@ func Userlists() (lists []*List) {
 func ListItemsMovies(listId string, page string) (movies []*Movies, err error) {
 	endPoint := fmt.Sprintf("users/%s/lists/%s/items/movies", config.Get().TraktUsername, listId)
 
-	params := napping.Params{
-		"page": page,
-		"limit": strconv.Itoa(config.Get().ResultsPerPage),
-		"extended": "full,images",
-	}.AsUrlValues()
+	params := napping.Params{}.AsUrlValues()
+
+	if page != "0" {
+		params = napping.Params{
+			"page": page,
+			"limit": strconv.Itoa(config.Get().ResultsPerPage),
+			"extended": "full,images",
+		}.AsUrlValues()
+	}
 
 	var resp *napping.Response
 

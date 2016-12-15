@@ -13,9 +13,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/op/go-logging"
-	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/xbmc"
 	"github.com/scakemyer/quasar/tmdb"
+	"github.com/scakemyer/quasar/trakt"
+	"github.com/scakemyer/quasar/config"
 )
 
 const (
@@ -341,9 +342,62 @@ func AddMovie(ctx *gin.Context) {
 	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
 	ctx.String(200, "")
 	xbmc.VideoLibraryScan()
-	ClearCache(ctx)
+	// ClearCache(ctx)
 	xbmc.Refresh()
 	libraryLog.Notice("Movie added")
+}
+
+func AddMovieList(ctx *gin.Context) {
+	LibraryPath := config.Get().LibraryPath
+	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
+
+	if fileInfo, err := os.Stat(LibraryPath); err != nil || fileInfo.IsDir() == false || LibraryPath == "" || LibraryPath == "." {
+		xbmc.Notify("Quasar", "LOCALIZE[30220]", config.AddonIcon())
+		ctx.String(404, "")
+		return
+	}
+
+	listId := ctx.Params.ByName("listId")
+
+	MoviesLibraryPath := filepath.Join(LibraryPath, "Movies")
+	if _, err := os.Stat(MoviesLibraryPath); os.IsNotExist(err) {
+		if err := os.Mkdir(MoviesLibraryPath, 0755); err != nil{
+			libraryLog.Error("Unable to create library path for Movies")
+			ctx.String(404, "")
+			return
+		}
+	}
+
+	movies, err := trakt.ListItemsMovies(listId, "0")
+	if err != nil {
+		libraryLog.Error(err)
+		ctx.String(404, "")
+		return
+	}
+
+	for _, movie := range movies {
+		title := movie.Movie.Title
+		tmdbId := strconv.Itoa(movie.Movie.IDs.TMDB)
+		if inJsonDb, err := InJsonDB(tmdbId, LMovie); err != nil || inJsonDb == true {
+			libraryLog.Warningf("%s already in library", title)
+			continue
+		}
+		if err := WriteMovieStrm(tmdbId, MoviesLibraryPath); err != nil {
+			libraryLog.Error("Unable to write strm file for %s", title)
+			continue
+		}
+		if err := UpdateJsonDB(DBPath, tmdbId, LMovie); err != nil {
+			libraryLog.Error("Unable to update json DB")
+			continue
+		}
+	}
+
+	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
+	ctx.String(200, "")
+	xbmc.VideoLibraryScan()
+	// ClearCache(ctx)
+	xbmc.Refresh()
+	libraryLog.Notice("Movie list added")
 }
 
 func WriteMovieStrm(tmdbId string, MoviesLibraryPath string) error {
@@ -390,8 +444,8 @@ func RemoveMovie(ctx *gin.Context) {
 
 	xbmc.Notify("Quasar", "LOCALIZE[30222]", config.AddonIcon())
 	ctx.String(200, "")
-	xbmc.VideoLibraryClean()
-	ClearCache(ctx)
+	// xbmc.VideoLibraryClean()
+	// ClearCache(ctx)
 	xbmc.Refresh()
 	libraryLog.Notice("Movie removed")
 }
@@ -436,9 +490,62 @@ func AddShow(ctx *gin.Context) {
 	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
 	ctx.String(200, "")
 	xbmc.VideoLibraryScan()
-	ClearCache(ctx)
+	// ClearCache(ctx)
 	xbmc.Refresh()
 	libraryLog.Notice("Show added")
+}
+
+func AddShowList(ctx *gin.Context) {
+	LibraryPath := config.Get().LibraryPath
+	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
+
+	if fileInfo, err := os.Stat(LibraryPath); err != nil || fileInfo.IsDir() == false || LibraryPath == "" || LibraryPath == "." {
+		xbmc.Notify("Quasar", "LOCALIZE[30220]", config.AddonIcon())
+		ctx.String(404, "")
+		return
+	}
+
+	listId := ctx.Params.ByName("listId")
+
+	ShowsLibraryPath := filepath.Join(LibraryPath, "Shows")
+	if _, err := os.Stat(ShowsLibraryPath); os.IsNotExist(err) {
+		if err := os.Mkdir(ShowsLibraryPath, 0755); err != nil {
+			libraryLog.Error("Unable to create library path for Shows")
+			ctx.String(404, "")
+			return
+		}
+	}
+
+	shows, err := trakt.ListItemsShows(listId, "0")
+	if err != nil {
+		libraryLog.Error(err)
+		ctx.String(404, "")
+		return
+	}
+
+	for _, show := range shows {
+		title := show.Show.Title
+		tmdbId := strconv.Itoa(show.Show.IDs.TMDB)
+		if inJsonDb, err := InJsonDB(tmdbId, LShow); err != nil || inJsonDb == true {
+			libraryLog.Warningf("%s already in library", title)
+			continue
+		}
+		if err := WriteShowStrm(tmdbId, ShowsLibraryPath); err != nil {
+			libraryLog.Error("Unable to write strm file for %s", title)
+			continue
+		}
+		if err := UpdateJsonDB(DBPath, tmdbId, LShow); err != nil {
+			libraryLog.Error("Unable to update json DB")
+			continue
+		}
+	}
+
+	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
+	ctx.String(200, "")
+	xbmc.VideoLibraryScan()
+	// ClearCache(ctx)
+	xbmc.Refresh()
+	libraryLog.Notice("Show list added")
 }
 
 func WriteShowStrm(showId string, ShowsLibraryPath string) error {
@@ -526,8 +633,8 @@ func RemoveShow(ctx *gin.Context) {
 
 	xbmc.Notify("Quasar", "LOCALIZE[30222]", config.AddonIcon())
 	ctx.String(200, "")
-	xbmc.VideoLibraryClean()
-	ClearCache(ctx)
+	// xbmc.VideoLibraryClean()
+	// ClearCache(ctx)
 	xbmc.Refresh()
 	libraryLog.Notice("Show removed")
 }

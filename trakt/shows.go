@@ -158,11 +158,15 @@ func CollectionShows() (shows []*Shows, err error) {
 func ListItemsShows(listId string, page string) (shows []*Shows, err error) {
 	endPoint := fmt.Sprintf("users/%s/lists/%s/items/shows", config.Get().TraktUsername, listId)
 
-	params := napping.Params{
-		"page": page,
-		"limit": strconv.Itoa(config.Get().ResultsPerPage),
-		"extended": "full,images",
-	}.AsUrlValues()
+	params := napping.Params{}.AsUrlValues()
+
+	if page != "0" {
+		params = napping.Params{
+			"page": page,
+			"limit": strconv.Itoa(config.Get().ResultsPerPage),
+			"extended": "full,images",
+		}.AsUrlValues()
+	}
 
 	var resp *napping.Response
 
@@ -198,12 +202,12 @@ func (show *Show) ToListItem() *xbmc.ListItem {
 			Count:         rand.Int(),
 			Title:         show.Title,
 			OriginalTitle: show.Title,
-      Year:          show.Year,
+			Year:          show.Year,
 			Genre:         strings.Title(strings.Join(show.Genres, " / ")),
 			Plot:          show.Overview,
 			PlotOutline:   show.Overview,
 			Rating:        show.Rating,
-      Votes:         strconv.Itoa(show.Votes),
+			Votes:         strconv.Itoa(show.Votes),
 			Duration:      show.Runtime * 60,
 			MPAA:          show.Certification,
 			Code:          show.IDs.IMDB,
@@ -230,14 +234,14 @@ func (season *Season) ToListItem(show *Show) *xbmc.ListItem {
 			OriginalTitle: seasonLabel,
 			Season:        season.Number,
 			Rating:        season.Rating,
-      Votes:         strconv.Itoa(season.Votes),
+			Votes:         strconv.Itoa(season.Votes),
 			Code:          show.IDs.IMDB,
 			IMDBNumber:    show.IDs.IMDB,
 			DBTYPE:        "season",
 		},
 		Art: &xbmc.ListItemArt{
 			Poster: season.Images.Poster.Full,
-      Thumbnail: season.Images.Thumbnail.Full,
+			Thumbnail: season.Images.Thumbnail.Full,
 			// FanArt: season.Images.FanArt.Full,
 		},
 	}
@@ -255,7 +259,7 @@ func (episode *Episode) ToListItem(show *Show) *xbmc.ListItem {
 			Plot:          episode.Overview,
 			PlotOutline:   episode.Overview,
 			Rating:        episode.Rating,
-      Votes:         strconv.Itoa(episode.Votes),
+			Votes:         strconv.Itoa(episode.Votes),
 			Episode:       episode.Number,
 			Season:        episode.Season,
 			Code:          show.IDs.IMDB,

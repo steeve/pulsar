@@ -76,11 +76,16 @@ func TVTraktLists(ctx *gin.Context) {
 	}
 
 	for _, list := range trakt.Userlists() {
-		items = append(items, &xbmc.ListItem{
+		item := &xbmc.ListItem{
 			Label: list.Name,
 			Path:  UrlForXBMC("/shows/trakt/lists/id/%d", list.IDs.Trakt),
 			Thumbnail: config.AddonResource("img", "trakt.png"),
-		})
+		}
+		libraryAction := []string{"LOCALIZE[30252]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/show/list/add/%d", list.IDs.Trakt))}
+		item.ContextMenu = [][]string{
+			libraryAction,
+		}
+		items = append(items, item)
 	}
 
 	ctx.JSON(200, xbmc.NewView("", items))

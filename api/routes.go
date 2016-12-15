@@ -141,8 +141,10 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 	{
 		library.GET("/movie/add/:tmdbId", AddMovie)
 		library.GET("/movie/remove/:tmdbId", RemoveMovie)
+		library.GET("/movie/list/add/:listId", AddMovieList)
 		library.GET("/show/add/:showId", AddShow)
 		library.GET("/show/remove/:showId", RemoveShow)
+		library.GET("/show/list/add/:listId", AddShowList)
 		library.GET("/update", UpdateLibrary)
 		library.GET("/getpath", GetLibraryPath)
 		library.GET("/getcount", GetCount)
