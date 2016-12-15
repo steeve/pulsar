@@ -50,6 +50,34 @@ func toFileName(filename string) string {
 	return filename
 }
 
+func checkLibraryPath(LibraryPath string) bool {
+	if fileInfo, err := os.Stat(LibraryPath); err != nil || fileInfo.IsDir() == false || LibraryPath == "" || LibraryPath == "." {
+		xbmc.Notify("Quasar", "LOCALIZE[30220]", config.AddonIcon())
+		return false
+	}
+	return true
+}
+
+func checkMoviesPath(MoviesLibraryPath string) bool {
+	if _, err := os.Stat(MoviesLibraryPath); os.IsNotExist(err) {
+		if err := os.Mkdir(MoviesLibraryPath, 0755); err != nil {
+			libraryLog.Error("Unable to create library path for Movies")
+			return false
+		}
+	}
+	return true
+}
+
+func checkShowsPath(ShowsLibraryPath string) bool {
+	if _, err := os.Stat(ShowsLibraryPath); os.IsNotExist(err) {
+		if err := os.Mkdir(ShowsLibraryPath, 0755); err != nil {
+			libraryLog.Error("Unable to create library path for Shows")
+			return false
+		}
+	}
+	return true
+}
+
 func PlayMovie(ctx *gin.Context) {
 	if config.Get().ChooseStreamAuto == true {
 		MoviePlay(ctx)
@@ -222,7 +250,7 @@ func UpdateLibrary(ctx *gin.Context) {
 	LibraryPath := config.Get().LibraryPath
 	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
 
-	if fileInfo, err := os.Stat(LibraryPath); err != nil || fileInfo.IsDir() == false || LibraryPath == "" || LibraryPath == "." {
+	if checkLibraryPath(LibraryPath) == false {
 		ctx.String(404, "")
 		return
 	}
@@ -233,21 +261,15 @@ func UpdateLibrary(ctx *gin.Context) {
 	}
 
 	MoviesLibraryPath := filepath.Join(LibraryPath, "Movies")
-	if _, err := os.Stat(MoviesLibraryPath); os.IsNotExist(err) {
-		if err := os.Mkdir(MoviesLibraryPath, 0755); err != nil{
-			libraryLog.Error("Unable to create library path for Movies")
-			ctx.String(404, "")
-			return
-		}
+	if checkMoviesPath(MoviesLibraryPath) == false {
+		ctx.String(404, "")
+		return
 	}
 
 	ShowsLibraryPath := filepath.Join(LibraryPath, "Shows")
-	if _, err := os.Stat(ShowsLibraryPath); os.IsNotExist(err) {
-		if err := os.Mkdir(ShowsLibraryPath, 0755); err != nil{
-			libraryLog.Error("Unable to create library path for Shows")
-			ctx.String(404, "")
-			return
-		}
+	if checkShowsPath(ShowsLibraryPath) == false {
+		ctx.String(404, "")
+		return
 	}
 
 	var db DataBase
@@ -303,16 +325,14 @@ func GetCount(ctx *gin.Context) {
 }
 
 func AddMovie(ctx *gin.Context) {
+	tmdbId := ctx.Params.ByName("tmdbId")
 	LibraryPath := config.Get().LibraryPath
 	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
 
-	if fileInfo, err := os.Stat(LibraryPath); err != nil || fileInfo.IsDir() == false || LibraryPath == "" || LibraryPath == "." {
-		xbmc.Notify("Quasar", "LOCALIZE[30220]", config.AddonIcon())
+	if checkLibraryPath(LibraryPath) == false {
 		ctx.String(404, "")
 		return
 	}
-
-	tmdbId := ctx.Params.ByName("tmdbId")
 
 	if inJsonDb, err := InJsonDB(tmdbId, LMovie); err != nil || inJsonDb == true {
 		ctx.String(404, "")
@@ -320,12 +340,9 @@ func AddMovie(ctx *gin.Context) {
 	}
 
 	MoviesLibraryPath := filepath.Join(LibraryPath, "Movies")
-	if _, err := os.Stat(MoviesLibraryPath); os.IsNotExist(err) {
-		if err := os.Mkdir(MoviesLibraryPath, 0755); err != nil{
-			libraryLog.Error("Unable to create library path for Movies")
-			ctx.String(404, "")
-			return
-		}
+	if checkMoviesPath(MoviesLibraryPath) == false {
+		ctx.String(404, "")
+		return
 	}
 
 	if err := WriteMovieStrm(tmdbId, MoviesLibraryPath); err != nil {
@@ -348,24 +365,19 @@ func AddMovie(ctx *gin.Context) {
 }
 
 func AddMovieList(ctx *gin.Context) {
+	listId := ctx.Params.ByName("listId")
 	LibraryPath := config.Get().LibraryPath
 	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
 
-	if fileInfo, err := os.Stat(LibraryPath); err != nil || fileInfo.IsDir() == false || LibraryPath == "" || LibraryPath == "." {
-		xbmc.Notify("Quasar", "LOCALIZE[30220]", config.AddonIcon())
+	if checkLibraryPath(LibraryPath) == false {
 		ctx.String(404, "")
 		return
 	}
 
-	listId := ctx.Params.ByName("listId")
-
 	MoviesLibraryPath := filepath.Join(LibraryPath, "Movies")
-	if _, err := os.Stat(MoviesLibraryPath); os.IsNotExist(err) {
-		if err := os.Mkdir(MoviesLibraryPath, 0755); err != nil{
-			libraryLog.Error("Unable to create library path for Movies")
-			ctx.String(404, "")
-			return
-		}
+	if checkMoviesPath(MoviesLibraryPath) == false {
+		ctx.String(404, "")
+		return
 	}
 
 	movies, err := trakt.ListItemsMovies(listId, "0")
@@ -414,17 +426,18 @@ func WriteMovieStrm(tmdbId string, MoviesLibraryPath string) error {
 
 	MovieStrmPath := filepath.Join(MoviePath, fmt.Sprintf("%s.strm", MovieStrm))
 	if err := ioutil.WriteFile(MovieStrmPath, []byte(UrlForXBMC("/library/play/movie/%s", tmdbId)), 0644); err != nil {
-				libraryLog.Error("Unable to write to strm file for movie")
-				return err
-		}
+		libraryLog.Error("Unable to write to strm file for movie")
+		return err
+	}
 
-		return nil
+	return nil
 }
 
 func RemoveMovie(ctx *gin.Context) {
 	LibraryPath := config.Get().LibraryPath
 	MoviesLibraryPath := filepath.Join(LibraryPath, "Movies")
 	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
+
 	tmdbId := ctx.Params.ByName("tmdbId")
 	movie := tmdb.GetMovieById(tmdbId, "en")
 	MovieStrm := toFileName(fmt.Sprintf("%s (%s)", movie.OriginalTitle, strings.Split(movie.ReleaseDate, "-")[0]))
@@ -451,16 +464,14 @@ func RemoveMovie(ctx *gin.Context) {
 }
 
 func AddShow(ctx *gin.Context) {
+	showId := ctx.Params.ByName("showId")
 	LibraryPath := config.Get().LibraryPath
 	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
 
-	if fileInfo, err := os.Stat(LibraryPath); err != nil || fileInfo.IsDir() == false || LibraryPath == "" || LibraryPath == "." {
-		xbmc.Notify("Quasar", "LOCALIZE[30220]", config.AddonIcon())
+	if checkLibraryPath(LibraryPath) == false {
 		ctx.String(404, "")
 		return
 	}
-
-	showId := ctx.Params.ByName("showId")
 
 	if inJsonDb, err := InJsonDB(showId, LShow); err != nil || inJsonDb == true {
 		ctx.String(404, "")
@@ -468,12 +479,9 @@ func AddShow(ctx *gin.Context) {
 	}
 
 	ShowsLibraryPath := filepath.Join(LibraryPath, "Shows")
-	if _, err := os.Stat(ShowsLibraryPath); os.IsNotExist(err) {
-		if err := os.Mkdir(ShowsLibraryPath, 0755); err != nil{
-			libraryLog.Error("Unable to create library path for Shows")
-			ctx.String(404, "")
-			return
-		}
+	if checkShowsPath(ShowsLibraryPath) == false {
+		ctx.String(404, "")
+		return
 	}
 
 	if err := WriteShowStrm(showId, ShowsLibraryPath); err != nil {
@@ -482,10 +490,10 @@ func AddShow(ctx *gin.Context) {
 	}
 
 	if err := UpdateJsonDB(DBPath, showId, LShow); err != nil {
-			libraryLog.Error("Unable to update json DB")
-			ctx.String(404, "")
-			return
-		}
+		libraryLog.Error("Unable to update json DB")
+		ctx.String(404, "")
+		return
+	}
 
 	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
 	ctx.String(200, "")
@@ -496,24 +504,19 @@ func AddShow(ctx *gin.Context) {
 }
 
 func AddShowList(ctx *gin.Context) {
+	listId := ctx.Params.ByName("listId")
 	LibraryPath := config.Get().LibraryPath
 	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
 
-	if fileInfo, err := os.Stat(LibraryPath); err != nil || fileInfo.IsDir() == false || LibraryPath == "" || LibraryPath == "." {
-		xbmc.Notify("Quasar", "LOCALIZE[30220]", config.AddonIcon())
+	if checkLibraryPath(LibraryPath) == false {
 		ctx.String(404, "")
 		return
 	}
 
-	listId := ctx.Params.ByName("listId")
-
 	ShowsLibraryPath := filepath.Join(LibraryPath, "Shows")
-	if _, err := os.Stat(ShowsLibraryPath); os.IsNotExist(err) {
-		if err := os.Mkdir(ShowsLibraryPath, 0755); err != nil {
-			libraryLog.Error("Unable to create library path for Shows")
-			ctx.String(404, "")
-			return
-		}
+	if checkShowsPath(ShowsLibraryPath) == false {
+		ctx.String(404, "")
+		return
 	}
 
 	shows, err := trakt.ListItemsShows(listId, "0")
@@ -596,9 +599,9 @@ func WriteShowStrm(showId string, ShowsLibraryPath string) error {
 			EpisodeStrmPath := filepath.Join(ShowPath, fmt.Sprintf("%s S%02dE%02d.strm", ShowStrm, season.Season, episode.EpisodeNumber))
 			playLink := UrlForXBMC("/library/play/show/%d/season/%d/episode/%d", Id, season.Season, episode.EpisodeNumber)
 			if err := ioutil.WriteFile(EpisodeStrmPath, []byte(playLink), 0644); err != nil {
-						libraryLog.Error("Unable to write to strm file for episode")
-						return err
-				}
+				libraryLog.Error("Unable to write to strm file for episode")
+				return err
+			}
 		}
 	}
 
@@ -609,13 +612,16 @@ func RemoveShow(ctx *gin.Context) {
 	LibraryPath := config.Get().LibraryPath
 	ShowsLibraryPath := filepath.Join(LibraryPath, "Shows")
 	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
+
 	showId := ctx.Params.ByName("showId")
 	Id, _ := strconv.Atoi(showId)
 	show := tmdb.GetShow(Id, "en")
+
 	if show == nil {
 		ctx.String(404, "")
 		return
 	}
+
 	ShowStrm := toFileName(fmt.Sprintf("%s (%s)", show.Name, strings.Split(show.FirstAirDate, "-")[0]))
 	ShowPath := filepath.Join(ShowsLibraryPath, ShowStrm)
 
