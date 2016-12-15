@@ -14,9 +14,13 @@ import (
 var cmdLog = logging.MustGetLogger("cmd")
 
 func ClearCache(ctx *gin.Context) {
-	cloudhole.ResetClearances()
 	os.RemoveAll(filepath.Join(config.Get().Info.Profile, "cache"))
 	xbmc.Notify("Quasar", "LOCALIZE[30200]", config.AddonIcon())
+}
+
+func ResetClearances(ctx *gin.Context) {
+	cloudhole.ResetClearances()
+	xbmc.Notify("Quasar", "LOCALIZE[30264]", config.AddonIcon())
 }
 
 func SetViewMode(ctx *gin.Context) {
