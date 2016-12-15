@@ -359,8 +359,6 @@ func AddMovie(ctx *gin.Context) {
 	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
 	ctx.String(200, "")
 	xbmc.VideoLibraryScan()
-	// ClearCache(ctx)
-	xbmc.Refresh()
 	libraryLog.Notice("Movie added")
 }
 
@@ -407,8 +405,6 @@ func AddMovieList(ctx *gin.Context) {
 	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
 	ctx.String(200, "")
 	xbmc.VideoLibraryScan()
-	// ClearCache(ctx)
-	xbmc.Refresh()
 	libraryLog.Notice("Movie list added")
 }
 
@@ -454,8 +450,6 @@ func AddMovieCollection(ctx *gin.Context) {
 	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
 	ctx.String(200, "")
 	xbmc.VideoLibraryScan()
-	// ClearCache(ctx)
-	xbmc.Refresh()
 	libraryLog.Notice("Movie collection added")
 }
 
@@ -501,8 +495,6 @@ func AddMovieWatchlist(ctx *gin.Context) {
 	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
 	ctx.String(200, "")
 	xbmc.VideoLibraryScan()
-	// ClearCache(ctx)
-	xbmc.Refresh()
 	libraryLog.Notice("Movie watchlist added")
 }
 
@@ -551,8 +543,6 @@ func RemoveMovie(ctx *gin.Context) {
 
 	xbmc.Notify("Quasar", "LOCALIZE[30222]", config.AddonIcon())
 	ctx.String(200, "")
-	// xbmc.VideoLibraryClean()
-	// ClearCache(ctx)
 	xbmc.Refresh()
 	libraryLog.Notice("Movie removed")
 }
@@ -592,8 +582,6 @@ func AddShow(ctx *gin.Context) {
 	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
 	ctx.String(200, "")
 	xbmc.VideoLibraryScan()
-	// ClearCache(ctx)
-	xbmc.Refresh()
 	libraryLog.Notice("Show added")
 }
 
@@ -640,8 +628,6 @@ func AddShowList(ctx *gin.Context) {
 	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
 	ctx.String(200, "")
 	xbmc.VideoLibraryScan()
-	// ClearCache(ctx)
-	xbmc.Refresh()
 	libraryLog.Notice("Show list added")
 }
 
@@ -687,8 +673,6 @@ func AddShowCollection(ctx *gin.Context) {
 	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
 	ctx.String(200, "")
 	xbmc.VideoLibraryScan()
-	// ClearCache(ctx)
-	xbmc.Refresh()
 	libraryLog.Notice("Show collection added")
 }
 
@@ -734,8 +718,6 @@ func AddShowWatchlist(ctx *gin.Context) {
 	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
 	ctx.String(200, "")
 	xbmc.VideoLibraryScan()
-	// ClearCache(ctx)
-	xbmc.Refresh()
 	libraryLog.Notice("Show watchlist added")
 }
 
@@ -827,8 +809,6 @@ func RemoveShow(ctx *gin.Context) {
 
 	xbmc.Notify("Quasar", "LOCALIZE[30222]", config.AddonIcon())
 	ctx.String(200, "")
-	// xbmc.VideoLibraryClean()
-	// ClearCache(ctx)
 	xbmc.Refresh()
 	libraryLog.Notice("Show removed")
 }
