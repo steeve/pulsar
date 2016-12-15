@@ -404,7 +404,6 @@ func AddMovieList(ctx *gin.Context) {
 
 	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
 	ctx.String(200, "")
-	xbmc.VideoLibraryScan()
 	libraryLog.Notice("Movie list added")
 }
 
@@ -449,7 +448,6 @@ func AddMovieCollection(ctx *gin.Context) {
 
 	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
 	ctx.String(200, "")
-	xbmc.VideoLibraryScan()
 	libraryLog.Notice("Movie collection added")
 }
 
@@ -494,7 +492,6 @@ func AddMovieWatchlist(ctx *gin.Context) {
 
 	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
 	ctx.String(200, "")
-	xbmc.VideoLibraryScan()
 	libraryLog.Notice("Movie watchlist added")
 }
 
@@ -627,7 +624,6 @@ func AddShowList(ctx *gin.Context) {
 
 	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
 	ctx.String(200, "")
-	xbmc.VideoLibraryScan()
 	libraryLog.Notice("Show list added")
 }
 
@@ -672,7 +668,6 @@ func AddShowCollection(ctx *gin.Context) {
 
 	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
 	ctx.String(200, "")
-	xbmc.VideoLibraryScan()
 	libraryLog.Notice("Show collection added")
 }
 
@@ -717,7 +712,6 @@ func AddShowWatchlist(ctx *gin.Context) {
 
 	xbmc.Notify("Quasar", "LOCALIZE[30221]", config.AddonIcon())
 	ctx.String(200, "")
-	xbmc.VideoLibraryScan()
 	libraryLog.Notice("Show watchlist added")
 }
 
