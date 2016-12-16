@@ -9,8 +9,26 @@ import (
 
 	"github.com/jmcvetta/napping"
 	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/tmdb"
 	"github.com/scakemyer/quasar/xbmc"
 )
+
+// Fill fanart from TMDB
+func setFanart(movie *Movie) *Movie {
+	tmdbImages := tmdb.GetImages(movie.IDs.TMDB)
+	movie.Images.Poster.Full = tmdb.ImageURL(tmdbImages.Posters[0].FilePath, "w500")
+	movie.Images.Thumbnail.Full = tmdb.ImageURL(tmdbImages.Posters[0].FilePath, "w500")
+	movie.Images.FanArt.Full = tmdb.ImageURL(tmdbImages.Backdrops[0].FilePath, "w1280")
+	movie.Images.Banner.Full = tmdb.ImageURL(tmdbImages.Backdrops[0].FilePath, "w1280")
+	return movie
+}
+
+func setFanarts(movies []*Movies) []*Movies {
+	for i, movie := range movies {
+		movies[i].Movie = setFanart(movie.Movie)
+	}
+	return movies
+}
 
 func GetMovie(Id string) (movie *Movie) {
 	endPoint := fmt.Sprintf("movies/%s", Id)
@@ -27,6 +45,8 @@ func GetMovie(Id string) (movie *Movie) {
 	}
 
 	resp.Unmarshal(&movie)
+	movie = setFanart(movie)
+
 	return movie
 }
 
@@ -53,6 +73,8 @@ func SearchMovies(query string, page string) (movies []*Movies, err error) {
   // X-Pagination-Item-Count:100
 
 	resp.Unmarshal(&movies)
+	movies = setFanarts(movies)
+
 	return movies, err
 }
 
@@ -88,6 +110,9 @@ func TopMovies(topCategory string, page string) (movies []*Movies, err error) {
 	} else {
 		resp.Unmarshal(&movies)
 	}
+
+	movies = setFanarts(movies)
+
 	return movies, err
 }
 
@@ -122,6 +147,8 @@ func WatchlistMovies() (movies []*Movies, err error) {
 	}
 	movies = movieListing
 
+	movies = setFanarts(movies)
+
 	return movies, err
 }
 
@@ -155,6 +182,8 @@ func CollectionMovies() (movies []*Movies, err error) {
 		movieListing = append(movieListing, &movieItem)
 	}
 	movies = movieListing
+
+	movies = setFanarts(movies)
 
 	return movies, err
 }
@@ -221,6 +250,8 @@ func ListItemsMovies(listId string, page string) (movies []*Movies, err error) {
 		movieListing = append(movieListing, &movieItem)
 	}
 	movies = movieListing
+
+	movies = setFanarts(movies)
 
 	return movies, err
 }

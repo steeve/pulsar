@@ -24,6 +24,37 @@ func LogError(err error) {
 	}
 }
 
+func GetShowImages(showId int) *Images {
+	var images *Images
+	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
+	key := fmt.Sprintf("com.tmdb.show.%d.images", showId)
+	if err := cacheStore.Get(key, &images); err != nil {
+		rateLimiter.Call(func() {
+			urlValues := napping.Params{
+				"api_key": apiKey,
+			}.AsUrlValues()
+			resp, err := napping.Get(
+				tmdbEndpoint + "tv/" + strconv.Itoa(showId) + "/images",
+				&urlValues,
+				&images,
+				nil,
+			)
+			if err != nil {
+				log.Error(err.Error())
+				xbmc.Notify("Quasar", "GetImages failed, check your logs.", config.AddonIcon())
+			} else if resp.Status() != 200 {
+				message := fmt.Sprintf("GetImages bad status: %d", resp.Status())
+				log.Error(message)
+				xbmc.Notify("Quasar", message, config.AddonIcon())
+			}
+			if images != nil {
+				cacheStore.Set(key, images, cacheTime)
+			}
+		})
+	}
+	return images
+}
+
 func GetShow(showId int, language string) *Show {
 	var show *Show
 	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))

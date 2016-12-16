@@ -9,8 +9,26 @@ import (
 
 	"github.com/jmcvetta/napping"
 	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/tmdb"
 	"github.com/scakemyer/quasar/xbmc"
 )
+
+// Fill fanart from TMDB
+func setShowFanart(show *Show) *Show {
+	tmdbImages := tmdb.GetShowImages(show.IDs.TMDB)
+	show.Images.Poster.Full = tmdb.ImageURL(tmdbImages.Posters[0].FilePath, "w500")
+	show.Images.Thumbnail.Full = tmdb.ImageURL(tmdbImages.Posters[0].FilePath, "w500")
+	show.Images.FanArt.Full = tmdb.ImageURL(tmdbImages.Backdrops[0].FilePath, "w1280")
+	show.Images.Banner.Full = tmdb.ImageURL(tmdbImages.Backdrops[0].FilePath, "w1280")
+	return show
+}
+
+func setShowsFanart(shows []*Shows) []*Shows {
+	for i, show := range shows {
+		shows[i].Show = setShowFanart(show.Show)
+	}
+	return shows
+}
 
 func GetShow(Id string) (show *Show) {
 	endPoint := fmt.Sprintf("shows/%s", Id)
@@ -27,6 +45,8 @@ func GetShow(Id string) (show *Show) {
 	}
 
 	resp.Unmarshal(&show)
+	show = setShowFanart(show)
+
 	return show
 }
 
@@ -49,6 +69,8 @@ func SearchShows(query string, page string) (shows []*Shows, err error) {
 	}
 
 	resp.Unmarshal(&shows)
+	shows = setShowsFanart(shows)
+
 	return shows, err
 }
 
@@ -84,6 +106,9 @@ func TopShows(topCategory string, page string) (shows []*Shows, err error) {
   } else {
   	resp.Unmarshal(&shows)
   }
+
+	shows = setShowsFanart(shows)
+
 	return shows, err
 }
 
@@ -118,6 +143,8 @@ func WatchlistShows() (shows []*Shows, err error) {
 	}
 	shows = showListing
 
+	shows = setShowsFanart(shows)
+
 	return shows, err
 }
 
@@ -151,6 +178,8 @@ func CollectionShows() (shows []*Shows, err error) {
 		showListing = append(showListing, &showItem)
 	}
 	shows = showListing
+
+	shows = setShowsFanart(shows)
 
 	return shows, err
 }
@@ -191,6 +220,8 @@ func ListItemsShows(listId string, page string) (shows []*Shows, err error) {
 		showListing = append(showListing, &showItem)
 	}
 	shows = showListing
+
+	shows = setShowsFanart(shows)
 
 	return shows, err
 }

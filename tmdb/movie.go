@@ -21,6 +21,37 @@ func (a ByPopularity) Len() int           { return len(a) }
 func (a ByPopularity) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByPopularity) Less(i, j int) bool { return a[i].Popularity < a[j].Popularity }
 
+func GetImages(movieId int) *Images {
+	var images *Images
+	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
+	key := fmt.Sprintf("com.tmdb.movie.%d.images", movieId)
+	if err := cacheStore.Get(key, &images); err != nil {
+		rateLimiter.Call(func() {
+			urlValues := napping.Params{
+				"api_key": apiKey,
+			}.AsUrlValues()
+			resp, err := napping.Get(
+				tmdbEndpoint + "movie/" + strconv.Itoa(movieId) + "/images",
+				&urlValues,
+				&images,
+				nil,
+			)
+			if err != nil {
+				log.Error(err.Error())
+				xbmc.Notify("Quasar", "GetImages failed, check your logs.", config.AddonIcon())
+			} else if resp.Status() != 200 {
+				message := fmt.Sprintf("GetImages bad status: %d", resp.Status())
+				log.Error(message)
+				xbmc.Notify("Quasar", message, config.AddonIcon())
+			}
+			if images != nil {
+				cacheStore.Set(key, images, cacheTime)
+			}
+		})
+	}
+	return images
+}
+
 func GetMovie(tmdbId int, language string) *Movie {
 	return GetMovieById(strconv.Itoa(tmdbId), language)
 }
