@@ -117,6 +117,22 @@ type StreamInfoEntry struct {
 	Channels int     `json:"channels,omitempty"`
 }
 
+type VideoLibraryMovies struct {
+	Movies []*struct {
+		ID         int    `json:"movieid"`
+		Title      string `json:"label"`
+		IMDBNumber string `json:"imdbnumber"`
+	} `json:"movies"`
+}
+
+type VideoLibraryShows struct {
+	Shows []*struct {
+		ID         int    `json:"tvshowid"`
+		Title      string `json:"label"`
+		IMDBNumber string `json:"imdbnumber"`
+	} `json:"tvshows"`
+}
+
 func NewView(contentType string, items ListItems) *View {
 	return &View{
 		ContentType: contentType,

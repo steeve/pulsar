@@ -33,7 +33,7 @@ func getConnection(hosts ...string) (net.Conn, error) {
 	return nil, err
 }
 
-func executeJSONRPC(method string, retVal interface{}, args []interface{}) error {
+func executeJSONRPC(method string, retVal interface{}, args Args) error {
 	if args == nil {
 		args = Args{}
 	}
@@ -48,7 +48,22 @@ func executeJSONRPC(method string, retVal interface{}, args []interface{}) error
 	return client.Call(method, args, retVal)
 }
 
-func executeJSONRPCEx(method string, retVal interface{}, args []interface{}) error {
+func executeJSONRPCO(method string, retVal interface{}, args Object) error {
+	if args == nil {
+		args = Object{}
+	}
+	conn, err := getConnection(XBMCJSONRPCHosts...)
+	if err != nil {
+		log.Error(err.Error())
+		Notify("Quasar", "executeJSONRPCO failed, check your logs.", "")
+	}
+	defer conn.Close()
+
+	client := jsonrpc.NewClient(conn)
+	return client.Call(method, args, retVal)
+}
+
+func executeJSONRPCEx(method string, retVal interface{}, args Args) error {
 	if args == nil {
 		args = Args{}
 	}

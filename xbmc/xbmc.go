@@ -25,6 +25,24 @@ func VideoLibraryClean() {
 	executeJSONRPC("VideoLibrary.Clean", &retVal, nil)
 }
 
+func VideoLibraryGetMovies() (movies *VideoLibraryMovies) {
+	params := map[string]interface{}{"properties": []interface{}{"imdbnumber"}}
+	ret := executeJSONRPCO("VideoLibrary.GetMovies", &movies, params)
+	if ret != nil {
+		log.Error(ret)
+	}
+	return movies
+}
+
+func VideoLibraryGetShows() (shows *VideoLibraryShows) {
+	params := map[string]interface{}{"properties": []interface{}{"imdbnumber"}}
+	ret := executeJSONRPCO("VideoLibrary.GetTVShows", &shows, params)
+	if ret != nil {
+		log.Error(ret)
+	}
+	return shows
+}
+
 func TranslatePath(path string) (retVal string) {
 	executeJSONRPCEx("TranslatePath", &retVal, Args{path})
 	return
