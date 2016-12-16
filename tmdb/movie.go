@@ -10,8 +10,8 @@ import (
 	"math/rand"
 
 	"github.com/jmcvetta/napping"
-	"github.com/scakemyer/quasar/cache"
 	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/cache"
 	"github.com/scakemyer/quasar/xbmc"
 )
 
@@ -29,6 +29,7 @@ func GetImages(movieId int) *Images {
 		rateLimiter.Call(func() {
 			urlValues := napping.Params{
 				"api_key": apiKey,
+				"language": config.Get().Language,
 			}.AsUrlValues()
 			resp, err := napping.Get(
 				tmdbEndpoint + "movie/" + strconv.Itoa(movieId) + "/images",
@@ -40,9 +41,7 @@ func GetImages(movieId int) *Images {
 				log.Error(err.Error())
 				xbmc.Notify("Quasar", "GetImages failed, check your logs.", config.AddonIcon())
 			} else if resp.Status() != 200 {
-				message := fmt.Sprintf("GetImages bad status: %d", resp.Status())
-				log.Error(message)
-				xbmc.Notify("Quasar", message, config.AddonIcon())
+				log.Warningf("GetImages bad status: %d", resp.Status())
 			}
 			if images != nil {
 				cacheStore.Set(key, images, cacheTime)

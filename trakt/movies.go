@@ -16,10 +16,17 @@ import (
 // Fill fanart from TMDB
 func setFanart(movie *Movie) *Movie {
 	tmdbImages := tmdb.GetImages(movie.IDs.TMDB)
-	movie.Images.Poster.Full = tmdb.ImageURL(tmdbImages.Posters[0].FilePath, "w500")
-	movie.Images.Thumbnail.Full = tmdb.ImageURL(tmdbImages.Posters[0].FilePath, "w500")
-	movie.Images.FanArt.Full = tmdb.ImageURL(tmdbImages.Backdrops[0].FilePath, "w1280")
-	movie.Images.Banner.Full = tmdb.ImageURL(tmdbImages.Backdrops[0].FilePath, "w1280")
+	if tmdbImages == nil {
+		return movie
+	}
+	if len(tmdbImages.Posters) > 0 {
+		movie.Images.Poster.Full = tmdb.ImageURL(tmdbImages.Posters[0].FilePath, "w500")
+		movie.Images.Thumbnail.Full = tmdb.ImageURL(tmdbImages.Posters[0].FilePath, "w500")
+	}
+	if len(tmdbImages.Backdrops) > 0 {
+		movie.Images.FanArt.Full = tmdb.ImageURL(tmdbImages.Backdrops[0].FilePath, "w1280")
+		movie.Images.Banner.Full = tmdb.ImageURL(tmdbImages.Backdrops[0].FilePath, "w1280")
+	}
 	return movie
 }
 
