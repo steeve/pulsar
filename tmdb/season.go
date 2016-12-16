@@ -104,6 +104,8 @@ func (season *Season) ToListItem(show *Show) *xbmc.ListItem {
 			Season:        season.Season,
 			TVShowTitle:   show.OriginalName,
 			DBTYPE:        "season",
+			Mediatype:     "season",
+			Code:          show.ExternalIDs.IMDBId,
 			IMDBNumber:    show.ExternalIDs.IMDBId,
 		},
 		Art: &xbmc.ListItemArt{},

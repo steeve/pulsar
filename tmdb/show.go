@@ -301,6 +301,7 @@ func (show *Show) ToListItem() *xbmc.ListItem {
 			TVShowTitle:   show.OriginalName,
 			Premiered:     show.FirstAirDate,
 			DBTYPE:        "tvshow",
+			Mediatype:     "tvshow",
 		},
 		Art: &xbmc.ListItemArt{
 			FanArt: ImageURL(show.BackdropPath, "w1280"),

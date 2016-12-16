@@ -109,6 +109,7 @@ func (episode *Episode) ToListItem(show *Show) *xbmc.ListItem {
 			Code:          show.ExternalIDs.IMDBId,
 			IMDBNumber:    show.ExternalIDs.IMDBId,
 			DBTYPE:        "episode",
+			Mediatype:     "episode",
 		},
 		Art: &xbmc.ListItemArt{},
 	}

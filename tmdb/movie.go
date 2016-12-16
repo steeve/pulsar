@@ -323,6 +323,7 @@ func (movie *Movie) ToListItem() *xbmc.ListItem {
 			Votes:         strconv.Itoa(movie.VoteCount),
 			Rating:        movie.VoteAverage,
 			DBTYPE:        "movie",
+			Mediatype:     "movie",
 		},
 		Art: &xbmc.ListItemArt{
 			FanArt: ImageURL(movie.BackdropPath, "w1280"),

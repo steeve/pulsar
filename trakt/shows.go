@@ -252,6 +252,7 @@ func (show *Show) ToListItem() *xbmc.ListItem {
 			IMDBNumber:    show.IDs.IMDB,
 			Trailer:       show.Trailer,
 			DBTYPE:        "tvshow",
+			Mediatype:     "tvshow",
 		},
 		Art: &xbmc.ListItemArt{
 			Poster: show.Images.Poster.Full,
@@ -276,6 +277,7 @@ func (season *Season) ToListItem(show *Show) *xbmc.ListItem {
 			Code:          show.IDs.IMDB,
 			IMDBNumber:    show.IDs.IMDB,
 			DBTYPE:        "season",
+			Mediatype:     "season",
 		},
 		Art: &xbmc.ListItemArt{
 			Poster: season.Images.Poster.Full,
@@ -303,6 +305,7 @@ func (episode *Episode) ToListItem(show *Show) *xbmc.ListItem {
 			Code:          show.IDs.IMDB,
 			IMDBNumber:    show.IDs.IMDB,
 			DBTYPE:        "episode",
+			Mediatype:     "episode",
 		},
 		Art: &xbmc.ListItemArt{
 			Thumbnail: episode.Images.ScreenShot.Full,

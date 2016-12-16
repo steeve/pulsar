@@ -283,6 +283,7 @@ func (movie *Movie) ToListItem() *xbmc.ListItem {
 			IMDBNumber:    movie.IDs.IMDB,
 			Trailer:       movie.Trailer,
 			DBTYPE:        "movie",
+			Mediatype:     "movie",
 		},
 		Art: &xbmc.ListItemArt{
 			Poster: movie.Images.Poster.Full,
