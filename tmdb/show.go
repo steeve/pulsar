@@ -92,6 +92,9 @@ func GetShow(showId int, language string) *Show {
 			cacheStore.Set(key, show, cacheTime)
 		}
 	}
+	if show == nil {
+		return nil
+	}
 
 	switch t := show.RawPopularity.(type) {
 	case string:
