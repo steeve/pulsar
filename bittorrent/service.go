@@ -509,15 +509,12 @@ func (s *BTService) downloadProgress() {
 				} else {
 					showProgress = activeTorrents[showNext].progress
 					showTorrent = activeTorrents[showNext].torrentName
-					if len(showTorrent) > 32 {
-						showTorrent = showTorrent[:32]
-					}
 					showNext += 1
 				}
 				if s.dialogProgressBG == nil {
 					s.dialogProgressBG = xbmc.NewDialogProgressBG("Quasar", "")
 				}
-				s.dialogProgressBG.Update(showProgress, fmt.Sprintf("Quasar - %s", showTorrent))
+				s.dialogProgressBG.Update(showProgress, "Quasar", showTorrent)
 			} else if s.dialogProgressBG != nil {
 				s.dialogProgressBG.Close()
 				s.dialogProgressBG = nil
