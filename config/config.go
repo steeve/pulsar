@@ -1,10 +1,10 @@
 package config
 
 import (
-	"path/filepath"
-	"strings"
-	"sync"
 	"os"
+	"sync"
+	"strings"
+	"path/filepath"
 
 	"github.com/op/go-logging"
 	"github.com/scakemyer/quasar/xbmc"
@@ -22,6 +22,7 @@ type Configuration struct {
 	ProfilePath         string
 	BackgroundHandling  bool
 	KeepFilesAfterStop  bool
+	KeepFilesAsk        bool
 	ResultsPerPage      int
 	EnableOverlayStatus bool
 	ChooseStreamAuto    bool
@@ -115,6 +116,7 @@ func Reload() *Configuration {
 		LimitAfterBuffering: xbmc.GetSettingBool("limit_after_buffering"),
 		BackgroundHandling:  xbmc.GetSettingBool("background_handling"),
 		KeepFilesAfterStop:  xbmc.GetSettingBool("keep_files"),
+		KeepFilesAsk:        xbmc.GetSettingBool("keep_files_ask"),
 		ResultsPerPage:      xbmc.GetSettingInt("results_per_page"),
 		EnableOverlayStatus: xbmc.GetSettingBool("enable_overlay_status"),
 		ChooseStreamAuto:    xbmc.GetSettingBool("choose_stream_auto"),

@@ -14,9 +14,9 @@ import (
 	"github.com/op/go-logging"
 	"github.com/dustin/go-humanize"
 	"github.com/scakemyer/libtorrent-go"
-	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/broadcast"
 	"github.com/scakemyer/quasar/diskusage"
+	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/trakt"
 	"github.com/scakemyer/quasar/xbmc"
 )
@@ -43,6 +43,7 @@ type BTPlayer struct {
 	runtime                  int
 	scrobble                 bool
 	deleteAfter              bool
+	askToKeep                bool
 	backgroundHandling       bool
 	overlayStatusEnabled     bool
 	torrentHandle            libtorrent.TorrentHandle
@@ -79,6 +80,7 @@ func NewBTPlayer(bts *BTService, params BTPlayerParams) *BTPlayer {
 		overlayStatusEnabled: config.Get().EnableOverlayStatus == true,
 		backgroundHandling:   config.Get().BackgroundHandling == true,
 		deleteAfter:          config.Get().KeepFilesAfterStop == false,
+		askToKeep:            config.Get().KeepFilesAsk == true,
 		scrobble:             config.Get().Scrobble == true && params.TMDBId > 0 && config.Get().TraktToken != "",
 		contentType:          params.ContentType,
 		tmdbId:               params.TMDBId,
@@ -386,7 +388,16 @@ func (btp *BTPlayer) onStateChanged(stateAlert libtorrent.StateChangedAlert) {
 func (btp *BTPlayer) Close() {
 	close(btp.closing)
 
-	if btp.backgroundHandling == false || btp.notEnoughSpace {
+	askedToKeep := false
+	if btp.askToKeep == true {
+		if xbmc.DialogConfirm("Quasar", "LOCALIZE[30267]") {
+			askedToKeep = true
+		}
+	} else {
+		askedToKeep = true
+	}
+
+	if btp.backgroundHandling == false || askedToKeep == false || btp.notEnoughSpace {
 		if btp.torrentInfo != nil && btp.torrentInfo.Swigcptr() != 0 {
 			libtorrent.DeleteTorrentInfo(btp.torrentInfo)
 		}
@@ -397,7 +408,7 @@ func (btp *BTPlayer) Close() {
 			defer os.Remove(btp.fastResumeFile)
 		}
 
-		if btp.deleteAfter {
+		if btp.deleteAfter || askedToKeep == false {
 			btp.log.Info("Removing the torrent and deleting files...")
 			btp.bts.Session.RemoveTorrent(btp.torrentHandle, int(libtorrent.SessionDeleteFiles))
 		} else {
