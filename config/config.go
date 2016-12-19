@@ -4,6 +4,7 @@ import (
 	"os"
 	"sync"
 	"strings"
+	"strconv"
 	"path/filepath"
 
 	"github.com/op/go-logging"
@@ -103,59 +104,75 @@ func Reload() *Configuration {
 		xbmc.AddonSettings("plugin.video.quasar")
 	}
 
+	xbmcSettings := xbmc.GetAllSettings()
+	settings := make(map[string]interface{})
+	for _, setting := range xbmcSettings {
+		switch setting.Type {
+		case "enum":
+			fallthrough
+		case "number":
+			value, _ := strconv.Atoi(setting.Value)
+			settings[setting.Key] = value
+		case "bool":
+			settings[setting.Key] = (setting.Value == "true")
+		default:
+			settings[setting.Key] = setting.Value
+		}
+	}
+
 	newConfig := Configuration{
 		DownloadPath:        downloadPath,
-		LibraryPath:         filepath.Dir(xbmc.GetSettingString("library_path")),
+		LibraryPath:         filepath.Dir(settings["library_path"].(string)),
 		TorrentsPath:        filepath.Join(downloadPath, "Torrents"),
 		Info:                info,
 		Platform:            platform,
 		Language:            xbmc.GetLanguageISO_639_1(),
 		ProfilePath:         info.Profile,
-		BufferSize:          xbmc.GetSettingInt("buffer_size") * 1024 * 1024,
-		UploadRateLimit:     xbmc.GetSettingInt("max_upload_rate") * 1024,
-		DownloadRateLimit:   xbmc.GetSettingInt("max_download_rate") * 1024,
-		LimitAfterBuffering: xbmc.GetSettingBool("limit_after_buffering"),
-		BackgroundHandling:  xbmc.GetSettingBool("background_handling"),
-		KeepFilesAfterStop:  xbmc.GetSettingBool("keep_files"),
-		KeepFilesAsk:        xbmc.GetSettingBool("keep_files_ask"),
-		ResultsPerPage:      xbmc.GetSettingInt("results_per_page"),
-		EnableOverlayStatus: xbmc.GetSettingBool("enable_overlay_status"),
-		ChooseStreamAuto:    xbmc.GetSettingBool("choose_stream_auto"),
-		UseOriginalTitle:    xbmc.GetSettingBool("use_original_title"),
-		AddSpecials:         xbmc.GetSettingBool("add_specials"),
-		PreReleaseUpdates:   xbmc.GetSettingBool("pre_release_updates"),
-		ShareRatioLimit:     xbmc.GetSettingInt("share_ratio_limit"),
-		SeedTimeRatioLimit:  xbmc.GetSettingInt("seed_time_ratio_limit"),
-		SeedTimeLimit:       xbmc.GetSettingInt("seed_time_limit") * 3600,
-		DisableDHT:          xbmc.GetSettingBool("disable_dht"),
-		BTListenPortMin:     xbmc.GetSettingInt("listen_port_min"),
-		BTListenPortMax:     xbmc.GetSettingInt("listen_port_max"),
-		ConnectionsLimit:    xbmc.GetSettingInt("connections_limit"),
-		SessionSave:         xbmc.GetSettingInt("session_save"),
-		Scrobble:            xbmc.GetSettingBool("trakt_scrobble"),
-		TraktUsername:       xbmc.GetSettingString("trakt_username"),
-		TraktToken:          xbmc.GetSettingString("trakt_token"),
-		TraktRefreshToken:   xbmc.GetSettingString("trakt_refresh_token"),
-		IgnoreDuplicates:    xbmc.GetSettingBool("library_ignore_duplicates"),
-		TvScraper:           xbmc.GetSettingInt("library_tv_scraper"),
-		UseCloudHole:        xbmc.GetSettingBool("use_cloudhole"),
-		CloudHoleKey:        xbmc.GetSettingString("cloudhole_key"),
-		TMDBApiKey:          xbmc.GetSettingString("tmdb_api_key"),
+		BufferSize:          settings["buffer_size"].(int) * 1024 * 1024,
+		UploadRateLimit:     settings["max_upload_rate"].(int) * 1024,
+		DownloadRateLimit:   settings["max_download_rate"].(int) * 1024,
+		LimitAfterBuffering: settings["limit_after_buffering"].(bool),
+		BackgroundHandling:  settings["background_handling"].(bool),
+		KeepFilesAfterStop:  settings["keep_files"].(bool),
+		KeepFilesAsk:        settings["keep_files_ask"].(bool),
+		ResultsPerPage:      settings["results_per_page"].(int),
+		EnableOverlayStatus: settings["enable_overlay_status"].(bool),
+		ChooseStreamAuto:    settings["choose_stream_auto"].(bool),
+		UseOriginalTitle:    settings["use_original_title"].(bool),
+		AddSpecials:         settings["add_specials"].(bool),
+		PreReleaseUpdates:   settings["pre_release_updates"].(bool),
+		ShareRatioLimit:     settings["share_ratio_limit"].(int),
+		SeedTimeRatioLimit:  settings["seed_time_ratio_limit"].(int),
+		SeedTimeLimit:       settings["seed_time_limit"].(int) * 3600,
+		DisableDHT:          settings["disable_dht"].(bool),
+		BTListenPortMin:     settings["listen_port_min"].(int),
+		BTListenPortMax:     settings["listen_port_max"].(int),
+		ConnectionsLimit:    settings["connections_limit"].(int),
+		SessionSave:         settings["session_save"].(int),
+		Scrobble:            settings["trakt_scrobble"].(bool),
+		TraktUsername:       settings["trakt_username"].(string),
+		TraktToken:          settings["trakt_token"].(string),
+		TraktRefreshToken:   settings["trakt_refresh_token"].(string),
+		IgnoreDuplicates:    settings["library_ignore_duplicates"].(bool),
+		TvScraper:           settings["library_tv_scraper"].(int),
+		UseCloudHole:        settings["use_cloudhole"].(bool),
+		CloudHoleKey:        settings["cloudhole_key"].(string),
+		TMDBApiKey:          settings["tmdb_api_key"].(string),
 
-		SortingModeMovies:            xbmc.GetSettingInt("sorting_mode_movies"),
-		SortingModeShows:             xbmc.GetSettingInt("sorting_mode_shows"),
-		ResolutionPreferenceMovies:   xbmc.GetSettingInt("resolution_preference_movies"),
-		ResolutionPreferenceShows:    xbmc.GetSettingInt("resolution_preference_shows"),
-		PercentageAdditionalSeeders:  xbmc.GetSettingInt("percentage_additional_seeders"),
+		SortingModeMovies:            settings["sorting_mode_movies"].(int),
+		SortingModeShows:             settings["sorting_mode_shows"].(int),
+		ResolutionPreferenceMovies:   settings["resolution_preference_movies"].(int),
+		ResolutionPreferenceShows:    settings["resolution_preference_shows"].(int),
+		PercentageAdditionalSeeders:  settings["percentage_additional_seeders"].(int),
 
-		CustomProviderTimeoutEnabled: xbmc.GetSettingBool("custom_provider_timeout_enabled"),
-		CustomProviderTimeout:        xbmc.GetSettingInt("custom_provider_timeout"),
+		CustomProviderTimeoutEnabled: settings["custom_provider_timeout_enabled"].(bool),
+		CustomProviderTimeout:        settings["custom_provider_timeout"].(int),
 
-		SocksEnabled:  xbmc.GetSettingBool("socks_enabled"),
-		SocksHost:     xbmc.GetSettingString("socks_host"),
-		SocksPort:     xbmc.GetSettingInt("socks_port"),
-		SocksLogin:    xbmc.GetSettingString("socks_login"),
-		SocksPassword: xbmc.GetSettingString("socks_password"),
+		SocksEnabled:  settings["socks_enabled"].(bool),
+		SocksHost:     settings["socks_host"].(string),
+		SocksPort:     settings["socks_port"].(int),
+		SocksLogin:    settings["socks_login"].(string),
+		SocksPassword: settings["socks_password"].(string),
 	}
 
 	lock.Lock()

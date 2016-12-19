@@ -19,6 +19,12 @@ type AddonInfo struct {
 	Version     string
 }
 
+type Setting struct {
+	Key   string `json:"key"`
+	Type  string `json:"type"`
+	Value string `json:"value"`
+}
+
 func GetAddonInfo() *AddonInfo {
 	retVal := AddonInfo{}
 	executeJSONRPCEx("GetAddonInfo", &retVal, nil)
@@ -42,6 +48,11 @@ func AddonCheck(addonId string) (failures int) {
 
 func GetLocalizedString(id int) (retVal string) {
 	executeJSONRPCEx("GetLocalizedString", &retVal, Args{id})
+	return
+}
+
+func GetAllSettings() (retVal []*Setting) {
+	executeJSONRPCEx("GetAllSettings", &retVal, nil)
 	return
 }
 
