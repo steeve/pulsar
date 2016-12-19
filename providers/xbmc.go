@@ -136,22 +136,6 @@ func (as *AddonSearcher) GetMovieSearchObject(movie *tmdb.Movie) *MovieSearchObj
 	return sObject
 }
 
-func strInterfaceToInt(t interface{}) (i int) {
-	switch t := t.(type) {
-	case string:
-		if v, err := strconv.Atoi(t); err == nil {
-			i = v
-		}
-	case float32:
-		i = int(t)
-	case float64:
-		i = int(t)
-	case int:
-		i = t
-	}
-	return i
-}
-
 func (as *AddonSearcher) GetSeasonSearchObject(show *tmdb.Show, season *tmdb.Season) *SeasonSearchObject {
 	title := show.OriginalName
 	if title == "" {
@@ -160,7 +144,7 @@ func (as *AddonSearcher) GetSeasonSearchObject(show *tmdb.Show, season *tmdb.Sea
 
 	return &SeasonSearchObject{
 		IMDBId:         show.ExternalIDs.IMDBId,
-		TVDBId:         strInterfaceToInt(show.ExternalIDs.TVDBID),
+		TVDBId:         util.StrInterfaceToInt(show.ExternalIDs.TVDBID),
 		Title:          NormalizeTitle(title),
 		Season:         season.Season,
 	}
@@ -172,11 +156,11 @@ func (as *AddonSearcher) GetEpisodeSearchObject(show *tmdb.Show, episode *tmdb.E
 		title = show.Name
 	}
 
-	tvdbId := strInterfaceToInt(show.ExternalIDs.TVDBID)
+	tvdbId := util.StrInterfaceToInt(show.ExternalIDs.TVDBID)
 
 	// Is this an Anime?
 	absoluteNumber := 0
-	if strInterfaceToInt(show.ExternalIDs.TVDBID) > 0 {
+	if util.StrInterfaceToInt(show.ExternalIDs.TVDBID) > 0 {
 		countryIsJP := false
 		for _, country := range show.OriginCountry {
 			if country == "JP" {

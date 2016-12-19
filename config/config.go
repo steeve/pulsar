@@ -45,6 +45,7 @@ type Configuration struct {
 	TraktUsername       string
 	TraktToken          string
 	TraktRefreshToken   string
+	TvScraper           int
 	IgnoreDuplicates    bool
 	UseCloudHole        bool
 	CloudHoleKey        string
@@ -136,6 +137,7 @@ func Reload() *Configuration {
 		TraktToken:          xbmc.GetSettingString("trakt_token"),
 		TraktRefreshToken:   xbmc.GetSettingString("trakt_refresh_token"),
 		IgnoreDuplicates:    xbmc.GetSettingBool("library_ignore_duplicates"),
+		TvScraper:           xbmc.GetSettingInt("library_tv_scraper"),
 		UseCloudHole:        xbmc.GetSettingBool("use_cloudhole"),
 		CloudHoleKey:        xbmc.GetSettingString("cloudhole_key"),
 		TMDBApiKey:          xbmc.GetSettingString("tmdb_api_key"),

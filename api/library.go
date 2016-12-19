@@ -13,6 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/op/go-logging"
+	"github.com/scakemyer/quasar/util"
 	"github.com/scakemyer/quasar/xbmc"
 	"github.com/scakemyer/quasar/tmdb"
 	"github.com/scakemyer/quasar/trakt"
@@ -22,6 +23,12 @@ import (
 const (
 	LMovie = iota
 	LShow
+)
+
+const (
+	TVDBScraper = iota
+	TMDBScraper
+	TraktScraper
 )
 
 var (
@@ -616,7 +623,7 @@ func RemoveMovie(ctx *gin.Context) {
 }
 
 func AddShow(ctx *gin.Context) {
-	showId := ctx.Params.ByName("showId")
+	tmdbId := ctx.Params.ByName("tmdbId")
 	LibraryPath := config.Get().LibraryPath
 	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
 
@@ -625,7 +632,7 @@ func AddShow(ctx *gin.Context) {
 		return
 	}
 
-	if inJsonDb, err := InJsonDB(showId, LShow); err != nil || inJsonDb == true {
+	if inJsonDb, err := InJsonDB(tmdbId, LShow); err != nil || inJsonDb == true {
 		ctx.String(200, "Show already in library")
 		return
 	}
@@ -633,10 +640,16 @@ func AddShow(ctx *gin.Context) {
 	// Duplicate check against Kodi library
 	if config.Get().IgnoreDuplicates == true {
 		libraryShows := xbmc.VideoLibraryGetShows()
-		tmdbId, _ := strconv.Atoi(showId)
+		Id, _ := strconv.Atoi(tmdbId)
+		show := tmdb.GetShow(Id, "en")
+		showId := tmdbId
+		if config.Get().TvScraper == TVDBScraper {
+			if show.ExternalIDs != nil {
+				showId = strconv.Itoa(util.StrInterfaceToInt(show.ExternalIDs.TVDBID))
+			}
+		}
 		if isDuplicateShow(showId, libraryShows) {
-			show := tmdb.GetShow(tmdbId, "en")
-			libraryLog.Warningf("%s (%d) already in library", show.Name, show.Id)
+			libraryLog.Warningf("%s (%s) already in library", show.Name, showId)
 			xbmc.Notify("Quasar", "LOCALIZE[30265]", config.AddonIcon())
 			return
 		}
@@ -648,12 +661,12 @@ func AddShow(ctx *gin.Context) {
 		return
 	}
 
-	if err := WriteShowStrm(showId, ShowsLibraryPath); err != nil {
+	if err := WriteShowStrm(tmdbId, ShowsLibraryPath); err != nil {
 		ctx.String(200, "Error writing strm")
 		return
 	}
 
-	if err := UpdateJsonDB(DBPath, showId, LShow); err != nil {
+	if err := UpdateJsonDB(DBPath, tmdbId, LShow); err != nil {
 		ctx.String(200, "Unable to update json DB")
 		return
 	}
@@ -700,8 +713,12 @@ func AddShowList(ctx *gin.Context) {
 				libraryLog.Warningf("%s already in library", title)
 				continue
 			}
-			if isDuplicateShow(strconv.Itoa(show.Show.IDs.TMDB), libraryShows) {
-				libraryLog.Warningf("%s (%d) already in library", title, show.Show.IDs.TMDB)
+			showId := tmdbId
+			if config.Get().TvScraper == TVDBScraper {
+					showId = strconv.Itoa(show.Show.IDs.TVDB)
+			}
+			if isDuplicateShow(showId, libraryShows) {
+				libraryLog.Warningf("%s (%s) already in library", title, showId)
 				continue
 			}
 		}
@@ -756,8 +773,12 @@ func AddShowCollection(ctx *gin.Context) {
 				libraryLog.Warningf("%s already in library", title)
 				continue
 			}
-			if isDuplicateShow(strconv.Itoa(show.Show.IDs.TMDB), libraryShows) {
-				libraryLog.Warningf("%s (%d) already in library", title, show.Show.IDs.TMDB)
+			showId := tmdbId
+			if config.Get().TvScraper == TVDBScraper {
+					showId = strconv.Itoa(show.Show.IDs.TVDB)
+			}
+			if isDuplicateShow(showId, libraryShows) {
+				libraryLog.Warningf("%s (%s) already in library", title, showId)
 				continue
 			}
 		}
@@ -812,8 +833,12 @@ func AddShowWatchlist(ctx *gin.Context) {
 				libraryLog.Warningf("%s already in library", title)
 				continue
 			}
-			if isDuplicateShow(strconv.Itoa(show.Show.IDs.TMDB), libraryShows) {
-				libraryLog.Warningf("%s (%d) already in library", title, show.Show.IDs.TMDB)
+			showId := tmdbId
+			if config.Get().TvScraper == TVDBScraper {
+					showId = strconv.Itoa(show.Show.IDs.TVDB)
+			}
+			if isDuplicateShow(showId, libraryShows) {
+				libraryLog.Warningf("%s (%s) already in library", title, showId)
 				continue
 			}
 		}
@@ -896,8 +921,8 @@ func RemoveShow(ctx *gin.Context) {
 	ShowsLibraryPath := filepath.Join(LibraryPath, "Shows")
 	DBPath := filepath.Join(LibraryPath, fmt.Sprintf("%s.json", DBName))
 
-	showId := ctx.Params.ByName("showId")
-	Id, _ := strconv.Atoi(showId)
+	tmdbId := ctx.Params.ByName("tmdbId")
+	Id, _ := strconv.Atoi(tmdbId)
 	show := tmdb.GetShow(Id, "en")
 
 	if show == nil {
@@ -908,7 +933,7 @@ func RemoveShow(ctx *gin.Context) {
 	ShowStrm := toFileName(fmt.Sprintf("%s (%s)", show.Name, strings.Split(show.FirstAirDate, "-")[0]))
 	ShowPath := filepath.Join(ShowsLibraryPath, ShowStrm)
 
-	if err := RemoveFromJsonDB(DBPath, showId, LShow); err != nil {
+	if err := RemoveFromJsonDB(DBPath, tmdbId, LShow); err != nil {
 		ctx.String(200, "Unable to remove show from db")
 		return
 	}
