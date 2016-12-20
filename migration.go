@@ -30,4 +30,6 @@ func Migrate() {
 		log.Info("Updating Kodi Addon Repositories")
 		xbmc.UpdateAddonRepos()
 	}
+
+	xbmc.Dialog("Quasar", "Please support Quasar development by visiting https://quasar.surge.sh to donate with Bitcoin, or buying a VPN subscription using the affiliate link at the bottom.")
 }
