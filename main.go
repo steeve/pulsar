@@ -47,6 +47,7 @@ func makeBTConfiguration(conf *config.Configuration) *bittorrent.BTConfiguration
 		SeedTimeRatioLimit:  conf.SeedTimeRatioLimit,
 		SeedTimeLimit:       conf.SeedTimeLimit,
 		DisableDHT:          conf.DisableDHT,
+		DisableUPNP:         conf.DisableUPNP,
 		LowerListenPort:     conf.BTListenPortMin,
 		UpperListenPort:     conf.BTListenPortMax,
 		DownloadPath:        conf.DownloadPath,

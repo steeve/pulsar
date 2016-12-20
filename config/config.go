@@ -38,6 +38,7 @@ type Configuration struct {
 	SeedTimeRatioLimit  int
 	SeedTimeLimit       int
 	DisableDHT          bool
+	DisableUPNP         bool
 	BTListenPortMin     int
 	BTListenPortMax     int
 	ConnectionsLimit    int
@@ -145,6 +146,7 @@ func Reload() *Configuration {
 		SeedTimeRatioLimit:  settings["seed_time_ratio_limit"].(int),
 		SeedTimeLimit:       settings["seed_time_limit"].(int) * 3600,
 		DisableDHT:          settings["disable_dht"].(bool),
+		DisableUPNP:         settings["disable_upnp"].(bool),
 		BTListenPortMin:     settings["listen_port_min"].(int),
 		BTListenPortMax:     settings["listen_port_max"].(int),
 		ConnectionsLimit:    settings["connections_limit"].(int),

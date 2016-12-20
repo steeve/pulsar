@@ -87,6 +87,7 @@ type BTConfiguration struct {
 	SeedTimeRatioLimit  int
 	SeedTimeLimit       int
 	DisableDHT          bool
+	DisableUPNP         bool
 	LowerListenPort     int
 	UpperListenPort     int
 	DownloadPath        string
@@ -296,11 +297,13 @@ func (s *BTService) startServices() {
 	s.log.Info("Starting LSD...")
 	s.Session.StartLsd()
 
-	s.log.Info("Starting UPNP...")
-	s.Session.StartUpnp()
+	if s.config.DisableUPNP != true {
+		s.log.Info("Starting UPNP...")
+		s.Session.StartUpnp()
 
-	s.log.Info("Starting NATPMP...")
-	s.Session.StartNatpmp()
+		s.log.Info("Starting NATPMP...")
+		s.Session.StartNatpmp()
+	}
 }
 
 func (s *BTService) stopServices() {
@@ -316,11 +319,13 @@ func (s *BTService) stopServices() {
 	s.log.Info("Stopping LSD...")
 	s.Session.StopLsd()
 
-	s.log.Info("Stopping UPNP...")
-	s.Session.StopUpnp()
+	if s.config.DisableUPNP != true {
+		s.log.Info("Stopping UPNP...")
+		s.Session.StopUpnp()
 
-	s.log.Info("Stopping NATPMP...")
-	s.Session.StopNatpmp()
+		s.log.Info("Stopping NATPMP...")
+		s.Session.StopNatpmp()
+	}
 }
 
 func (s *BTService) saveResumeDataLoop() {
