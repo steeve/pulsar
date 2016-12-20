@@ -435,6 +435,10 @@ func AddMovieList(ctx *gin.Context) {
 
 	for _, movie := range movies {
 		title := movie.Movie.Title
+		if movie.Movie.IDs.TMDB == 0 {
+			libraryLog.Warningf("Missing TMDB ID for %s", title)
+			continue
+		}
 		tmdbId := strconv.Itoa(movie.Movie.IDs.TMDB)
 		if updating == "false" && config.Get().IgnoreDuplicates == true {
 			if inJsonDb, err := InJsonDB(tmdbId, LMovie); err != nil || inJsonDb == true {
@@ -491,6 +495,10 @@ func AddMovieCollection(ctx *gin.Context) {
 
 	for _, movie := range movies {
 		title := movie.Movie.Title
+		if movie.Movie.IDs.TMDB == 0 {
+			libraryLog.Warningf("Missing TMDB ID for %s", title)
+			continue
+		}
 		tmdbId := strconv.Itoa(movie.Movie.IDs.TMDB)
 		if updating == "false" && config.Get().IgnoreDuplicates == true {
 			if inJsonDb, err := InJsonDB(tmdbId, LMovie); err != nil || inJsonDb == true {
@@ -547,6 +555,10 @@ func AddMovieWatchlist(ctx *gin.Context) {
 
 	for _, movie := range movies {
 		title := movie.Movie.Title
+		if movie.Movie.IDs.TMDB == 0 {
+			libraryLog.Warningf("Missing TMDB ID for %s", title)
+			continue
+		}
 		tmdbId := strconv.Itoa(movie.Movie.IDs.TMDB)
 		if updating == "false" && config.Get().IgnoreDuplicates == true {
 			if inJsonDb, err := InJsonDB(tmdbId, LMovie); err != nil || inJsonDb == true {
