@@ -447,7 +447,7 @@ func AddMovieList(ctx *gin.Context) {
 			}
 		}
 		if err := WriteMovieStrm(tmdbId, MoviesLibraryPath); err != nil {
-			libraryLog.Error("Unable to write strm file for %s", title)
+			libraryLog.Errorf("Unable to write strm file for %s", title)
 			continue
 		}
 		if err := UpdateJsonDB(DBPath, tmdbId, LMovie); err != nil {
@@ -503,7 +503,7 @@ func AddMovieCollection(ctx *gin.Context) {
 			}
 		}
 		if err := WriteMovieStrm(tmdbId, MoviesLibraryPath); err != nil {
-			libraryLog.Error("Unable to write strm file for %s", title)
+			libraryLog.Errorf("Unable to write strm file for %s", title)
 			continue
 		}
 		if err := UpdateJsonDB(DBPath, tmdbId, LMovie); err != nil {
@@ -559,7 +559,7 @@ func AddMovieWatchlist(ctx *gin.Context) {
 			}
 		}
 		if err := WriteMovieStrm(tmdbId, MoviesLibraryPath); err != nil {
-			libraryLog.Error("Unable to write strm file for %s", title)
+			libraryLog.Errorf("Unable to write strm file for %s", title)
 			continue
 		}
 		if err := UpdateJsonDB(DBPath, tmdbId, LMovie); err != nil {
@@ -707,6 +707,10 @@ func AddShowList(ctx *gin.Context) {
 
 	for _, show := range shows {
 		title := show.Show.Title
+		if show.Show.IDs.TMDB == 0 {
+			libraryLog.Warningf("Missing TMDB ID for %s", title)
+			continue
+		}
 		tmdbId := strconv.Itoa(show.Show.IDs.TMDB)
 		if updating == "false" && config.Get().IgnoreDuplicates == true {
 			if inJsonDb, err := InJsonDB(tmdbId, LShow); err != nil || inJsonDb == true {
@@ -723,7 +727,7 @@ func AddShowList(ctx *gin.Context) {
 			}
 		}
 		if err := WriteShowStrm(tmdbId, ShowsLibraryPath); err != nil {
-			libraryLog.Error("Unable to write strm file for %s", title)
+			libraryLog.Errorf("Unable to write strm file for %s", title)
 			continue
 		}
 		if err := UpdateJsonDB(DBPath, tmdbId, LShow); err != nil {
@@ -767,6 +771,10 @@ func AddShowCollection(ctx *gin.Context) {
 
 	for _, show := range shows {
 		title := show.Show.Title
+		if show.Show.IDs.TMDB == 0 {
+			libraryLog.Warningf("Missing TMDB ID for %s", title)
+			continue
+		}
 		tmdbId := strconv.Itoa(show.Show.IDs.TMDB)
 		if updating == "false" && config.Get().IgnoreDuplicates == true {
 			if inJsonDb, err := InJsonDB(tmdbId, LShow); err != nil || inJsonDb == true {
@@ -783,7 +791,7 @@ func AddShowCollection(ctx *gin.Context) {
 			}
 		}
 		if err := WriteShowStrm(tmdbId, ShowsLibraryPath); err != nil {
-			libraryLog.Error("Unable to write strm file for %s", title)
+			libraryLog.Errorf("Unable to write strm file for %s", title)
 			continue
 		}
 		if err := UpdateJsonDB(DBPath, tmdbId, LShow); err != nil {
@@ -827,6 +835,10 @@ func AddShowWatchlist(ctx *gin.Context) {
 
 	for _, show := range shows {
 		title := show.Show.Title
+		if show.Show.IDs.TMDB == 0 {
+			libraryLog.Warningf("Missing TMDB ID for %s", title)
+			continue
+		}
 		tmdbId := strconv.Itoa(show.Show.IDs.TMDB)
 		if updating == "false" && config.Get().IgnoreDuplicates == true {
 			if inJsonDb, err := InJsonDB(tmdbId, LShow); err != nil || inJsonDb == true {
@@ -843,7 +855,7 @@ func AddShowWatchlist(ctx *gin.Context) {
 			}
 		}
 		if err := WriteShowStrm(tmdbId, ShowsLibraryPath); err != nil {
-			libraryLog.Error("Unable to write strm file for %s", title)
+			libraryLog.Errorf("Unable to write strm file for %s", title)
 			continue
 		}
 		if err := UpdateJsonDB(DBPath, tmdbId, LShow); err != nil {
