@@ -340,6 +340,7 @@ func renderTraktMovies(movies []*trakt.Movies, ctx *gin.Context, page int) {
 			[]string{"LOCALIZE[30202]", fmt.Sprintf("XBMC.PlayMedia(%s)", movieLinksUrl)},
 			[]string{"LOCALIZE[30023]", fmt.Sprintf("XBMC.PlayMedia(%s)", playUrl)},
 			[]string{"LOCALIZE[30203]", "XBMC.Action(Info)"},
+			[]string{"LOCALIZE[30268]", "XBMC.Action(ToggleWatched)"},
 			libraryAction,
 			watchlistAction,
 			collectionAction,
@@ -465,6 +466,7 @@ func renderTraktShows(shows []*trakt.Shows, ctx *gin.Context, page int) {
 			libraryAction,
 			watchlistAction,
 			collectionAction,
+			[]string{"LOCALIZE[30203]", "XBMC.Action(Info)"},
 			[]string{"LOCALIZE[30035]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/setviewmode/tvshows"))},
 		}
 		items = append(items, item)

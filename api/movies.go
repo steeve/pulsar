@@ -160,6 +160,7 @@ func renderMovies(movies tmdb.Movies, ctx *gin.Context, page int, query string) 
 			[]string{"LOCALIZE[30202]", fmt.Sprintf("XBMC.PlayMedia(%s)", movieLinksUrl)},
 			[]string{"LOCALIZE[30023]", fmt.Sprintf("XBMC.PlayMedia(%s)", playUrl)},
 			[]string{"LOCALIZE[30203]", "XBMC.Action(Info)"},
+			[]string{"LOCALIZE[30268]", "XBMC.Action(ToggleWatched)"},
 			libraryAction,
 			watchlistAction,
 			collectionAction,
