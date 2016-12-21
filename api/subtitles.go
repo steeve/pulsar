@@ -38,7 +38,7 @@ func appendLocalFilePayloads(playingFile string, payloads *[]osdb.SearchPayload)
 
 	*payloads = append(*payloads, []osdb.SearchPayload{
 		hashPayload,
-		{Query: filepath.Base(playingFile)},
+		{Query: strings.Replace(filepath.Base(playingFile), filepath.Ext(playingFile), "", -1)},
 	}...)
 
 	return nil
@@ -92,7 +92,7 @@ func SubtitlesIndex(ctx *gin.Context) {
 	)
 	playingFile := xbmc.PlayerGetPlayingFile()
 
-	// are we reading a file from Quasar?
+	// Check if we are reading a file from Quasar
 	if strings.HasPrefix(playingFile, util.GetHTTPHost()) {
 		playingFile = strings.Replace(playingFile, util.GetHTTPHost() + "/files", config.Get().DownloadPath, 1)
 		playingFile, _ = url.QueryUnescape(playingFile)
@@ -133,13 +133,17 @@ func SubtitlesIndex(ctx *gin.Context) {
 		payloads[i] = payload
 	}
 
+	subLog.Infof("Subtitles payload: %+v", payloads)
+
 	client, err := osdb.NewClient()
 	if err != nil {
-		ctx.AbortWithError(404, err)
+		subLog.Error(err)
+		ctx.String(200, err.Error())
 		return
 	}
-	if err := client.LogIn("", "", ""); err != nil {
-		ctx.AbortWithError(404, err)
+	if err := client.LogIn(config.Get().OSDBUser, config.Get().OSDBPass, config.Get().Language); err != nil {
+		subLog.Error(err)
+		ctx.String(200, err.Error())
 		return
 	}
 
@@ -182,14 +186,16 @@ func SubtitleGet(ctx *gin.Context) {
 
 	resp, err := http.Get(dl)
 	if err != nil {
-		ctx.AbortWithError(404, err)
+		subLog.Error(err)
+		ctx.String(200, err.Error())
 		return
 	}
 	defer resp.Body.Close()
 
 	reader, err := gzip.NewReader(resp.Body)
 	if err != nil {
-		ctx.AbortWithError(404, err)
+		subLog.Error(err)
+		ctx.String(200, err.Error())
 		return
 	}
 	defer reader.Close()
@@ -203,7 +209,8 @@ func SubtitleGet(ctx *gin.Context) {
 
 	outFile, err := os.Create(filepath.Join(subtitlesPath, file))
 	if err != nil {
-		ctx.AbortWithError(404, err)
+		subLog.Error(err)
+		ctx.String(200, err.Error())
 		return
 	}
 	defer outFile.Close()

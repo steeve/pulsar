@@ -52,6 +52,8 @@ type Configuration struct {
 	UseCloudHole        bool
 	CloudHoleKey        string
 	TMDBApiKey          string
+	OSDBUser            string
+	OSDBPass            string
 
 	SortingModeMovies            int
 	SortingModeShows             int
@@ -160,6 +162,8 @@ func Reload() *Configuration {
 		UseCloudHole:        settings["use_cloudhole"].(bool),
 		CloudHoleKey:        settings["cloudhole_key"].(string),
 		TMDBApiKey:          settings["tmdb_api_key"].(string),
+		OSDBUser:            settings["osdb_user"].(string),
+		OSDBPass:            settings["osdb_pass"].(string),
 
 		SortingModeMovies:            settings["sorting_mode_movies"].(int),
 		SortingModeShows:             settings["sorting_mode_shows"].(int),

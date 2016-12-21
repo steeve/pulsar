@@ -34,7 +34,7 @@ type Subtitle struct {
 	MovieTimeMS        string `xmlrpc:"MovieTimeMS"`
 	MovieYear          string `xmlrpc:"MovieYear"`
 	MovieFileName      string `xmlrpc:"MovieName"`
-	QueryNumber        int `xmlrpc:"QueryNumber"`
+	QueryNumber        string `xmlrpc:"QueryNumber"`
 	QueryParameters    struct {
 	                       query          string `xmlrpc:"query"`
 	                       sublanguageid  string `xmlrpc:"sublanguageid"`
