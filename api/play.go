@@ -65,10 +65,6 @@ func Play(btService *bittorrent.BTService) gin.HandlerFunc {
 			torrent := bittorrent.NewTorrent(uri)
 			magnet = torrent.Magnet()
 			infoHash = torrent.InfoHash
-			boosters := url.Values{
-				"tr": bittorrent.DefaultTrackers,
-			}
-			magnet += "&" + boosters.Encode()
 		}
 
 		params := bittorrent.BTPlayerParams{

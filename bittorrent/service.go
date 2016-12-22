@@ -7,7 +7,6 @@ import (
 	"time"
 	"strings"
 	"runtime"
-	"net/url"
 	"io/ioutil"
 	"encoding/hex"
 	"path/filepath"
@@ -401,10 +400,7 @@ func (s *BTService) loadFastResumeFiles() error {
 		torrent := NewTorrent(uri)
 		magnet := torrent.Magnet()
 		infoHash = torrent.InfoHash
-		boosters := url.Values{
-			"tr": DefaultTrackers,
-		}
-		magnet += "&" + boosters.Encode()
+
 		torrentParams.SetUrl(magnet)
 		torrentParams.SetSavePath(s.config.DownloadPath)
 

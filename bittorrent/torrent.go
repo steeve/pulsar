@@ -1,16 +1,16 @@
 package bittorrent
 
 import (
-	"crypto/sha1"
-	"crypto/tls"
-	"encoding/base32"
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/url"
 	"regexp"
 	"strings"
+	"net/url"
+	"net/http"
+	"crypto/tls"
+	"crypto/sha1"
+	"encoding/hex"
+	"encoding/json"
+	"encoding/base32"
 
 	"github.com/op/go-logging"
 	"github.com/scakemyer/quasar/cloudhole"
@@ -42,6 +42,12 @@ type Torrent struct {
 	SceneRating int    `json:"scene_rating"`
 
 	hasResolved bool
+}
+
+type TorrentFileRaw struct {
+	Announce     string                 `bencode:"announce"`
+	AnnounceList [][]string             `bencode:"announce-list"`
+	Info         map[string]interface{} `bencode:"info"`
 }
 
 const (
@@ -163,6 +169,10 @@ func (t *Torrent) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+func (t *Torrent) IsMagnet() bool {
+	return strings.HasPrefix(t.URI, "magnet:")
+}
+
 func (t *Torrent) initializeFromMagnet() {
 	magnetURI, _ := url.Parse(t.URI)
 	vals := magnetURI.Query()
@@ -194,15 +204,10 @@ func (t *Torrent) Resolve() error {
 		return nil
 	}
 
-	var torrentFile struct {
-		Announce     string                 `bencode:"announce"`
-		AnnounceList [][]string             `bencode:"announce-list"`
-		Info         map[string]interface{} `bencode:"info"`
-	}
-
 	// We don't need trackers for public torrents since we'll find them on the
 	// DHT or public trackers
 	if (t.InfoHash != "" && t.Name != "" && t.Peers > 0 && t.Seeds > 0) && (t.IsPrivate == false || len(t.Trackers) > 0) {
+		log.Noticef("Skipping torrent resolving for %s from %s (private: %b)", t.Name, t.Provider, t.IsPrivate)
 		return nil
 	}
 
@@ -238,18 +243,28 @@ func (t *Torrent) Resolve() error {
 	}
 	dec := bencode.NewDecoder(resp.Body)
 
-	// FIXME!!!!
+	var torrentFile *TorrentFileRaw
+
 	if err := dec.Decode(&torrentFile); err != nil {
 		return err
 	}
+
+	if torrentFile.Info["private"] != nil {
+		if torrentFile.Info["private"].(int64) == 1 {
+			t.IsPrivate = true
+		}
+	}
+
 	if t.InfoHash == "" {
 		hasher := sha1.New()
 		bencode.NewEncoder(hasher).Encode(torrentFile.Info)
 		t.InfoHash = hex.EncodeToString(hasher.Sum(nil))
 	}
+
 	if t.Name == "" {
 		t.Name = torrentFile.Info["name"].(string)
 	}
+
 	if len(t.Trackers) == 0 {
 		t.Trackers = append(t.Trackers, torrentFile.Announce)
 		for _, trackers := range torrentFile.AnnounceList {
@@ -265,7 +280,7 @@ func (t *Torrent) Resolve() error {
 }
 
 func (t *Torrent) initialize() {
-	if strings.HasPrefix(t.URI, "magnet:") {
+	if t.IsMagnet() {
 		t.initializeFromMagnet()
 	}
 
@@ -303,10 +318,6 @@ func matchTags(t *Torrent, tokens map[*regexp.Regexp]int) int {
 		}
 	}
 	return codec
-}
-
-func (t *Torrent) IsMagnet() bool {
-	return strings.HasPrefix(t.URI, "magnet:")
 }
 
 func (t *Torrent) Magnet() string {

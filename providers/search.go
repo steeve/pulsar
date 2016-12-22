@@ -173,6 +173,7 @@ func processLinks(torrentsChan chan *bittorrent.Torrent, sortType int) []*bittor
 		} else {
 			torrentsMap[torrent.InfoHash] = torrent
 		}
+
 		for _, tracker := range torrent.Trackers {
 			bTracker, err := bittorrent.NewTracker(tracker)
 			if err != nil {
@@ -180,11 +181,13 @@ func processLinks(torrentsChan chan *bittorrent.Torrent, sortType int) []*bittor
 			}
 			trackers[bTracker.URL.Host] = bTracker
 		}
-	}
 
-	for _, trackerUrl := range bittorrent.DefaultTrackers {
-		tracker, _ := bittorrent.NewTracker(trackerUrl)
-		trackers[tracker.URL.Host] = tracker
+		if torrent.IsPrivate == false {
+			for _, trackerUrl := range bittorrent.DefaultTrackers {
+				tracker, _ := bittorrent.NewTracker(trackerUrl)
+				trackers[tracker.URL.Host] = tracker
+			}
+		}
 	}
 
 	torrents = make([]*bittorrent.Torrent, 0, len(torrentsMap))
@@ -223,6 +226,7 @@ func processLinks(torrentsChan chan *bittorrent.Torrent, sortType int) []*bittor
 		close(scrapeResults)
 	}()
 
+	// TODO Use average or median instead of highest count #573
 	for results := range scrapeResults {
 		for i, result := range results {
 			if int64(result.Seeders) > torrents[i].Seeds {
