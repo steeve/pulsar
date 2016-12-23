@@ -32,7 +32,7 @@ func GetShowImages(showId int) *Images {
 		rateLimiter.Call(func() {
 			urlValues := napping.Params{
 				"api_key": apiKey,
-				"language": config.Get().Language,
+				"include_image_language": fmt.Sprintf("%s,en,null", config.Get().Language),
 			}.AsUrlValues()
 			resp, err := napping.Get(
 				tmdbEndpoint + "tv/" + strconv.Itoa(showId) + "/images",

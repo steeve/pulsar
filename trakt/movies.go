@@ -20,12 +20,24 @@ func setFanart(movie *Movie) *Movie {
 		return movie
 	}
 	if len(tmdbImages.Posters) > 0 {
-		movie.Images.Poster.Full = tmdb.ImageURL(tmdbImages.Posters[0].FilePath, "w500")
-		movie.Images.Thumbnail.Full = tmdb.ImageURL(tmdbImages.Posters[0].FilePath, "w500")
+		posterImage := tmdb.ImageURL(tmdbImages.Posters[0].FilePath, "w500")
+		for _, image := range tmdbImages.Posters {
+			if image.ISO_639_1 == config.Get().Language {
+				posterImage = tmdb.ImageURL(image.FilePath, "w500")
+			}
+		}
+		movie.Images.Poster.Full = posterImage
+		movie.Images.Thumbnail.Full = posterImage
 	}
 	if len(tmdbImages.Backdrops) > 0 {
-		movie.Images.FanArt.Full = tmdb.ImageURL(tmdbImages.Backdrops[0].FilePath, "w1280")
-		movie.Images.Banner.Full = tmdb.ImageURL(tmdbImages.Backdrops[0].FilePath, "w1280")
+		backdropImage := tmdb.ImageURL(tmdbImages.Backdrops[0].FilePath, "w1280")
+		for _, image := range tmdbImages.Backdrops {
+			if image.ISO_639_1 == config.Get().Language {
+				backdropImage = tmdb.ImageURL(image.FilePath, "w1280")
+			}
+		}
+		movie.Images.FanArt.Full = backdropImage
+		movie.Images.Banner.Full = backdropImage
 	}
 	return movie
 }

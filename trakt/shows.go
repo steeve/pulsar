@@ -20,12 +20,24 @@ func setShowFanart(show *Show) *Show {
 		return show
 	}
 	if len(tmdbImages.Posters) > 0 {
-		show.Images.Poster.Full = tmdb.ImageURL(tmdbImages.Posters[0].FilePath, "w500")
-		show.Images.Thumbnail.Full = tmdb.ImageURL(tmdbImages.Posters[0].FilePath, "w500")
+		posterImage := tmdb.ImageURL(tmdbImages.Posters[0].FilePath, "w500")
+		for _, image := range tmdbImages.Posters {
+			if image.ISO_639_1 == config.Get().Language {
+				posterImage = tmdb.ImageURL(image.FilePath, "w500")
+			}
+		}
+		show.Images.Poster.Full = posterImage
+		show.Images.Thumbnail.Full = posterImage
 	}
 	if len(tmdbImages.Backdrops) > 0 {
-		show.Images.FanArt.Full = tmdb.ImageURL(tmdbImages.Backdrops[0].FilePath, "w1280")
-		show.Images.Banner.Full = tmdb.ImageURL(tmdbImages.Backdrops[0].FilePath, "w1280")
+		backdropImage := tmdb.ImageURL(tmdbImages.Backdrops[0].FilePath, "w1280")
+		for _, image := range tmdbImages.Backdrops {
+			if image.ISO_639_1 == config.Get().Language {
+				backdropImage = tmdb.ImageURL(image.FilePath, "w1280")
+			}
+		}
+		show.Images.FanArt.Full = backdropImage
+		show.Images.Banner.Full = backdropImage
 	}
 	return show
 }
