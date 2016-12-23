@@ -387,7 +387,7 @@ func ShowSeasonLinks(ctx *gin.Context) {
 	if choice >= 0 {
 		AddToTorrentsMap(strconv.Itoa(season.Id), torrents[choice])
 
-		rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[choice].Magnet())
+		rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[choice].URI)
 		ctx.Redirect(302, rUrl)
 	}
 }
@@ -503,7 +503,7 @@ func ShowEpisodeLinks(ctx *gin.Context) {
 		AddToTorrentsMap(strconv.Itoa(episode.Id), torrents[choice])
 
 		rUrl := UrlQuery(
-			UrlForXBMC("/play"), "uri", torrents[choice].Magnet(),
+			UrlForXBMC("/play"), "uri", torrents[choice].URI,
 			                     "tmdb", strconv.Itoa(episode.Id),
 			                     "type", "episode",
 			                     "runtime", strconv.Itoa(runtime))
@@ -547,7 +547,7 @@ func ShowEpisodePlay(ctx *gin.Context) {
 
 	AddToTorrentsMap(strconv.Itoa(episode.Id), torrents[0])
 
-	rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[0].Magnet(),
+	rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[0].URI,
 	                                      "tmdb", strconv.Itoa(episode.Id),
 	                                      "type", "episode",
 	                                      "runtime", strconv.Itoa(runtime))

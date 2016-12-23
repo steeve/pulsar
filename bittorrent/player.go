@@ -9,6 +9,7 @@ import (
 	"errors"
 	"strings"
 	"io/ioutil"
+	"encoding/hex"
 	"path/filepath"
 
 	"github.com/op/go-logging"
@@ -34,7 +35,6 @@ type BTPlayer struct {
 	dialogProgress           *xbmc.DialogProgress
 	overlayStatus            *xbmc.OverlayStatus
 	uri                      string
-	infoHash                 string
 	fastResumeFile           string
 	contentType              string
 	fileIndex                int
@@ -61,7 +61,6 @@ type BTPlayer struct {
 
 type BTPlayerParams struct {
 	URI          string
-	InfoHash     string
 	FileIndex    int
 	ResumeIndex  int
 	ContentType  string
@@ -74,7 +73,6 @@ func NewBTPlayer(bts *BTService, params BTPlayerParams) *BTPlayer {
 		log:                  logging.MustGetLogger("btplayer"),
 		bts:                  bts,
 		uri:                  params.URI,
-		infoHash:             params.InfoHash,
 		fileIndex:            params.FileIndex,
 		resumeIndex:          params.ResumeIndex,
 		overlayStatusEnabled: config.Get().EnableOverlayStatus == true,
@@ -95,7 +93,7 @@ func NewBTPlayer(bts *BTService, params BTPlayerParams) *BTPlayer {
 }
 
 func (btp *BTPlayer) addTorrent() error {
-	btp.log.Info("Adding torrent")
+	btp.log.Infof("Adding torrent from %s", btp.uri)
 
 	if btp.bts.config.DownloadPath == "." {
 		xbmc.Notify("Quasar", "LOCALIZE[30113]", config.AddonIcon())
@@ -111,16 +109,30 @@ func (btp *BTPlayer) addTorrent() error {
 	torrentParams := libtorrent.NewAddTorrentParams()
 	defer libtorrent.DeleteAddTorrentParams(torrentParams)
 
-	torrentParams.SetUrl(btp.uri)
+	var infoHash string
+
+	if strings.HasPrefix(btp.uri, "magnet") || strings.HasPrefix(btp.uri, "http") {
+		torrentParams.SetUrl(btp.uri)
+
+		torrent := NewTorrent(btp.uri)
+		torrent.Magnet()
+		infoHash = torrent.InfoHash
+	} else {
+		info := libtorrent.NewTorrentInfo(btp.uri)
+		torrentParams.SetTorrentInfo(info)
+
+		shaHash := info.InfoHash().ToString()
+		infoHash = hex.EncodeToString([]byte(shaHash))
+	}
 
 	btp.log.Infof("Setting save path to %s", btp.bts.config.DownloadPath)
 	torrentParams.SetSavePath(btp.bts.config.DownloadPath)
 
-	btp.log.Infof("Checking for fast resume data in %s.fastresume", btp.infoHash)
-	fastResumeFile := filepath.Join(btp.bts.config.TorrentsPath, fmt.Sprintf("%s.fastresume", btp.infoHash))
+	btp.log.Infof("Checking for fast resume data in %s.fastresume", infoHash)
+	fastResumeFile := filepath.Join(btp.bts.config.TorrentsPath, fmt.Sprintf("%s.fastresume", infoHash))
+	btp.fastResumeFile = fastResumeFile
 	if _, err := os.Stat(fastResumeFile); err == nil {
 		btp.log.Info("Found fast resume data...")
-		btp.fastResumeFile = fastResumeFile
 		fastResumeData, err := ioutil.ReadFile(fastResumeFile)
 		if err != nil {
 			return err
@@ -210,6 +222,11 @@ func (btp *BTPlayer) PlayURL() string {
 
 func (btp *BTPlayer) CheckAvailableSpace() bool {
 	if btp.diskStatus != nil {
+		if btp.torrentInfo == nil || btp.torrentInfo.Swigcptr() == 0 {
+			btp.log.Warning("Missing torrent info to check available space.")
+			return true
+		}
+
 		status := btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
 		sizeLeft := btp.torrentInfo.TotalSize() - status.GetTotalDone()
 		availableSpace := btp.diskStatus.Free
@@ -241,6 +258,11 @@ func (btp *BTPlayer) onMetadataReceived() {
 	btp.torrentName = btp.torrentHandle.Status(uint(0)).GetName()
 
 	btp.torrentInfo = btp.torrentHandle.TorrentFile()
+
+	// Reset fastResumeFile
+	shaHash := btp.torrentInfo.InfoHash().ToString()
+	infoHash := hex.EncodeToString([]byte(shaHash))
+	btp.fastResumeFile = filepath.Join(btp.bts.config.TorrentsPath, fmt.Sprintf("%s.fastresume", infoHash))
 
 	var err error
 	btp.chosenFile, err = btp.chooseFile()

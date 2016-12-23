@@ -211,7 +211,7 @@ func processLinks(torrentsChan chan *bittorrent.Torrent, sortType int) []*bittor
 			go func(tracker *bittorrent.Tracker) {
 				defer wg.Done()
 				if err := tracker.Connect(); err != nil {
-					log.Errorf("Tracker %s failed: %s", tracker, err)
+					log.Warningf("Tracker %s failed: %s", tracker, err)
 					return
 				}
 				scrapeResults <- tracker.Scrape(torrents)
@@ -290,10 +290,10 @@ func processLinks(torrentsChan chan *bittorrent.Torrent, sortType int) []*bittor
 		}
 	}
 
-	log.Info("Sorted torrent candidates:")
-	for _, torrent := range torrents {
-		log.Infof("S:%d P:%d %s - %s", torrent.Seeds, torrent.Peers, torrent.Name, torrent.Provider)
-	}
+	log.Info("Sorted torrent candidates.")
+	// for _, torrent := range torrents {
+	// 	log.Infof("S:%d P:%d %s - %s - %s", torrent.Seeds, torrent.Peers, torrent.Name, torrent.Provider, torrent.URI)
+	// }
 
 	return torrents
 }

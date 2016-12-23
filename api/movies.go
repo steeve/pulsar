@@ -333,7 +333,7 @@ func MovieLinks(ctx *gin.Context) {
 	if choice >= 0 {
 		AddToTorrentsMap(tmdbId, torrents[choice])
 
-		rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[choice].Magnet(),
+		rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[choice].URI,
 		                                      "tmdb", tmdbId,
 		                                      "type", "movie",
 		                                      "runtime", strconv.Itoa(runtime))
@@ -359,7 +359,7 @@ func MoviePlay(ctx *gin.Context) {
 
 	AddToTorrentsMap(tmdbId, torrents[0])
 
-	rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[0].Magnet(),
+	rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[0].URI,
 	                                      "tmdb", tmdbId,
 	                                      "type", "movie",
 	                                      "runtime", strconv.Itoa(runtime))

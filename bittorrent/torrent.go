@@ -249,12 +249,6 @@ func (t *Torrent) Resolve() error {
 		return err
 	}
 
-	if torrentFile.Info["private"] != nil {
-		if torrentFile.Info["private"].(int64) == 1 {
-			t.IsPrivate = true
-		}
-	}
-
 	if t.InfoHash == "" {
 		hasher := sha1.New()
 		bencode.NewEncoder(hasher).Encode(torrentFile.Info)
@@ -263,6 +257,13 @@ func (t *Torrent) Resolve() error {
 
 	if t.Name == "" {
 		t.Name = torrentFile.Info["name"].(string)
+	}
+
+	if torrentFile.Info["private"] != nil {
+		if torrentFile.Info["private"].(int64) == 1 {
+			log.Noticef("Torrent marked as private for %s", t.Name)
+			t.IsPrivate = true
+		}
 	}
 
 	if len(t.Trackers) == 0 {
