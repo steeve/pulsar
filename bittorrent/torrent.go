@@ -173,6 +173,28 @@ func (t *Torrent) IsMagnet() bool {
 	return strings.HasPrefix(t.URI, "magnet:")
 }
 
+func (t *Torrent) initialize() {
+	if t.IsMagnet() {
+		t.initializeFromMagnet()
+	}
+
+	if t.Resolution == ResolutionUnknown {
+		t.Resolution = matchTags(t, resolutionTags)
+	}
+	if t.VideoCodec == CodecUnknown {
+		t.VideoCodec = matchTags(t, videoTags)
+	}
+	if t.AudioCodec == CodecUnknown {
+		t.AudioCodec = matchTags(t, audioTags)
+	}
+	if t.RipType == RipUnknown {
+		t.RipType = matchTags(t, ripTags)
+	}
+	if t.SceneRating == RatingUnkown {
+		t.SceneRating = matchTags(t, sceneTags)
+	}
+}
+
 func (t *Torrent) initializeFromMagnet() {
 	magnetURI, _ := url.Parse(t.URI)
 	vals := magnetURI.Query()
@@ -196,6 +218,30 @@ func (t *Torrent) initializeFromMagnet() {
 			t.Trackers = append(t.Trackers, strings.Replace(string(tracker), "\\", "", -1))
 		}
 	}
+}
+
+func NewTorrent(uri string) *Torrent {
+	t := &Torrent{
+		URI: uri,
+	}
+	t.initialize()
+	return t
+}
+
+func (t *Torrent) Magnet() string {
+	if t.hasResolved == false {
+		t.Resolve()
+	}
+	if t.IsMagnet() {
+		return t.URI + "&" + url.Values{"as": []string{fmt.Sprintf(torCache, t.InfoHash)}}.Encode()
+	}
+	params := url.Values{}
+	params.Set("dn", t.Name)
+	for _, tracker := range t.Trackers {
+		params.Add("tr", tracker)
+	}
+	params.Add("as", t.URI)
+	return fmt.Sprintf("magnet:?xt=urn:btih:%s&%s", t.InfoHash, params.Encode())
 }
 
 func (t *Torrent) Resolve() error {
@@ -280,36 +326,6 @@ func (t *Torrent) Resolve() error {
 	return nil
 }
 
-func (t *Torrent) initialize() {
-	if t.IsMagnet() {
-		t.initializeFromMagnet()
-	}
-
-	if t.Resolution == ResolutionUnknown {
-		t.Resolution = matchTags(t, resolutionTags)
-	}
-	if t.VideoCodec == CodecUnknown {
-		t.VideoCodec = matchTags(t, videoTags)
-	}
-	if t.AudioCodec == CodecUnknown {
-		t.AudioCodec = matchTags(t, audioTags)
-	}
-	if t.RipType == RipUnknown {
-		t.RipType = matchTags(t, ripTags)
-	}
-	if t.SceneRating == RatingUnkown {
-		t.SceneRating = matchTags(t, sceneTags)
-	}
-}
-
-func NewTorrent(uri string) *Torrent {
-	t := &Torrent{
-		URI: uri,
-	}
-	t.initialize()
-	return t
-}
-
 func matchTags(t *Torrent, tokens map[*regexp.Regexp]int) int {
 	lowName := strings.ToLower(t.Name)
 	codec := 0
@@ -319,22 +335,6 @@ func matchTags(t *Torrent, tokens map[*regexp.Regexp]int) int {
 		}
 	}
 	return codec
-}
-
-func (t *Torrent) Magnet() string {
-	if t.hasResolved == false {
-		t.Resolve()
-	}
-	if t.IsMagnet() {
-		return t.URI + "&" + url.Values{"as": []string{fmt.Sprintf(torCache, t.InfoHash)}}.Encode()
-	}
-	params := url.Values{}
-	params.Set("dn", t.Name)
-	for _, tracker := range t.Trackers {
-		params.Add("tr", tracker)
-	}
-	params.Add("as", t.URI)
-	return fmt.Sprintf("magnet:?xt=urn:btih:%s&%s", t.InfoHash, params.Encode())
 }
 
 func (t *Torrent) StreamInfo() *xbmc.StreamInfo {
