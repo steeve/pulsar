@@ -118,7 +118,7 @@ func (btp *BTPlayer) addTorrent() error {
 		torrent.Magnet()
 		infoHash = torrent.InfoHash
 	} else {
-		info := libtorrent.NewTorrentInfo(btp.uri)
+		info := libtorrent.NewTorrentInfo(btp.uri) // FIXME crashes on invalid paths
 		torrentParams.SetTorrentInfo(info)
 
 		shaHash := info.InfoHash().ToString()
@@ -144,7 +144,7 @@ func (btp *BTPlayer) addTorrent() error {
 		torrentParams.SetResumeData(fastResumeVector)
 	}
 
-	btp.torrentHandle = btp.bts.Session.AddTorrent(torrentParams)
+	btp.torrentHandle = btp.bts.Session.AddTorrent(torrentParams) // FIXME crashes on invalid magnet
 	go btp.consumeAlerts()
 
 	if btp.torrentHandle == nil {

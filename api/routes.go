@@ -5,6 +5,8 @@ import (
 	"path"
 	"time"
 	"net/url"
+	"net/http"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 	"github.com/scakemyer/quasar/util"
@@ -33,6 +35,16 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 	r.GET("/search", Search)
 	r.GET("/addtorrent", AddTorrent)
 
+	r.LoadHTMLGlob(filepath.Join(config.Get().Info.Path, "resources", "web", "*.html"))
+	web := r.Group("/web")
+	{
+		web.GET("/", func(c *gin.Context) {
+			c.HTML(http.StatusOK, "index.html", nil)
+		})
+	  web.Static("/static", filepath.Join(config.Get().Info.Path, "resources", "web", "static"))
+		web.StaticFile("/favicon.ico", filepath.Join(config.Get().Info.Path, "resources", "web", "favicon.ico"))
+	}
+
 	torrents := r.Group("/torrents")
 	{
 		torrents.GET("/", ListTorrents(btService))
@@ -41,6 +53,9 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 		torrents.GET("/pause/:torrentId", PauseTorrent(btService))
 		torrents.GET("/resume/:torrentId", ResumeTorrent(btService))
 		torrents.GET("/delete/:torrentId", RemoveTorrent(btService))
+
+		// Web UI json
+		torrents.GET("/list", ListTorrentsWeb(btService))
 	}
 
 	movies := r.Group("/movies")

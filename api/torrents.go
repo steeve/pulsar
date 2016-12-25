@@ -11,6 +11,7 @@ import (
 
 	"github.com/op/go-logging"
 	"github.com/gin-gonic/gin"
+	"github.com/dustin/go-humanize"
 	"github.com/scakemyer/libtorrent-go"
 	"github.com/scakemyer/quasar/bittorrent"
 	"github.com/scakemyer/quasar/config"
@@ -18,6 +19,22 @@ import (
 )
 
 var torrentsLog = logging.MustGetLogger("torrents")
+
+type TorrentsWeb struct {
+	Name         string  `json:"name"`
+	Size         string  `json:"size"`
+	Status       string  `json:"status"`
+	Progress     float64 `json:"progress"`
+	Ratio        float64 `json:"ratio"`
+	TimeRatio    float64 `json:"time_ratio"`
+	SeedingTime  string  `json:"seeding_time"`
+	DownloadRate float64 `json:"download_rate"`
+	UploadRate   float64 `json:"upload_rate"`
+	Seeders      int     `json:"seeders"`
+	SeedersTotal int     `json:"seeders_total"`
+	Peers        int     `json:"peers"`
+	PeersTotal   int     `json:"peers_total"`
+}
 
 type TorrentMap struct {
 	tmdbId  string
@@ -69,11 +86,9 @@ func ListTorrents(btService *bittorrent.BTService) gin.HandlerFunc {
 			}
 
 			torrentStatus := torrentHandle.Status()
-			progress := float64(torrentStatus.GetProgress()) * 100
+
 			torrentName := torrentStatus.GetName()
-
-			playUrl := UrlQuery(UrlForXBMC("/play"), "resume", fmt.Sprintf("%d", i))
-
+			progress := float64(torrentStatus.GetProgress()) * 100
 			status := bittorrent.StatusStrings[int(torrentStatus.GetState())]
 
 			ratio := float64(0)
@@ -104,6 +119,7 @@ func ListTorrents(btService *bittorrent.BTService) gin.HandlerFunc {
 			}
 			torrentsLog.Infof("- %.2f%% - %s - %.2f:1 / %.2f:1 (%s) - %s", progress, status, ratio, timeRatio, seedingTime.String(), torrentName)
 
+			playUrl := UrlQuery(UrlForXBMC("/play"), "resume", fmt.Sprintf("%d", i))
 			item := xbmc.ListItem{
 				Label: fmt.Sprintf("%.2f%% - %s - %.2f:1 / %.2f:1 (%s) - %s", progress, status, ratio, timeRatio, seedingTime.String(), torrentName),
 				Path: playUrl,
@@ -125,10 +141,86 @@ func ListTorrents(btService *bittorrent.BTService) gin.HandlerFunc {
 	}
 }
 
+func ListTorrentsWeb(btService *bittorrent.BTService) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		btService.Session.GetTorrents()
+		torrentsVector := btService.Session.GetTorrents()
+		torrentsVectorSize := int(torrentsVector.Size())
+		torrents := make([]*TorrentsWeb, 0, torrentsVectorSize)
+
+		for i := 0; i < torrentsVectorSize; i++ {
+			torrentHandle := torrentsVector.Get(i)
+			if torrentHandle.IsValid() == false {
+				continue
+			}
+
+			torrentStatus := torrentHandle.Status()
+
+			torrentName := torrentStatus.GetName()
+			progress := float64(torrentStatus.GetProgress()) * 100
+
+			status := bittorrent.StatusStrings[int(torrentStatus.GetState())]
+			if torrentStatus.GetPaused() {
+				status = "Paused"
+			}
+			if btService.Session.IsPaused() {
+				status = "Paused"
+			}
+
+			ratio := float64(0)
+			allTimeDownload := float64(torrentStatus.GetAllTimeDownload())
+			if allTimeDownload > 0 {
+				ratio = float64(torrentStatus.GetAllTimeUpload()) / allTimeDownload
+			}
+
+			timeRatio := float64(0)
+			finished_time := float64(torrentStatus.GetFinishedTime())
+			download_time := float64(torrentStatus.GetActiveTime()) - finished_time
+			if download_time > 1 {
+				timeRatio = finished_time / download_time
+			}
+			seedingTime := time.Duration(torrentStatus.GetSeedingTime()) * time.Second
+
+			torrentInfo := torrentHandle.TorrentFile()
+			size := ""
+			if torrentInfo != nil && torrentInfo.Swigcptr() != 0 {
+				size = humanize.Bytes(uint64(torrentInfo.TotalSize()))
+			}
+			downloadRate := float64(torrentStatus.GetDownloadRate()) / 1024
+			uploadRate := float64(torrentStatus.GetUploadRate()) / 1024
+			seeders := torrentStatus.GetNumSeeds()
+			seedersTotal := torrentStatus.GetNumComplete()
+			peers := torrentStatus.GetNumPeers() - seeders
+			peersTotal := torrentStatus.GetNumIncomplete()
+
+			torrent := TorrentsWeb{
+				Name: torrentName,
+				Size: size,
+				Status: status,
+				Progress: progress,
+				Ratio: ratio,
+				TimeRatio: timeRatio,
+				SeedingTime: seedingTime.String(),
+				DownloadRate: downloadRate,
+				UploadRate: uploadRate,
+				Seeders: seeders,
+				SeedersTotal: seedersTotal,
+				Peers: peers,
+				PeersTotal: peersTotal,
+			}
+			torrents = append(torrents, &torrent)
+		}
+
+		ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		ctx.JSON(200, torrents)
+	}
+}
+
 func PauseSession(btService *bittorrent.BTService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		btService.Session.Pause()
 		xbmc.Refresh()
+		ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		ctx.String(200, "")
 	}
 }
@@ -137,6 +229,7 @@ func ResumeSession(btService *bittorrent.BTService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		btService.Session.Resume()
 		xbmc.Refresh()
+		ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		ctx.String(200, "")
 	}
 }
@@ -160,6 +253,7 @@ func ResumeTorrent(btService *bittorrent.BTService) gin.HandlerFunc {
 		torrentHandle.AutoManaged(true)
 
 		xbmc.Refresh()
+		ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		ctx.String(200, "")
 	}
 }
@@ -185,6 +279,7 @@ func PauseTorrent(btService *bittorrent.BTService) gin.HandlerFunc {
 		torrentHandle.Pause(1)
 
 		xbmc.Refresh()
+		ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		ctx.String(200, "")
 	}
 }
@@ -233,6 +328,7 @@ func RemoveTorrent(btService *bittorrent.BTService) gin.HandlerFunc {
 		}
 
 		xbmc.Refresh()
+		ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		ctx.String(200, "")
 	}
 }
