@@ -5,8 +5,8 @@ import (
 	"io"
 	"fmt"
 	"time"
-	"strings"
 	"runtime"
+	"net/url"
 	"io/ioutil"
 	"encoding/hex"
 	"path/filepath"
@@ -17,6 +17,7 @@ import (
 	"github.com/scakemyer/quasar/tmdb"
 	"github.com/scakemyer/quasar/util"
 	"github.com/scakemyer/quasar/xbmc"
+	"github.com/zeebo/bencode"
 )
 
 const (
@@ -107,6 +108,11 @@ type BTService struct {
 type activeTorrent struct {
 	torrentName       string
 	progress          int
+}
+
+type ResumeFile struct {
+	InfoHash  string     `bencode:"info-hash"`
+	Trackers  [][]string `bencode:"trackers"`
 }
 
 func NewBTService(config BTConfiguration) *BTService {
@@ -393,13 +399,25 @@ func (s *BTService) loadFastResumeFiles() error {
 
 		s.log.Infof("Loading fast resume file %s", fastResumeFile)
 
-		hashFromPath := strings.Split(strings.TrimSuffix(fastResumeFile, ".fastresume"), string(os.PathSeparator))
-		infoHash := hashFromPath[len(hashFromPath) - 1]
-		uri := fmt.Sprintf("magnet:?xt=urn:btih:%s", infoHash)
+		fastResumeToDecode, err := os.Open(fastResumeFile)
+		if err != nil {
+			return err
+		}
+		defer fastResumeToDecode.Close()
+		var resumeFile *ResumeFile
+		dec := bencode.NewDecoder(fastResumeToDecode)
+		if err := dec.Decode(&resumeFile); err != nil {
+			return err
+		}
+
+		infoHash := hex.EncodeToString([]byte(resumeFile.InfoHash))
+		trackers := url.Values{
+			"tr": resumeFile.Trackers[0],
+		}
+		uri := fmt.Sprintf("magnet:?xt=urn:btih:%s&%s", infoHash, trackers.Encode())
 
 		torrent := NewTorrent(uri)
 		magnet := torrent.Magnet()
-		infoHash = torrent.InfoHash
 
 		torrentParams.SetUrl(magnet)
 		torrentParams.SetSavePath(s.config.DownloadPath)
