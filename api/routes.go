@@ -205,6 +205,7 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 	r.GET("/subtitle/:id", SubtitleGet)
 
 	r.GET("/play", Play(btService))
+	r.GET("/playuri", PlayURI)
 
 	r.POST("/callbacks/:cid", providers.CallbackHandler)
 

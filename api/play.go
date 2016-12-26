@@ -71,7 +71,6 @@ func Play(btService *bittorrent.BTService) gin.HandlerFunc {
 		}
 
 		rUrl, _ := url.Parse(fmt.Sprintf("%s/files/%s", util.GetHTTPHost(), player.PlayURL()))
-		ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		ctx.Redirect(302, rUrl.String())
 	}
 }
@@ -82,4 +81,14 @@ func AddTorrent(ctx *gin.Context) {
 		return
 	}
 	xbmc.PlayURL(UrlQuery(UrlForXBMC("/play"), "uri", retval["path"]))
+}
+
+func PlayURI(ctx *gin.Context) {
+	uri := ctx.Request.URL.Query().Get("uri")
+	if uri == "" {
+		return
+	}
+	xbmc.PlayURL(UrlQuery(UrlForXBMC("/play"), "uri", uri))
+	ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	ctx.String(200, "")
 }
