@@ -55,7 +55,10 @@ func MakeQuasarRepositoryAddon() error {
 			&xbmc.AddonExtension{
 				Point: "xbmc.addon.metadata",
 				Summaries: []*xbmc.AddonText{
-					&xbmc.AddonText{"GitHub repository for Quasar Updates", "en"},
+					&xbmc.AddonText{
+						Text: "GitHub repository for Quasar updates",
+						Lang: "en",
+					},
 				},
 				Platform: "all",
 			},

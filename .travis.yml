@@ -27,6 +27,7 @@ install:
   - go get -d github.com/scakemyer/libtorrent-go
 
 script:
+  - go tool vet -unsafeptr=false .
   - make libs
   - make $PLATFORM
   - |

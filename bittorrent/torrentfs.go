@@ -1,13 +1,13 @@
 package bittorrent
 
 import (
-	"errors"
-	"net/http"
 	"os"
-	"path/filepath"
-	"sync"
 	"time"
+	"sync"
+	"errors"
 	"unsafe"
+	"net/http"
+	"path/filepath"
 
 	"github.com/op/go-logging"
 	"github.com/scakemyer/libtorrent-go"
@@ -29,9 +29,8 @@ type TorrentFile struct {
 	tfs               *TorrentFS
 	torrentHandle     libtorrent.TorrentHandle
 	torrentInfo       libtorrent.TorrentInfo
-	fileEntry         libtorrent.FileEntry
-	fileEntryIdx      int
 	pieceLength       int
+	filePath          string
 	fileOffset        int64
 	fileSize          int64
 	piecesMx          sync.RWMutex
@@ -62,7 +61,7 @@ func (tfs *TorrentFS) Open(name string) (http.File, error) {
 
 	tfs.log.Infof("Opening %s", name)
 	// NB: this does NOT return a pointer to vector, no need to free!
-	torrentsVector := tfs.service.Session.GetTorrents()
+	torrentsVector := tfs.service.Session.GetHandle().GetTorrents()
 	torrentsVectorSize := int(torrentsVector.Size())
 	for i := 0; i < torrentsVectorSize; i++ {
 		torrentHandle := torrentsVector.Get(i)
@@ -71,29 +70,31 @@ func (tfs *TorrentFS) Open(name string) (http.File, error) {
 		}
 		torrentInfo := torrentHandle.TorrentFile()
 		numFiles := torrentInfo.NumFiles()
+		files := torrentInfo.Files()
 		for j := 0; j < numFiles; j++ {
-			fe := torrentInfo.FileAt(j)
-			if name[1:] == fe.GetPath() {
-				// tfs.log.Infof("%s belongs to torrent %s", name, torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName)).GetName())
-				return NewTorrentFile(file, tfs, torrentHandle, torrentInfo, fe, j)
+			fileOffset := files.FileOffset(j)
+			filePath := files.FilePath(j)
+			fileSize := files.FileSize(j)
+			// tfs.log.Debugf("File: %s - %s - %d - %d", name, filePath, fileSize, fileOffset)
+			if name[1:] == filePath {
+				tfs.log.Noticef("%s belongs to torrent %s", name, torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName)).GetName())
+				return NewTorrentFile(file, tfs, torrentHandle, torrentInfo, filePath, fileOffset, fileSize)
 			}
 		}
-		defer libtorrent.DeleteTorrentInfo(torrentInfo)
 	}
 	return file, err
 }
 
-func NewTorrentFile(file *os.File, tfs *TorrentFS, torrentHandle libtorrent.TorrentHandle, torrentInfo libtorrent.TorrentInfo, fileEntry libtorrent.FileEntry, fileEntryIdx int) (*TorrentFile, error) {
+func NewTorrentFile(file *os.File, tfs *TorrentFS, torrentHandle libtorrent.TorrentHandle, torrentInfo libtorrent.TorrentInfo, filePath string, fileOffset int64, fileSize int64) (*TorrentFile, error) {
 	tf := &TorrentFile{
 		File:          file,
 		tfs:           tfs,
 		torrentHandle: torrentHandle,
 		torrentInfo:   torrentInfo,
-		fileEntry:     fileEntry,
-		fileEntryIdx:  fileEntryIdx,
+		filePath:      filePath,
 		pieceLength:   torrentInfo.PieceLength(),
-		fileOffset:    fileEntry.GetOffset(),
-		fileSize:      fileEntry.GetSize(),
+		fileOffset:    fileOffset,
+		fileSize:      fileSize,
 		removed:       broadcast.NewBroadcaster(),
 	}
 	go tf.consumeAlerts()
@@ -105,9 +106,9 @@ func (tf *TorrentFile) consumeAlerts() {
 	alerts, done := tf.tfs.service.Alerts()
 	defer close(done)
 	for alert := range alerts {
-		switch alert.Type() {
+		switch alert.Type {
 		case libtorrent.TorrentRemovedAlertAlertType:
-			removedAlert := libtorrent.SwigcptrTorrentAlert(alert.Swigcptr())
+			removedAlert := libtorrent.SwigcptrTorrentAlert(alert.Pointer)
 			if removedAlert.GetHandle().Equal(tf.torrentHandle) {
 				tf.removed.Signal()
 				return
@@ -153,7 +154,6 @@ func (tf *TorrentFile) hasPiece(idx int) bool {
 func (tf *TorrentFile) Close() error {
 	tf.tfs.log.Info("Closing file...")
 	tf.removed.Signal()
-	libtorrent.DeleteTorrentInfo(tf.torrentInfo)
 	return tf.File.Close()
 }
 
@@ -162,7 +162,7 @@ func (tf *TorrentFile) Read(data []byte) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	// tf.tfs.log.Infof("About to read from file at %d for %d\n", currentOffset, len(data))
+	// tf.tfs.log.Debugf("About to read from file at %d for %d bytes", currentOffset, len(data))
 	piece, _ := tf.pieceFromOffset(currentOffset + int64(len(data)))
 	if err := tf.waitForPiece(piece); err != nil {
 		return 0, err

@@ -73,8 +73,8 @@ func InTorrentsMap(tmdbId string) (torrents []*bittorrent.Torrent) {
 
 func ListTorrents(btService *bittorrent.BTService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		btService.Session.GetTorrents()
-		torrentsVector := btService.Session.GetTorrents()
+		btService.Session.GetHandle().GetTorrents()
+		torrentsVector := btService.Session.GetHandle().GetTorrents()
 		torrentsVectorSize := int(torrentsVector.Size())
 		items := make(xbmc.ListItems, 0, torrentsVectorSize)
 
@@ -113,7 +113,7 @@ func ListTorrents(btService *bittorrent.BTService) gin.HandlerFunc {
 				status = "Paused"
 				torrentAction = []string{"LOCALIZE[30235]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/torrents/resume/%d", i))}
 			}
-			if btService.Session.IsPaused() {
+			if btService.Session.GetHandle().IsPaused() {
 				status = "Paused"
 				sessionAction = []string{"LOCALIZE[30234]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/torrents/resume"))}
 			}
@@ -143,8 +143,8 @@ func ListTorrents(btService *bittorrent.BTService) gin.HandlerFunc {
 
 func ListTorrentsWeb(btService *bittorrent.BTService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		btService.Session.GetTorrents()
-		torrentsVector := btService.Session.GetTorrents()
+		btService.Session.GetHandle().GetTorrents()
+		torrentsVector := btService.Session.GetHandle().GetTorrents()
 		torrentsVectorSize := int(torrentsVector.Size())
 		torrents := make([]*TorrentsWeb, 0, torrentsVectorSize)
 
@@ -163,7 +163,7 @@ func ListTorrentsWeb(btService *bittorrent.BTService) gin.HandlerFunc {
 			if torrentStatus.GetPaused() {
 				status = "Paused"
 			}
-			if btService.Session.IsPaused() {
+			if btService.Session.GetHandle().IsPaused() {
 				status = "Paused"
 			}
 
@@ -218,7 +218,7 @@ func ListTorrentsWeb(btService *bittorrent.BTService) gin.HandlerFunc {
 
 func PauseSession(btService *bittorrent.BTService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		btService.Session.Pause()
+		btService.Session.GetHandle().Pause()
 		xbmc.Refresh()
 		ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		ctx.String(200, "")
@@ -227,7 +227,7 @@ func PauseSession(btService *bittorrent.BTService) gin.HandlerFunc {
 
 func ResumeSession(btService *bittorrent.BTService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		btService.Session.Resume()
+		btService.Session.GetHandle().Resume()
 		xbmc.Refresh()
 		ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		ctx.String(200, "")
@@ -236,7 +236,7 @@ func ResumeSession(btService *bittorrent.BTService) gin.HandlerFunc {
 
 func ResumeTorrent(btService *bittorrent.BTService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		torrentsVector := btService.Session.GetTorrents()
+		torrentsVector := btService.Session.GetHandle().GetTorrents()
 		torrentId := ctx.Params.ByName("torrentId")
 		torrentIndex, _ := strconv.Atoi(torrentId)
 		torrentHandle := torrentsVector.Get(torrentIndex)
@@ -260,21 +260,16 @@ func ResumeTorrent(btService *bittorrent.BTService) gin.HandlerFunc {
 
 func PauseTorrent(btService *bittorrent.BTService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		btService.Session.GetTorrents()
-		torrentsVector := btService.Session.GetTorrents()
+		btService.Session.GetHandle().GetTorrents()
+		torrentsVector := btService.Session.GetHandle().GetTorrents()
 		torrentId := ctx.Params.ByName("torrentId")
 		torrentIndex, _ := strconv.Atoi(torrentId)
 		torrentHandle := torrentsVector.Get(torrentIndex)
 		if torrentHandle.IsValid() == false {
 			ctx.Error(errors.New("Invalid torrent handle"))
 		}
-		torrentInfo := torrentHandle.TorrentFile()
 
-		if torrentInfo != nil && torrentInfo.Swigcptr() != 0 {
-			libtorrent.DeleteTorrentInfo(torrentInfo)
-		}
-
-		torrentsLog.Info(fmt.Sprintf("Pausing torrent %s", torrentHandle.Status(uint(0)).GetName()))
+		torrentsLog.Infof("Pausing torrent %s", torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName)).GetName())
 		torrentHandle.AutoManaged(false)
 		torrentHandle.Pause(1)
 
@@ -286,18 +281,13 @@ func PauseTorrent(btService *bittorrent.BTService) gin.HandlerFunc {
 
 func RemoveTorrent(btService *bittorrent.BTService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		btService.Session.GetTorrents()
-		torrentsVector := btService.Session.GetTorrents()
+		btService.Session.GetHandle().GetTorrents()
+		torrentsVector := btService.Session.GetHandle().GetTorrents()
 		torrentId := ctx.Params.ByName("torrentId")
 		torrentIndex, _ := strconv.Atoi(torrentId)
 		torrentHandle := torrentsVector.Get(torrentIndex)
 		if torrentHandle.IsValid() == false {
 			ctx.Error(errors.New("Invalid torrent handle"))
-		}
-		torrentInfo := torrentHandle.TorrentFile()
-
-		if torrentInfo != nil && torrentInfo.Swigcptr() != 0 {
-			libtorrent.DeleteTorrentInfo(torrentInfo)
 		}
 
 		// Delete fast resume data
@@ -321,10 +311,10 @@ func RemoveTorrent(btService *bittorrent.BTService) gin.HandlerFunc {
 
 		if config.Get().KeepFilesAfterStop == false || askedToKeep == false {
 			torrentsLog.Info("Removing the torrent and deleting files...")
-			btService.Session.RemoveTorrent(torrentHandle, int(libtorrent.SessionDeleteFiles))
+			btService.Session.GetHandle().RemoveTorrent(torrentHandle, int(libtorrent.SessionHandleDeleteFiles))
 		} else {
 			torrentsLog.Info("Removing the torrent without deleting files...")
-			btService.Session.RemoveTorrent(torrentHandle, 0)
+			btService.Session.GetHandle().RemoveTorrent(torrentHandle, 0)
 		}
 
 		xbmc.Refresh()

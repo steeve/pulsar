@@ -15,7 +15,7 @@ import (
 func GetEpisode(showId int, seasonNumber int, episodeNumber int, language string) *Episode {
 	var episode *Episode
 	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
-	key := fmt.Sprintf("com.tmdb.episode.%d.%d.%s", showId, seasonNumber, episodeNumber, language)
+	key := fmt.Sprintf("com.tmdb.episode.%d.%d.%d.%s", showId, seasonNumber, episodeNumber, language)
 	if err := cacheStore.Get(key, &episode); err != nil {
 		rateLimiter.Call(func() {
 			urlValues := napping.Params{

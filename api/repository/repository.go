@@ -1,23 +1,23 @@
 package repository
 
 import (
+	"os"
+	"fmt"
+	"bufio"
+	"errors"
+	"regexp"
+	"strings"
+	"net/http"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/xml"
-	"net/http"
-	"errors"
-	"bufio"
-	"fmt"
-	"os"
-	"regexp"
-	"strings"
 	"path/filepath"
 
+	"github.com/op/go-logging"
 	"github.com/gin-gonic/gin"
 	"github.com/google/go-github/github"
-	"github.com/op/go-logging"
-	"github.com/scakemyer/quasar/xbmc"
 	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
 const (

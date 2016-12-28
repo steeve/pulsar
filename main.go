@@ -48,6 +48,7 @@ func makeBTConfiguration(conf *config.Configuration) *bittorrent.BTConfiguration
 		SeedTimeLimit:       conf.SeedTimeLimit,
 		DisableDHT:          conf.DisableDHT,
 		DisableUPNP:         conf.DisableUPNP,
+		EncryptionPolicy:    conf.EncryptionPolicy,
 		LowerListenPort:     conf.BTListenPortMin,
 		UpperListenPort:     conf.BTListenPortMax,
 		DownloadPath:        conf.DownloadPath,
@@ -56,7 +57,7 @@ func makeBTConfiguration(conf *config.Configuration) *bittorrent.BTConfiguration
 
 	if conf.SocksEnabled == true {
 		btConfig.Proxy = &bittorrent.ProxySettings{
-			Type:     bittorrent.ProxyTypeSocks5Password,
+			Type:     conf.ProxyType,
 			Hostname: conf.SocksHost,
 			Port:     conf.SocksPort,
 			Username: conf.SocksLogin,
@@ -78,16 +79,14 @@ func main() {
 	logging.SetBackend(logging.NewLogBackend(os.Stdout, "", 0))
 
 	for _, line := range strings.Split(QuasarLogo, "\n") {
-		log.Info(line)
+		log.Debug(line)
 	}
-	log.Infof("Version: %s Go: %s", util.Version, runtime.Version())
+	log.Infof("Version: %s Go: %s", util.Version[1:len(util.Version) - 1], runtime.Version())
 
 	conf := config.Reload()
 
 	ensureSingleInstance()
 	Migrate()
-
-	// xbmc.CloseAllDialogs()
 
 	log.Infof("Addon: %s v%s", conf.Info.Id, conf.Info.Version)
 
@@ -102,9 +101,8 @@ func main() {
 
 	var watchParentProcess = func() {
 		for {
-			// did the parent die? shutdown!
 			if os.Getppid() == 1 {
-				log.Warning("Parent shut down. Me too.")
+				log.Warning("Parent shut down, shutting down too...")
 				go shutdown()
 				break
 			}

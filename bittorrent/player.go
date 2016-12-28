@@ -48,7 +48,7 @@ type BTPlayer struct {
 	overlayStatusEnabled     bool
 	torrentHandle            libtorrent.TorrentHandle
 	torrentInfo              libtorrent.TorrentInfo
-	chosenFile               libtorrent.FileEntry
+	chosenFile               int
 	lastStatus               libtorrent.TorrentStatus
 	bufferPiecesProgress     map[int]float64
 	bufferPiecesProgressLock sync.RWMutex
@@ -144,7 +144,7 @@ func (btp *BTPlayer) addTorrent() error {
 		torrentParams.SetResumeData(fastResumeVector)
 	}
 
-	btp.torrentHandle = btp.bts.Session.AddTorrent(torrentParams) // FIXME crashes on invalid magnet
+	btp.torrentHandle = btp.bts.Session.GetHandle().AddTorrent(torrentParams) // FIXME crashes on invalid magnet
 	go btp.consumeAlerts()
 
 	if btp.torrentHandle == nil {
@@ -167,7 +167,7 @@ func (btp *BTPlayer) addTorrent() error {
 }
 
 func (btp *BTPlayer) resumeTorrent(torrentIndex int) error {
-	torrentsVector := btp.bts.Session.GetTorrents()
+	torrentsVector := btp.bts.Session.GetHandle().GetTorrents()
 	btp.torrentHandle = torrentsVector.Get(torrentIndex)
 	go btp.consumeAlerts()
 
@@ -217,7 +217,7 @@ func (btp *BTPlayer) Buffer() error {
 }
 
 func (btp *BTPlayer) PlayURL() string {
-	return strings.Join(strings.Split(btp.chosenFile.GetPath(), string(os.PathSeparator)), "/")
+	return strings.Join(strings.Split(btp.torrentInfo.Files().FilePath(btp.chosenFile), string(os.PathSeparator)), "/")
 }
 
 func (btp *BTPlayer) CheckAvailableSpace() bool {
@@ -252,10 +252,7 @@ func (btp *BTPlayer) CheckAvailableSpace() bool {
 func (btp *BTPlayer) onMetadataReceived() {
 	btp.log.Info("Metadata received.")
 
-	// btp.torrentHandle.Pause()
-	// defer btp.torrentHandle.Resume()
-
-	btp.torrentName = btp.torrentHandle.Status(uint(0)).GetName()
+	btp.torrentName = btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName)).GetName()
 
 	btp.torrentInfo = btp.torrentHandle.TorrentFile()
 
@@ -270,7 +267,7 @@ func (btp *BTPlayer) onMetadataReceived() {
 		btp.bufferEvents.Broadcast(errors.New("User cancelled."))
 		return
 	}
-	btp.log.Infof("Chosen file: %s", btp.chosenFile.GetPath())
+	btp.log.Infof("Chosen file: %s", btp.torrentInfo.Files().FilePath(btp.chosenFile))
 
 	btp.log.Info("Setting piece priorities")
 
@@ -300,7 +297,7 @@ func (btp *BTPlayer) onMetadataReceived() {
 		piecesPriorities.PushBack(0)
 	}
 	for _ = 0; curPiece < startPiece+startBufferPieces; curPiece++ { // get this part
-		piecesPriorities.PushBack(1)
+		piecesPriorities.PushBack(7)
 		btp.bufferPiecesProgress[curPiece] = 0
 		btp.torrentHandle.SetPieceDeadline(curPiece, 0, 0)
 	}
@@ -344,24 +341,25 @@ func (btp *BTPlayer) pieceFromOffset(offset int64) (int, int64) {
 	return piece, pieceOffset
 }
 
-func (btp *BTPlayer) getFilePiecesAndOffset(fe libtorrent.FileEntry) (int, int, int64) {
-	startPiece, offset := btp.pieceFromOffset(fe.GetOffset())
-	endPiece, _ := btp.pieceFromOffset(fe.GetOffset() + fe.GetSize())
+func (btp *BTPlayer) getFilePiecesAndOffset(fe int) (int, int, int64) {
+	files := btp.torrentInfo.Files()
+	startPiece, offset := btp.pieceFromOffset(files.FileOffset(fe))
+	endPiece, _ := btp.pieceFromOffset(files.FileOffset(fe) + files.FileSize(fe))
 	return startPiece, endPiece, offset
 }
 
-func (btp *BTPlayer) chooseFile() (libtorrent.FileEntry, error) {
-	var biggestFile libtorrent.FileEntry
+func (btp *BTPlayer) chooseFile() (int, error) {
+	var biggestFile int
 	maxSize := int64(0)
 	numFiles := btp.torrentInfo.NumFiles()
+	files := btp.torrentInfo.Files()
 	var candidateFiles []int
 
 	for i := 0; i < numFiles; i++ {
-		fe := btp.torrentInfo.FileAt(i)
-		size := fe.GetSize()
+		size := files.FileSize(i)
 		if size > maxSize {
 			maxSize = size
-			biggestFile = fe
+			biggestFile = i
 		}
 		if size > minCandidateSize {
 			candidateFiles = append(candidateFiles, i)
@@ -371,16 +369,16 @@ func (btp *BTPlayer) chooseFile() (libtorrent.FileEntry, error) {
 	if len(candidateFiles) > 1 {
 		btp.log.Info(fmt.Sprintf("There are %d candidate files", len(candidateFiles)))
 		if btp.fileIndex >= 0 && btp.fileIndex < len(candidateFiles) {
-			return btp.torrentInfo.FileAt(candidateFiles[btp.fileIndex]), nil
+			return candidateFiles[btp.fileIndex], nil
 		}
 		choices := make([]string, 0, len(candidateFiles))
 		for _, index := range candidateFiles {
-			fileName := filepath.Base(btp.torrentInfo.FileAt(index).GetPath())
+			fileName := filepath.Base(files.FilePath(index))
 			choices = append(choices, fileName)
 		}
 		choice := xbmc.ListDialog("LOCALIZE[30223]", choices...)
 		if choice >= 0 {
-			return btp.torrentInfo.FileAt(candidateFiles[choice]), nil
+			return candidateFiles[choice], nil
 		} else {
 			return biggestFile, fmt.Errorf("User cancelled")
 		}
@@ -420,10 +418,6 @@ func (btp *BTPlayer) Close() {
 	}
 
 	if btp.backgroundHandling == false || askedToKeep == false || btp.notEnoughSpace {
-		if btp.torrentInfo != nil && btp.torrentInfo.Swigcptr() != 0 {
-			libtorrent.DeleteTorrentInfo(btp.torrentInfo)
-		}
-
 		// Delete fast resume data
 		if _, err := os.Stat(btp.fastResumeFile); err == nil {
 			btp.log.Infof("Deleting fast resume data at %s", btp.fastResumeFile)
@@ -432,10 +426,10 @@ func (btp *BTPlayer) Close() {
 
 		if btp.deleteAfter || askedToKeep == false {
 			btp.log.Info("Removing the torrent and deleting files...")
-			btp.bts.Session.RemoveTorrent(btp.torrentHandle, int(libtorrent.SessionDeleteFiles))
+			btp.bts.Session.GetHandle().RemoveTorrent(btp.torrentHandle, int(libtorrent.SessionHandleDeleteFiles))
 		} else {
 			btp.log.Info("Removing the torrent without deleting files...")
-			btp.bts.Session.RemoveTorrent(btp.torrentHandle, 0)
+			btp.bts.Session.GetHandle().RemoveTorrent(btp.torrentHandle, 0)
 		}
 	}
 }
@@ -450,15 +444,15 @@ func (btp *BTPlayer) consumeAlerts() {
 			if !ok { // was the alerts channel closed?
 				return
 			}
-			switch alert.Type() {
+			switch alert.Type {
 			case libtorrent.MetadataReceivedAlertAlertType:
-				metadataAlert := libtorrent.SwigcptrMetadataReceivedAlert(alert.Swigcptr())
+				metadataAlert := libtorrent.SwigcptrMetadataReceivedAlert(alert.Pointer)
 				if metadataAlert.GetHandle().Equal(btp.torrentHandle) {
 					btp.onMetadataReceived()
 				}
 				break
 			case libtorrent.StateChangedAlertAlertType:
-				stateAlert := libtorrent.SwigcptrStateChangedAlert(alert.Swigcptr())
+				stateAlert := libtorrent.SwigcptrStateChangedAlert(alert.Pointer)
 				if stateAlert.GetHandle().Equal(btp.torrentHandle) {
 					btp.onStateChanged(stateAlert)
 				}
@@ -514,7 +508,7 @@ func (btp *BTPlayer) bufferDialog() {
 				return
 			}
 		case <-oneSecond.C:
-			status := btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
+			status := btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryAccurateDownloadCounters))
 
 			// Handle "Checking" state for resumed downloads
 			if int(status.GetState()) == 1 {
@@ -547,23 +541,23 @@ func (btp *BTPlayer) bufferDialog() {
 
 func (btp *BTPlayer) setRateLimiting(enable bool) {
 	if btp.bts.config.LimitAfterBuffering == true {
-		settings := btp.bts.Session.Settings()
+		settings := btp.bts.packSettings
 		if enable == true {
 			if btp.bts.config.MaxDownloadRate > 0 {
 				btp.log.Infof("Buffer filled, rate limiting download to %dkB/s", btp.bts.config.MaxDownloadRate/1024)
-				settings.SetDownloadRateLimit(btp.bts.config.MaxDownloadRate)
+				settings.SetInt(libtorrent.SettingByName("download_rate_limit"), btp.bts.config.MaxDownloadRate)
 			}
 			if btp.bts.config.MaxUploadRate > 0 {
 				// If we have an upload rate, use the nicer bittyrant choker
 				btp.log.Infof("Buffer filled, rate limiting upload to %dkB/s", btp.bts.config.MaxUploadRate/1024)
-				settings.SetUploadRateLimit(btp.bts.config.MaxUploadRate)
+				settings.SetInt(libtorrent.SettingByName("upload_rate_limit"), btp.bts.config.MaxUploadRate)
 			}
 		} else {
 			btp.log.Info("Resetting rate limiting")
-			settings.SetDownloadRateLimit(0)
-			settings.SetUploadRateLimit(0)
+			settings.SetInt(libtorrent.SettingByName("download_rate_limit"), 0)
+			settings.SetInt(libtorrent.SettingByName("upload_rate_limit"), 0)
 		}
-		btp.bts.Session.SetSettings(settings)
+		btp.bts.Session.GetHandle().ApplySettings(settings)
 	}
 }
 
@@ -623,7 +617,7 @@ playbackLoop:
 					trakt.Scrobble("pause", btp.contentType, btp.tmdbId, btp.runtime)
 				}
 				if btp.overlayStatusEnabled == true {
-					status := btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
+					status := btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryAccurateDownloadCounters))
 					progress := float64(status.GetProgress())
 					line1, line2, line3 := btp.statusStrings(progress, status)
 					btp.overlayStatus.Update(int(progress), line1, line2, line3)

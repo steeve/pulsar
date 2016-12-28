@@ -39,6 +39,7 @@ type Configuration struct {
 	SeedTimeLimit       int
 	DisableDHT          bool
 	DisableUPNP         bool
+	EncryptionPolicy    int
 	BTListenPortMin     int
 	BTListenPortMax     int
 	ConnectionsLimit    int
@@ -64,6 +65,7 @@ type Configuration struct {
 	CustomProviderTimeoutEnabled bool
 	CustomProviderTimeout        int
 
+	ProxyType     int
 	SocksEnabled  bool
 	SocksHost     string
 	SocksPort     int
@@ -149,6 +151,7 @@ func Reload() *Configuration {
 		SeedTimeLimit:       settings["seed_time_limit"].(int) * 3600,
 		DisableDHT:          settings["disable_dht"].(bool),
 		DisableUPNP:         settings["disable_upnp"].(bool),
+		EncryptionPolicy:    settings["encryption_policy"].(int),
 		BTListenPortMin:     settings["listen_port_min"].(int),
 		BTListenPortMax:     settings["listen_port_max"].(int),
 		ConnectionsLimit:    settings["connections_limit"].(int),
@@ -174,6 +177,7 @@ func Reload() *Configuration {
 		CustomProviderTimeoutEnabled: settings["custom_provider_timeout_enabled"].(bool),
 		CustomProviderTimeout:        settings["custom_provider_timeout"].(int),
 
+		ProxyType:     settings["proxy_type"].(int),
 		SocksEnabled:  settings["socks_enabled"].(bool),
 		SocksHost:     settings["socks_host"].(string),
 		SocksPort:     settings["socks_port"].(int),
