@@ -85,10 +85,17 @@ func AddTorrent(ctx *gin.Context) {
 
 func PlayURI(ctx *gin.Context) {
 	uri := ctx.Request.URL.Query().Get("uri")
-	if uri == "" {
+	resume := ctx.Request.URL.Query().Get("resume")
+
+	if uri == "" && resume == "" {
 		return
 	}
-	xbmc.PlayURL(UrlQuery(UrlForXBMC("/play"), "uri", uri))
+
+	if uri != "" {
+		xbmc.PlayURL(UrlQuery(UrlForXBMC("/play"), "uri", uri))
+	} else {
+		xbmc.PlayURL(UrlQuery(UrlForXBMC("/play"), "resume", resume))
+	}
 	ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	ctx.String(200, "")
 }
