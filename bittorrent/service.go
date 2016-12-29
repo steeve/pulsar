@@ -167,8 +167,8 @@ func (s *BTService) configure() {
 	settings := libtorrent.NewSettingsPack()
 	s.Session = libtorrent.NewSession(settings, int(libtorrent.SessionHandleAddDefaultPlugins))
 
+	s.log.Info("Applying session settings...")
 	s.log.Infof("UserAgent: %s", util.UserAgent())
-	s.log.Info("Applying Session settings...")
 
 	settings.SetStr(libtorrent.SettingByName("user_agent"), util.UserAgent())
 	settings.SetInt(libtorrent.SettingByName("request_timeout"), 2)
@@ -231,7 +231,7 @@ func (s *BTService) configure() {
 		settings.SetInt(libtorrent.SettingByName("seed_time_limit"), s.config.SeedTimeLimit)
 	}
 
-	s.log.Info("Setting encryption settings...")
+	s.log.Info("Applying encryption settings...")
 	if s.config.EncryptionPolicy > 0 {
 		policy := int(libtorrent.SettingsPackPeDisabled)
 		level := int(libtorrent.SettingsPackPeBoth)
@@ -250,7 +250,7 @@ func (s *BTService) configure() {
 	}
 
 	if s.config.Proxy != nil {
-		s.log.Info("Setting Proxy settings...")
+		s.log.Info("Applying proxy settings...")
 		proxy_type := s.config.Proxy.Type + 1
 		settings.SetInt(libtorrent.SettingByName("proxy_type"), proxy_type)
 		settings.SetInt(libtorrent.SettingByName("proxy_port"), s.config.Proxy.Port)

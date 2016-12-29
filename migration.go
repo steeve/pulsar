@@ -4,7 +4,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/scakemyer/quasar/xbmc"
 	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/repository"
 )
@@ -17,17 +16,14 @@ func Migrate() {
 	file, _ := os.Create(firstRun)
 	defer file.Close()
 
-	log.Info("Preparing for first run")
+	log.Info("Preparing for first run...")
 
 	// Remove the cache
 	log.Info("Clearing cache")
 	os.RemoveAll(filepath.Join(config.Get().Info.Profile, "cache"))
 
-	log.Info("Creating Quasar Repository Addon")
+	log.Info("Creating Quasar repository add-on")
 	if err := repository.MakeQuasarRepositoryAddon(); err != nil {
-		log.Errorf("Unable to create repository addon: %s", err)
-	} else {
-		log.Info("Updating Kodi Addon Repositories")
-		xbmc.UpdateAddonRepos()
+		log.Errorf("Unable to create repository add-on: %s", err)
 	}
 }

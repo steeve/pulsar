@@ -24,8 +24,14 @@ const (
 	IndexCacheTime      = 15 * 24 * time.Hour // 15 days caching for index
 )
 
+func GinLogger(exclude string) gin.HandlerFunc {
+	return gin.LoggerWithWriter(gin.DefaultWriter, exclude)
+}
+
 func Routes(btService *bittorrent.BTService) *gin.Engine {
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.Recovery())
+	r.Use(GinLogger("/torrents/list"))
 
 	gin.SetMode(gin.ReleaseMode)
 

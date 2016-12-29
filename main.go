@@ -20,8 +20,7 @@ import (
 var log = logging.MustGetLogger("main")
 
 const (
-	QuasarLogo = `
-________
+	QuasarLogo = `________
 \_____  \  __ _______    ___________ _______
  /  / \  \|  |  \__  \  /  ___/\__  \\_  __ \
 /   \_/.  \  |  // __ \_\___ \  / __ \|  | \/
@@ -85,10 +84,10 @@ func main() {
 
 	conf := config.Reload()
 
+	log.Infof("Addon: %s v%s", conf.Info.Id, conf.Info.Version)
+
 	ensureSingleInstance()
 	Migrate()
-
-	log.Infof("Addon: %s v%s", conf.Info.Id, conf.Info.Version)
 
 	btService := bittorrent.NewBTService(*makeBTConfiguration(conf))
 
@@ -123,12 +122,12 @@ func main() {
 		shutdown()
 	}))
 
-	xbmc.Notify("Quasar", "LOCALIZE[30208]", config.AddonIcon())
+	xbmc.ResetRPC()
 
-	log.Info("Updating Kodi Addon Repositories")
+	log.Info("Updating Kodi add-on repositories...")
 	xbmc.UpdateAddonRepos()
 
-	xbmc.ResetRPC()
+	xbmc.Notify("Quasar", "LOCALIZE[30208]", config.AddonIcon())
 
 	http.ListenAndServe(":"+strconv.Itoa(config.ListenPort), nil)
 }
