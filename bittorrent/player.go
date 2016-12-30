@@ -227,7 +227,7 @@ func (btp *BTPlayer) CheckAvailableSpace() bool {
 			return true
 		}
 
-		status := btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
+		status := btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryAccurateDownloadCounters))
 		sizeLeft := btp.torrentInfo.TotalSize() - status.GetTotalDone()
 		availableSpace := btp.diskStatus.Free
 
@@ -508,7 +508,7 @@ func (btp *BTPlayer) bufferDialog() {
 				return
 			}
 		case <-oneSecond.C:
-			status := btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryAccurateDownloadCounters))
+			status := btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
 
 			// Handle "Checking" state for resumed downloads
 			if int(status.GetState()) == 1 {
@@ -617,7 +617,7 @@ playbackLoop:
 					trakt.Scrobble("pause", btp.contentType, btp.tmdbId, btp.runtime)
 				}
 				if btp.overlayStatusEnabled == true {
-					status := btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryAccurateDownloadCounters))
+					status := btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
 					progress := float64(status.GetProgress())
 					line1, line2, line3 := btp.statusStrings(progress, status)
 					btp.overlayStatus.Update(int(progress), line1, line2, line3)
