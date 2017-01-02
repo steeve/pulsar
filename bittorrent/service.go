@@ -427,10 +427,16 @@ func (s *BTService) saveResumeDataConsumer() {
 			switch alert.Type {
 			case libtorrent.SaveResumeDataAlertAlertType:
 				saveResumeData := libtorrent.SwigcptrSaveResumeDataAlert(alert.Pointer)
+				if saveResumeData.Swigcptr() == 0 {
+					break
+				}
 				torrentHandle := saveResumeData.GetHandle()
 				torrentStatus := torrentHandle.Status(uint(libtorrent.TorrentHandleQuerySavePath) | uint(libtorrent.TorrentHandleQueryName))
 				shaHash := torrentStatus.GetInfoHash().ToString()
 				infoHash := hex.EncodeToString([]byte(shaHash))
+				if saveResumeData.Swigcptr() == 0 {
+					break
+				}
 				entry := saveResumeData.ResumeData()
 				bEncoded := []byte(libtorrent.Bencode(entry))
 
