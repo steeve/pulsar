@@ -77,6 +77,7 @@ type ProxySettings struct {
 }
 
 type BTConfiguration struct {
+	SpoofUserAgent      int
 	BackgroundHandling  bool
 	BufferSize          int
 	MaxUploadRate       int
@@ -168,9 +169,56 @@ func (s *BTService) configure() {
 	s.Session = libtorrent.NewSession(settings, int(libtorrent.SessionHandleAddDefaultPlugins))
 
 	s.log.Info("Applying session settings...")
-	s.log.Infof("UserAgent: %s", util.UserAgent())
 
-	settings.SetStr(libtorrent.SettingByName("user_agent"), util.UserAgent())
+	userAgent := util.UserAgent()
+	if s.config.SpoofUserAgent > 0 {
+		switch s.config.SpoofUserAgent {
+		case 1:
+			userAgent = ""
+			break
+		case 2:
+			userAgent = "libtorrent (Rasterbar) 1.1.0"
+			break
+		case 3:
+			userAgent = "BitTorrent 7.5.0"
+			break
+		case 4:
+			userAgent = "BitTorrent 7.4.3"
+			break
+		case 5:
+			userAgent = "µTorrent 3.4.9"
+			break
+		case 6:
+			userAgent = "µTorrent 3.2.0"
+			break
+		case 7:
+			userAgent = "µTorrent 2.2.1"
+			break
+		case 8:
+			userAgent = "Transmission 2.92"
+			break
+		case 9:
+			userAgent = "Deluge 1.3.6.0"
+			break
+		case 10:
+			userAgent = "Deluge 1.3.12.0"
+			break
+		case 11:
+			userAgent = "Vuze 5.7.3.0"
+			break
+		}
+		if userAgent != "" {
+			s.log.Infof("UserAgent: %s", userAgent)
+		} else {
+			s.log.Infof("UserAgent: libtorrent/%s", libtorrent.Version())
+		}
+	} else {
+		s.log.Infof("UserAgent: %s", util.UserAgent())
+	}
+
+	if userAgent != "" {
+		settings.SetStr(libtorrent.SettingByName("user_agent"), userAgent)
+	}
 	settings.SetInt(libtorrent.SettingByName("request_timeout"), 2)
 	settings.SetInt(libtorrent.SettingByName("peer_connect_timeout"), 2)
 	settings.SetBool(libtorrent.SettingByName("strict_end_game_mode"), true)

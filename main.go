@@ -35,6 +35,7 @@ func ensureSingleInstance() {
 
 func makeBTConfiguration(conf *config.Configuration) *bittorrent.BTConfiguration {
 	btConfig := &bittorrent.BTConfiguration{
+		SpoofUserAgent:      conf.SpoofUserAgent,
 		BackgroundHandling:  conf.BackgroundHandling,
 		BufferSize:          conf.BufferSize,
 		MaxUploadRate:       conf.UploadRateLimit,

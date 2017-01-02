@@ -21,6 +21,7 @@ type Configuration struct {
 	Platform            *xbmc.Platform
 	Language            string
 	ProfilePath         string
+	SpoofUserAgent      int
 	BackgroundHandling  bool
 	KeepFilesAfterStop  bool
 	KeepFilesAsk        bool
@@ -136,6 +137,7 @@ func Reload() *Configuration {
 		BufferSize:          settings["buffer_size"].(int) * 1024 * 1024,
 		UploadRateLimit:     settings["max_upload_rate"].(int) * 1024,
 		DownloadRateLimit:   settings["max_download_rate"].(int) * 1024,
+		SpoofUserAgent:      settings["spoof_user_agent"].(int),
 		LimitAfterBuffering: settings["limit_after_buffering"].(bool),
 		BackgroundHandling:  settings["background_handling"].(bool),
 		KeepFilesAfterStop:  settings["keep_files"].(bool),
