@@ -196,10 +196,10 @@ func (tf *TorrentFile) Seek(offset int64, whence int) (int64, error) {
 		curPiece := 0
 		numPieces := tf.torrentInfo.NumPieces()
 		for _ = 0; curPiece < piece; curPiece++ {
-			piecesPriorities.PushBack(0)
+			piecesPriorities.Add(0)
 		}
 		for _ = 0; curPiece < numPieces; curPiece++ {
-			piecesPriorities.PushBack(1)
+			piecesPriorities.Add(1)
 		}
 		tf.torrentHandle.PrioritizePieces(piecesPriorities)
 	}

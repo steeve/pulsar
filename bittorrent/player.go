@@ -139,7 +139,7 @@ func (btp *BTPlayer) addTorrent() error {
 		}
 		fastResumeVector := libtorrent.NewStdVectorChar()
 		for _, c := range fastResumeData {
-			fastResumeVector.PushBack(c)
+			fastResumeVector.Add(c)
 		}
 		torrentParams.SetResumeData(fastResumeVector)
 	}
@@ -294,24 +294,24 @@ func (btp *BTPlayer) onMetadataReceived() {
 	// Properly set the pieces priority vector
 	curPiece := 0
 	for _ = 0; curPiece < startPiece; curPiece++ {
-		piecesPriorities.PushBack(0)
+		piecesPriorities.Add(0)
 	}
 	for _ = 0; curPiece < startPiece+startBufferPieces; curPiece++ { // get this part
-		piecesPriorities.PushBack(7)
+		piecesPriorities.Add(7)
 		btp.bufferPiecesProgress[curPiece] = 0
 		btp.torrentHandle.SetPieceDeadline(curPiece, 0, 0)
 	}
 	for _ = 0; curPiece < endPiece-endBufferPieces; curPiece++ {
-		piecesPriorities.PushBack(1)
+		piecesPriorities.Add(1)
 	}
 	for _ = 0; curPiece <= endPiece; curPiece++ { // get this part
-		piecesPriorities.PushBack(7)
+		piecesPriorities.Add(7)
 		btp.bufferPiecesProgress[curPiece] = 0
 		btp.torrentHandle.SetPieceDeadline(curPiece, 0, 0)
 	}
 	numPieces := btp.torrentInfo.NumPieces()
 	for _ = 0; curPiece < numPieces; curPiece++ {
-		piecesPriorities.PushBack(0)
+		piecesPriorities.Add(0)
 	}
 	btp.torrentHandle.PrioritizePieces(piecesPriorities)
 }
@@ -395,7 +395,7 @@ func (btp *BTPlayer) onStateChanged(stateAlert libtorrent.StateChangedAlert) {
 		defer libtorrent.DeleteStdVectorInt(piecesPriorities)
 		numPieces := btp.torrentInfo.NumPieces()
 		for i := 0; i < numPieces; i++ {
-			piecesPriorities.PushBack(1)
+			piecesPriorities.Add(1)
 		}
 		btp.torrentHandle.PrioritizePieces(piecesPriorities)
 		break
