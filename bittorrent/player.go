@@ -138,6 +138,7 @@ func (btp *BTPlayer) addTorrent() error {
 			return err
 		}
 		fastResumeVector := libtorrent.NewStdVectorChar()
+		defer libtorrent.DeleteStdVectorChar(fastResumeVector)
 		for _, c := range fastResumeData {
 			fastResumeVector.Add(c)
 		}

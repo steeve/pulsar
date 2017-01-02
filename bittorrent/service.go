@@ -486,6 +486,7 @@ func (s *BTService) loadFastResumeFiles() error {
 			return err
 		}
 		fastResumeVector := libtorrent.NewStdVectorChar()
+		defer libtorrent.DeleteStdVectorChar(fastResumeVector)
 		for _, c := range fastResumeData {
 			fastResumeVector.Add(c)
 		}
