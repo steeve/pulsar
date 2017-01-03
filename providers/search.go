@@ -29,9 +29,10 @@ const (
 	Sort480p720p1080p
 )
 
-var trackerTimeout = time.Duration(5) * time.Second
-
-var log = logging.MustGetLogger("linkssearch")
+var (
+	trackerTimeout = time.Duration(5) * time.Second
+	log = logging.MustGetLogger("linkssearch")
+)
 
 func Search(searchers []Searcher, query string) []*bittorrent.Torrent {
 	torrentsChan := make(chan *bittorrent.Torrent)
@@ -152,9 +153,17 @@ func processLinks(torrentsChan chan *bittorrent.Torrent, sortType int) []*bittor
 			log.Errorf("InfoHash is empty for %s", torrent.URI)
 			continue
 		}
-		if existingTorrent, exists := torrentsMap[torrent.InfoHash]; exists {
+
+		torrentKey := torrent.InfoHash
+		if torrent.IsPrivate {
+			torrentKey = torrent.InfoHash + "-" + torrent.Provider
+		}
+
+		if existingTorrent, exists := torrentsMap[torrentKey]; exists {
 			existingTorrent.Trackers = append(existingTorrent.Trackers, torrent.Trackers...)
+			existingTorrent.Provider += ", " + torrent.Provider
 			if torrent.Resolution > existingTorrent.Resolution {
+				existingTorrent.Name = torrent.Name
 				existingTorrent.Resolution = torrent.Resolution
 			}
 			if torrent.VideoCodec > existingTorrent.VideoCodec {
@@ -171,7 +180,7 @@ func processLinks(torrentsChan chan *bittorrent.Torrent, sortType int) []*bittor
 			}
 			existingTorrent.Multi = true
 		} else {
-			torrentsMap[torrent.InfoHash] = torrent
+			torrentsMap[torrentKey] = torrent
 		}
 
 		for _, tracker := range torrent.Trackers {
@@ -226,7 +235,6 @@ func processLinks(torrentsChan chan *bittorrent.Torrent, sortType int) []*bittor
 		close(scrapeResults)
 	}()
 
-	// TODO Use average or median instead of highest count #573
 	for results := range scrapeResults {
 		for i, result := range results {
 			if int64(result.Seeders) > torrents[i].Seeds {
