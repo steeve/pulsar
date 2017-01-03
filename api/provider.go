@@ -59,7 +59,7 @@ func ProviderGetEpisode(ctx *gin.Context) {
 	}
 	episode := season.Episodes[episodeNumber - 1]
 
-	log.Printf("Resolved %s to %s", showId, show.Name)
+	log.Printf("Resolved %d to %s", showId, show.Name)
 
 	searcher := providers.NewAddonSearcher(provider)
 	torrents := searcher.SearchEpisodeLinks(show, episode)
