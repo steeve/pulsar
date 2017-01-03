@@ -43,7 +43,6 @@ func getLastRelease(user string, repository string) (string, string) {
 		}
 		return *lastRelease.TagName, *lastRelease.TargetCommitish
 	}
-	log.Warning("Unable to find a last tag, using master.")
 	return "", "master"
 }
 
@@ -99,6 +98,15 @@ func GetAddonFiles(ctx *gin.Context) {
 	filepath := ctx.Params.ByName("filepath")[1:] // strip the leading "/"
 
 	lastReleaseTag, lastReleaseBranch := getLastRelease(user, repository)
+	if lastReleaseTag == "" {
+		// Get last release from addons.xml on master
+		log.Warning("Unable to find a last tag, using master.")
+		addons, err := getAddons(user, repository)
+		if err != nil {
+			ctx.AbortWithError(404, errors.New("Unable to retrieve the remote's addon.xml file."))
+		}
+		lastReleaseTag = "v" + addons.Addons[0].Version
+	}
 	log.Infof("Last release: %s on %s", lastReleaseTag, lastReleaseBranch)
 
 	switch filepath {
@@ -112,7 +120,7 @@ func GetAddonFiles(ctx *gin.Context) {
 	case "fanart.jpg":
 		fallthrough
 	case "icon.png":
-		ctx.Redirect(302, fmt.Sprintf(githubUserContentURL+"/"+filepath, user, repository, lastReleaseBranch))
+		ctx.Redirect(302, fmt.Sprintf(githubUserContentURL + "/" + filepath, user, repository, lastReleaseTag))
 		return
 	}
 
