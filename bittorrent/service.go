@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 	"strings"
+	"strconv"
 	"net/url"
 	"io/ioutil"
 	"encoding/hex"
@@ -135,6 +136,7 @@ func NewBTService(config BTConfiguration) *BTService {
 	}
 
 	s.configure()
+	s.startServices()
 
 	go s.saveResumeDataConsumer()
 	go s.saveResumeDataLoop()
@@ -162,6 +164,7 @@ func (s *BTService) Reconfigure(config BTConfiguration) {
 	s.config = &config
 	s.configure()
 	s.startServices()
+	s.loadFastResumeFiles()
 }
 
 func (s *BTService) configure() {
@@ -317,6 +320,12 @@ func (s *BTService) configure() {
 		}
 	}
 
+	// Set alert_mask here so it also applies on reconfigure...
+	settings.SetInt(libtorrent.SettingByName("alert_mask"), int(
+		libtorrent.AlertStatusNotification |
+		libtorrent.AlertStorageNotification |
+		libtorrent.AlertErrorNotification))
+
 	s.packSettings = settings
 	s.Session.GetHandle().ApplySettings(s.packSettings)
 }
@@ -342,6 +351,13 @@ func (s *BTService) LoadState(f io.Reader) error {
 }
 
 func (s *BTService) startServices() {
+	var listenPorts []string
+	for p := s.config.LowerListenPort; p <= s.config.UpperListenPort; p++ {
+		listenPorts = append(listenPorts, strconv.Itoa(p))
+	}
+	listenInterfaces := "0.0.0.0:" + strings.Join(listenPorts, ",0.0.0.0:")
+	s.packSettings.SetStr(libtorrent.SettingByName("listen_interfaces"), listenInterfaces)
+
 	s.log.Info("Starting LSD...")
 	s.packSettings.SetBool(libtorrent.SettingByName("enable_lsd"), true)
 
@@ -443,13 +459,12 @@ func (s *BTService) saveResumeDataConsumer() {
 				// s.log.Infof("Saving resume data for %s to %s.fastresume", torrentStatus.GetName(), infoHash)
 				path := filepath.Join(s.config.TorrentsPath, fmt.Sprintf("%s.fastresume", infoHash))
 				ioutil.WriteFile(path, bEncoded, 0644)
-				break
 			}
 		}
 	}
 }
 
-func (s *BTService) loadFastResumeFiles() error {
+func (s *BTService) loadFastResumeFiles() {
 	pattern := filepath.Join(s.config.TorrentsPath, "*.fastresume")
 	files, _ := filepath.Glob(pattern)
 	for _, fastResumeFile := range files {
@@ -460,13 +475,17 @@ func (s *BTService) loadFastResumeFiles() error {
 
 		fastResumeToDecode, err := os.Open(fastResumeFile)
 		if err != nil {
-			return err
+			s.log.Errorf("Error opening fastresume file: %s", err.Error())
+			os.Remove(fastResumeFile)
+			continue
 		}
 		defer fastResumeToDecode.Close()
 		var resumeFile *ResumeFile
 		dec := bencode.NewDecoder(fastResumeToDecode)
 		if err := dec.Decode(&resumeFile); err != nil {
-			return err
+			s.log.Errorf("Error decoding fastresume file: %s", err.Error())
+			os.Remove(fastResumeFile)
+			continue
 		}
 
 		var trackersList []string
@@ -489,7 +508,9 @@ func (s *BTService) loadFastResumeFiles() error {
 
 		fastResumeData, err := ioutil.ReadFile(fastResumeFile)
 		if err != nil {
-			return err
+			s.log.Errorf("Error reading fastresume file: %s", err.Error())
+			os.Remove(fastResumeFile)
+			continue
 		}
 		fastResumeVector := libtorrent.NewStdVectorChar()
 		defer libtorrent.DeleteStdVectorChar(fastResumeVector)
@@ -501,11 +522,11 @@ func (s *BTService) loadFastResumeFiles() error {
 		torrentHandle := s.Session.GetHandle().AddTorrent(torrentParams)
 
 		if torrentHandle == nil {
-			return fmt.Errorf("Unable to add torrent from %s", fastResumeFile)
+			s.log.Errorf("Error adding fastresume file: %s", fastResumeFile)
+			os.Remove(fastResumeFile)
+			continue
 		}
 	}
-
-	return nil
 }
 
 func (s *BTService) downloadProgress() {
@@ -609,9 +630,6 @@ func (s *BTService) downloadProgress() {
 }
 
 func (s *BTService) alertsConsumer() {
-	s.packSettings.SetInt(libtorrent.SettingByName("alert_mask"), int(libtorrent.AlertStatusNotification | libtorrent.AlertStorageNotification))
-	s.Session.GetHandle().ApplySettings(s.packSettings)
-
 	defer s.alertsBroadcaster.Close()
 
 	ltOneSecond := libtorrent.Seconds(libtorrentAlertWaitTime)
