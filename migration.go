@@ -18,10 +18,6 @@ func Migrate() {
 
 	log.Info("Preparing for first run...")
 
-	// Remove the cache
-	log.Info("Clearing cache")
-	os.RemoveAll(filepath.Join(config.Get().Info.Profile, "cache"))
-
 	log.Info("Creating Quasar repository add-on")
 	if err := repository.MakeQuasarRepositoryAddon(); err != nil {
 		log.Errorf("Unable to create repository add-on: %s", err)
