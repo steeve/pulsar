@@ -94,6 +94,7 @@ type BTConfiguration struct {
 	EncryptionPolicy    int
 	LowerListenPort     int
 	UpperListenPort     int
+	TunedStorage        bool
 	DownloadPath        string
 	TorrentsPath        string
 	Proxy               *ProxySettings
@@ -252,6 +253,15 @@ func (s *BTService) configure() {
 	settings.SetBool(libtorrent.SettingByName("ignore_limits_on_local_network"), true)
 	settings.SetBool(libtorrent.SettingByName("rate_limit_utp"), true)
 	settings.SetInt(libtorrent.SettingByName("mixed_mode_algorithm"), int(libtorrent.SettingsPackPreferTcp))
+
+	// For Android external storage / OS-mounted NAS setups
+	if s.config.TunedStorage {
+		settings.SetBool(libtorrent.SettingByName("use_read_cache"), true)
+		settings.SetBool(libtorrent.SettingByName("coalesce_reads"), true)
+		settings.SetBool(libtorrent.SettingByName("coalesce_writes"), true)
+		settings.SetInt(libtorrent.SettingByName("max_queued_disk_bytes"), 10 * 1024 * 1024)
+		settings.SetInt(libtorrent.SettingByName("cache_size"), -1)
+	}
 
 	if s.config.ConnectionsLimit > 0 {
 		settings.SetInt(libtorrent.SettingByName("connections_limit"), s.config.ConnectionsLimit)

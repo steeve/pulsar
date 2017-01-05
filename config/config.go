@@ -35,6 +35,8 @@ type Configuration struct {
 	UploadRateLimit     int
 	DownloadRateLimit   int
 	LimitAfterBuffering bool
+	ConnectionsLimit    int
+	SessionSave         int
 	ShareRatioLimit     int
 	SeedTimeRatioLimit  int
 	SeedTimeLimit       int
@@ -43,8 +45,7 @@ type Configuration struct {
 	EncryptionPolicy    int
 	BTListenPortMin     int
 	BTListenPortMax     int
-	ConnectionsLimit    int
-	SessionSave         int
+	TunedStorage        bool
 	Scrobble            bool
 	TraktUsername       string
 	TraktToken          string
@@ -156,6 +157,7 @@ func Reload() *Configuration {
 		EncryptionPolicy:    settings["encryption_policy"].(int),
 		BTListenPortMin:     settings["listen_port_min"].(int),
 		BTListenPortMax:     settings["listen_port_max"].(int),
+		TunedStorage:        settings["tuned_storage"].(bool),
 		ConnectionsLimit:    settings["connections_limit"].(int),
 		SessionSave:         settings["session_save"].(int),
 		Scrobble:            settings["trakt_scrobble"].(bool),
