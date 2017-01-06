@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"time"
 	"errors"
+	"strings"
 	"strconv"
+	"io/ioutil"
 	"encoding/hex"
 	"path/filepath"
 
@@ -14,6 +16,7 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/scakemyer/libtorrent-go"
 	"github.com/scakemyer/quasar/bittorrent"
+	"github.com/scakemyer/quasar/diskusage"
 	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/xbmc"
 )
@@ -234,6 +237,82 @@ func ResumeSession(btService *bittorrent.BTService) gin.HandlerFunc {
 	}
 }
 
+func AddTorrent(btService *bittorrent.BTService) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		uri := ctx.Request.URL.Query().Get("uri")
+		ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+
+		if uri == "" {
+			ctx.String(200, "Missing torrent URI")
+		}
+		torrentsLog.Infof("Adding torrent from %s", uri)
+
+		if config.Get().DownloadPath == "." {
+			xbmc.Notify("Quasar", "LOCALIZE[30113]", config.AddonIcon())
+			ctx.String(200, "Download path empty")
+			return
+		}
+
+		// TODO Need to check available space here too...
+		if _, err := diskusage.DiskUsage(config.Get().DownloadPath); err != nil {
+			torrentsLog.Warningf("Unable to retrieve the free space for %s, continuing anyway...", config.Get().DownloadPath)
+		}
+
+		torrentParams := libtorrent.NewAddTorrentParams()
+		defer libtorrent.DeleteAddTorrentParams(torrentParams)
+
+		var infoHash string
+
+		if strings.HasPrefix(uri, "magnet") || strings.HasPrefix(uri, "http") {
+			torrentParams.SetUrl(uri)
+
+			torrent := bittorrent.NewTorrent(uri)
+			torrent.Magnet()
+			infoHash = torrent.InfoHash
+		} else {
+			info := libtorrent.NewTorrentInfo(uri) // FIXME crashes on invalid paths
+			torrentParams.SetTorrentInfo(info)
+
+			shaHash := info.InfoHash().ToString()
+			infoHash = hex.EncodeToString([]byte(shaHash))
+		}
+
+		torrentsLog.Infof("Setting save path to %s", config.Get().DownloadPath)
+		torrentParams.SetSavePath(config.Get().DownloadPath)
+
+		torrentsLog.Infof("Checking for fast resume data in %s.fastresume", infoHash)
+		fastResumeFile := filepath.Join(config.Get().TorrentsPath, fmt.Sprintf("%s.fastresume", infoHash))
+		if _, err := os.Stat(fastResumeFile); err == nil {
+			torrentsLog.Info("Found fast resume data...")
+			fastResumeData, err := ioutil.ReadFile(fastResumeFile)
+			if err != nil {
+				torrentsLog.Error(err.Error())
+				ctx.String(200, err.Error())
+				return
+			}
+			fastResumeVector := libtorrent.NewStdVectorChar()
+			defer libtorrent.DeleteStdVectorChar(fastResumeVector)
+			for _, c := range fastResumeData {
+				fastResumeVector.Add(c)
+			}
+			torrentParams.SetResumeData(fastResumeVector)
+		}
+
+		torrentHandle := btService.Session.GetHandle().AddTorrent(torrentParams) // FIXME crashes on invalid magnet
+
+		if torrentHandle == nil {
+			ctx.String(200, fmt.Sprintf("Unable to add torrent with URI %s", uri))
+			return
+		}
+
+		torrentStatus := torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
+		torrentsLog.Infof("Downloading %s", torrentStatus.GetName())
+
+		xbmc.Refresh()
+		ctx.String(200, "")
+	}
+}
+
 func ResumeTorrent(btService *bittorrent.BTService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		torrentsVector := btService.Session.GetHandle().GetTorrents()
@@ -290,10 +369,18 @@ func RemoveTorrent(btService *bittorrent.BTService) gin.HandlerFunc {
 			ctx.Error(errors.New("Invalid torrent handle"))
 		}
 
-		// Delete fast resume data
 		torrentStatus := torrentHandle.Status(uint(libtorrent.TorrentHandleQuerySavePath) | uint(libtorrent.TorrentHandleQueryName))
 		shaHash := torrentStatus.GetInfoHash().ToString()
 		infoHash := hex.EncodeToString([]byte(shaHash))
+
+		// Delete torrent file
+		torrentFile := filepath.Join(config.Get().TorrentsPath, fmt.Sprintf("%s.torrent", infoHash))
+		if _, err := os.Stat(torrentFile); err == nil {
+			torrentsLog.Infof("Deleting torrent file at %s", torrentFile)
+			defer os.Remove(torrentFile)
+		}
+
+		// Delete fast resume data
 		fastResumeFile := filepath.Join(config.Get().TorrentsPath, fmt.Sprintf("%s.fastresume", infoHash))
 		if _, err := os.Stat(fastResumeFile); err == nil {
 			torrentsLog.Infof("Deleting fast resume data at %s", fastResumeFile)

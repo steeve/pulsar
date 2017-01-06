@@ -39,7 +39,7 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 
 	r.GET("/", Index)
 	r.GET("/search", Search)
-	r.GET("/addtorrent", AddTorrent)
+	r.GET("/playtorrent", PlayTorrent)
 
 	r.LoadHTMLGlob(filepath.Join(config.Get().Info.Path, "resources", "web", "*.html"))
 	web := r.Group("/web")
@@ -54,6 +54,7 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 	torrents := r.Group("/torrents")
 	{
 		torrents.GET("/", ListTorrents(btService))
+		torrents.GET("/add", AddTorrent(btService))
 		torrents.GET("/pause", PauseSession(btService))
 		torrents.GET("/resume", ResumeSession(btService))
 		torrents.GET("/pause/:torrentId", PauseTorrent(btService))

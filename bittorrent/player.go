@@ -36,6 +36,7 @@ type BTPlayer struct {
 	overlayStatus            *xbmc.OverlayStatus
 	uri                      string
 	fastResumeFile           string
+	torrentFile              string
 	contentType              string
 	fileIndex                int
 	resumeIndex              int
@@ -84,6 +85,7 @@ func NewBTPlayer(bts *BTService, params BTPlayerParams) *BTPlayer {
 		tmdbId:               params.TMDBId,
 		runtime:              params.Runtime * 60,
 		fastResumeFile:       "",
+		torrentFile:          "",
 		notEnoughSpace:       false,
 		closing:              make(chan interface{}),
 		bufferEvents:         broadcast.NewBroadcaster(),
@@ -119,6 +121,7 @@ func (btp *BTPlayer) addTorrent() error {
 		infoHash = torrent.InfoHash
 	} else {
 		info := libtorrent.NewTorrentInfo(btp.uri) // FIXME crashes on invalid paths
+		defer libtorrent.DeleteTorrentInfo(info)
 		torrentParams.SetTorrentInfo(info)
 
 		shaHash := info.InfoHash().ToString()
@@ -127,6 +130,8 @@ func (btp *BTPlayer) addTorrent() error {
 
 	btp.log.Infof("Setting save path to %s", btp.bts.config.DownloadPath)
 	torrentParams.SetSavePath(btp.bts.config.DownloadPath)
+
+	btp.torrentFile = filepath.Join(btp.bts.config.TorrentsPath, fmt.Sprintf("%s.torrent", infoHash))
 
 	btp.log.Infof("Checking for fast resume data in %s.fastresume", infoHash)
 	fastResumeFile := filepath.Join(btp.bts.config.TorrentsPath, fmt.Sprintf("%s.fastresume", infoHash))
@@ -176,7 +181,14 @@ func (btp *BTPlayer) resumeTorrent(torrentIndex int) error {
 		return fmt.Errorf("Unable to resume torrent with index %d", torrentIndex)
 	}
 
+	btp.log.Info("Enabling sequential download")
+	btp.torrentHandle.SetSequentialDownload(true)
+
 	status := btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
+
+	shaHash := status.GetInfoHash().ToString()
+	infoHash := hex.EncodeToString([]byte(shaHash))
+	btp.torrentFile = filepath.Join(btp.bts.config.TorrentsPath, fmt.Sprintf("%s.torrent", infoHash))
 
 	btp.torrentName = status.GetName()
 	btp.log.Infof("Resuming %s", btp.torrentName)
@@ -256,6 +268,14 @@ func (btp *BTPlayer) onMetadataReceived() {
 	btp.torrentName = btp.torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName)).GetName()
 
 	btp.torrentInfo = btp.torrentHandle.TorrentFile()
+
+	// Save .torrent
+	btp.log.Infof("Saving %s...", btp.torrentFile)
+	torrentFile := libtorrent.NewCreateTorrent(btp.torrentInfo)
+	defer libtorrent.DeleteCreateTorrent(torrentFile)
+	torrentContent := torrentFile.Generate()
+	bEncodedTorrent := []byte(libtorrent.Bencode(torrentContent))
+	ioutil.WriteFile(btp.torrentFile, bEncodedTorrent, 0644)
 
 	// Reset fastResumeFile
 	shaHash := btp.torrentInfo.InfoHash().ToString()
@@ -399,10 +419,8 @@ func (btp *BTPlayer) onStateChanged(stateAlert libtorrent.StateChangedAlert) {
 			piecesPriorities.Add(1)
 		}
 		btp.torrentHandle.PrioritizePieces(piecesPriorities)
-		break
 	case libtorrent.TorrentStatusDownloading:
 		btp.CheckAvailableSpace()
-		break
 	}
 }
 
@@ -417,6 +435,11 @@ func (btp *BTPlayer) Close() {
 	}
 
 	if btp.backgroundHandling == false || askedToDelete == true || btp.notEnoughSpace {
+		// Delete torrent file
+		if _, err := os.Stat(btp.torrentFile); err == nil {
+			btp.log.Infof("Deleting torrent file at %s", btp.torrentFile)
+			defer os.Remove(btp.torrentFile)
+		}
 		// Delete fast resume data
 		if _, err := os.Stat(btp.fastResumeFile); err == nil {
 			btp.log.Infof("Deleting fast resume data at %s", btp.fastResumeFile)
@@ -449,13 +472,11 @@ func (btp *BTPlayer) consumeAlerts() {
 				if metadataAlert.GetHandle().Equal(btp.torrentHandle) {
 					btp.onMetadataReceived()
 				}
-				break
 			case libtorrent.StateChangedAlertAlertType:
 				stateAlert := libtorrent.SwigcptrStateChangedAlert(alert.Pointer)
 				if stateAlert.GetHandle().Equal(btp.torrentHandle) {
 					btp.onStateChanged(stateAlert)
 				}
-				break
 			}
 		case <-btp.closing:
 			return

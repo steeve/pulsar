@@ -75,7 +75,7 @@ func Play(btService *bittorrent.BTService) gin.HandlerFunc {
 	}
 }
 
-func AddTorrent(ctx *gin.Context) {
+func PlayTorrent(ctx *gin.Context) {
 	retval := xbmc.DialogInsert()
 	if retval["path"] == "" {
 		return

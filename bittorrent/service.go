@@ -7,7 +7,6 @@ import (
 	"time"
 	"strings"
 	"strconv"
-	"net/url"
 	"io/ioutil"
 	"encoding/hex"
 	"path/filepath"
@@ -18,7 +17,6 @@ import (
 	"github.com/scakemyer/quasar/tmdb"
 	"github.com/scakemyer/quasar/util"
 	"github.com/scakemyer/quasar/xbmc"
-	"github.com/zeebo/bencode"
 )
 
 const (
@@ -147,7 +145,7 @@ func NewBTService(config BTConfiguration) *BTService {
 	tmdb.CheckApiKey()
 
 	if config.BackgroundHandling {
-		go s.loadFastResumeFiles()
+		go s.loadTorrentFiles()
 		go s.downloadProgress()
 	}
 
@@ -166,7 +164,7 @@ func (s *BTService) Reconfigure(config BTConfiguration) {
 	s.config = &config
 	s.configure()
 	s.startServices()
-	s.loadFastResumeFiles()
+	s.loadTorrentFiles()
 }
 
 func (s *BTService) configure() {
@@ -454,6 +452,23 @@ func (s *BTService) saveResumeDataConsumer() {
 				return
 			}
 			switch alert.Type {
+			case libtorrent.MetadataReceivedAlertAlertType:
+				metadataAlert := libtorrent.SwigcptrMetadataReceivedAlert(alert.Pointer)
+				torrentHandle := metadataAlert.GetHandle()
+				torrentStatus := torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName))
+				shaHash := torrentStatus.GetInfoHash().ToString()
+				infoHash := hex.EncodeToString([]byte(shaHash))
+				torrentFileName := filepath.Join(s.config.TorrentsPath, fmt.Sprintf("%s.torrent", infoHash))
+
+				// Save .torrent
+				s.log.Infof("Saving %s...", torrentFileName)
+				torrentInfo := torrentHandle.TorrentFile()
+				torrentFile := libtorrent.NewCreateTorrent(torrentInfo)
+				defer libtorrent.DeleteCreateTorrent(torrentFile)
+				torrentContent := torrentFile.Generate()
+				bEncodedTorrent := []byte(libtorrent.Bencode(torrentContent))
+				ioutil.WriteFile(torrentFileName, bEncodedTorrent, 0644)
+
 			case libtorrent.SaveResumeDataAlertAlertType:
 				saveResumeData := libtorrent.SwigcptrSaveResumeDataAlert(alert.Pointer)
 				if saveResumeData.Swigcptr() == 0 {
@@ -477,66 +492,47 @@ func (s *BTService) saveResumeDataConsumer() {
 	}
 }
 
-func (s *BTService) loadFastResumeFiles() {
-	pattern := filepath.Join(s.config.TorrentsPath, "*.fastresume")
+func (s *BTService) loadTorrentFiles() {
+	pattern := filepath.Join(s.config.TorrentsPath, "*.torrent")
 	files, _ := filepath.Glob(pattern)
-	for _, fastResumeFile := range files {
+	for _, torrentFile := range files {
 		torrentParams := libtorrent.NewAddTorrentParams()
 		defer libtorrent.DeleteAddTorrentParams(torrentParams)
 
-		s.log.Infof("Loading fast resume file %s", fastResumeFile)
+		s.log.Infof("Loading torrent file %s", torrentFile)
 
-		fastResumeToDecode, err := os.Open(fastResumeFile)
-		if err != nil {
-			s.log.Errorf("Error opening fastresume file: %s", err.Error())
-			os.Remove(fastResumeFile)
-			continue
-		}
-		defer fastResumeToDecode.Close()
-		var resumeFile *ResumeFile
-		dec := bencode.NewDecoder(fastResumeToDecode)
-		if err := dec.Decode(&resumeFile); err != nil {
-			s.log.Errorf("Error decoding fastresume file: %s", err.Error())
-			os.Remove(fastResumeFile)
-			continue
-		}
-
-		var trackersList []string
-		for _, ltTracker := range resumeFile.Trackers {
-			for _, tracker := range ltTracker {
-				trackersList = append(trackersList, tracker)
-			}
-		}
-		trackers := url.Values{
-			"tr": trackersList,
-		}
-		infoHash := hex.EncodeToString([]byte(resumeFile.InfoHash))
-		uri := fmt.Sprintf("magnet:?xt=urn:btih:%s&%s", infoHash, trackers.Encode())
-
-		torrent := NewTorrent(uri)
-		magnet := torrent.Magnet()
-
-		torrentParams.SetUrl(magnet)
+		info := libtorrent.NewTorrentInfo(torrentFile)
+		defer libtorrent.DeleteTorrentInfo(info)
+		torrentParams.SetTorrentInfo(info)
 		torrentParams.SetSavePath(s.config.DownloadPath)
 
-		fastResumeData, err := ioutil.ReadFile(fastResumeFile)
-		if err != nil {
-			s.log.Errorf("Error reading fastresume file: %s", err.Error())
-			os.Remove(fastResumeFile)
-			continue
+		fastResumeFile := strings.Replace(torrentFile, ".torrent", ".fastresume", 1)
+
+		if _, err := os.Stat(fastResumeFile); err == nil {
+			fastResumeData, err := ioutil.ReadFile(fastResumeFile)
+			if err != nil {
+				s.log.Errorf("Error reading fastresume file: %s", err.Error())
+				os.Remove(fastResumeFile)
+			} else {
+				fastResumeVector := libtorrent.NewStdVectorChar()
+				defer libtorrent.DeleteStdVectorChar(fastResumeVector)
+				for _, c := range fastResumeData {
+					fastResumeVector.Add(c)
+				}
+				torrentParams.SetResumeData(fastResumeVector)
+			}
 		}
-		fastResumeVector := libtorrent.NewStdVectorChar()
-		defer libtorrent.DeleteStdVectorChar(fastResumeVector)
-		for _, c := range fastResumeData {
-			fastResumeVector.Add(c)
-		}
-		torrentParams.SetResumeData(fastResumeVector)
 
 		torrentHandle := s.Session.GetHandle().AddTorrent(torrentParams)
 
 		if torrentHandle == nil {
-			s.log.Errorf("Error adding fastresume file: %s", fastResumeFile)
-			os.Remove(fastResumeFile)
+			s.log.Errorf("Error adding torrent file for %s", torrentFile)
+			if _, err := os.Stat(torrentFile); err == nil {
+				os.Remove(torrentFile)
+			}
+			if _, err := os.Stat(fastResumeFile); err == nil {
+				os.Remove(fastResumeFile)
+			}
 			continue
 		}
 	}
