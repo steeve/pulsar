@@ -156,6 +156,7 @@ func NewBTService(config BTConfiguration) *BTService {
 
 func (s *BTService) Close() {
 	s.log.Info("Stopping BT Services...")
+	s.stopServices()
 	close(s.closing)
 	libtorrent.DeleteSession(s.Session)
 }
@@ -393,6 +394,8 @@ func (s *BTService) stopServices() {
 	if s.dialogProgressBG != nil {
 		s.dialogProgressBG.Close()
 	}
+	s.dialogProgressBG = nil
+	xbmc.ResetRPC()
 
 	s.log.Info("Stopping LSD...")
 	s.packSettings.SetBool(libtorrent.SettingByName("enable_lsd"), false)

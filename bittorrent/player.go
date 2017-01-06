@@ -515,7 +515,7 @@ func (btp *BTPlayer) bufferDialog() {
 			if int(status.GetState()) == 1 {
 				progress := float64(status.GetProgress())
 				line1, line2, line3 := btp.statusStrings(progress, status)
-				btp.dialogProgress.Update(int(progress*100.0), line1, line2, line3)
+				btp.dialogProgress.Update(int(progress * 100.0), line1, line2, line3)
 			} else {
 				bufferProgress := float64(0)
 				btp.bufferPiecesProgressLock.Lock()
@@ -529,7 +529,7 @@ func (btp *BTPlayer) bufferDialog() {
 				}
 				btp.bufferPiecesProgressLock.Unlock()
 				line1, line2, line3 := btp.statusStrings(bufferProgress, status)
-				btp.dialogProgress.Update(int(bufferProgress*100.0), line1, line2, line3)
+				btp.dialogProgress.Update(int(bufferProgress * 100.0), line1, line2, line3)
 				if bufferProgress >= 1 {
 					btp.setRateLimiting(true)
 					btp.bufferEvents.Signal()
