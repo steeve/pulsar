@@ -129,9 +129,9 @@ const (
 
 var (
 	videoTags = map[*regexp.Regexp]int{
+		regexp.MustCompile(`\W+xvid\W*`):                  CodecXVid,
 		regexp.MustCompile(`\W+([hx]264|1080p|hdrip)\W*`): CodecH264,
 		regexp.MustCompile(`\W+([hx]265|hevc)\W*`):        CodecH265,
-		regexp.MustCompile(`\W+xvid\W*`):                  CodecXVid,
 	}
 	audioTags = map[*regexp.Regexp]int{
 		regexp.MustCompile(`\W+mp3\W*`):              CodecMp3,
@@ -331,7 +331,9 @@ func matchTags(t *Torrent, tokens map[*regexp.Regexp]int) int {
 	codec := 0
 	for re, value := range tokens {
 		if re.MatchString(lowName) {
-			codec = value
+			if value > codec {
+				codec = value
+			}
 		}
 	}
 	return codec
