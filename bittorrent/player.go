@@ -43,7 +43,7 @@ type BTPlayer struct {
 	runtime                  int
 	scrobble                 bool
 	deleteAfter              bool
-	askToKeep                bool
+	askToDelete              bool
 	backgroundHandling       bool
 	overlayStatusEnabled     bool
 	torrentHandle            libtorrent.TorrentHandle
@@ -78,7 +78,7 @@ func NewBTPlayer(bts *BTService, params BTPlayerParams) *BTPlayer {
 		overlayStatusEnabled: config.Get().EnableOverlayStatus == true,
 		backgroundHandling:   config.Get().BackgroundHandling == true,
 		deleteAfter:          config.Get().KeepFilesAfterStop == false,
-		askToKeep:            config.Get().KeepFilesAsk == true,
+		askToDelete:          config.Get().KeepFilesAsk == true,
 		scrobble:             config.Get().Scrobble == true && params.TMDBId > 0 && config.Get().TraktToken != "",
 		contentType:          params.ContentType,
 		tmdbId:               params.TMDBId,
@@ -409,23 +409,21 @@ func (btp *BTPlayer) onStateChanged(stateAlert libtorrent.StateChangedAlert) {
 func (btp *BTPlayer) Close() {
 	close(btp.closing)
 
-	askedToKeep := false
-	if btp.askToKeep == true {
-		if xbmc.DialogConfirm("Quasar", "LOCALIZE[30267]") {
-			askedToKeep = true
+	askedToDelete := false
+	if btp.askToDelete == true {
+		if xbmc.DialogConfirm("Quasar", "LOCALIZE[30269]") {
+			askedToDelete = true
 		}
-	} else {
-		askedToKeep = true
 	}
 
-	if btp.backgroundHandling == false || askedToKeep == false || btp.notEnoughSpace {
+	if btp.backgroundHandling == false || askedToDelete == true || btp.notEnoughSpace {
 		// Delete fast resume data
 		if _, err := os.Stat(btp.fastResumeFile); err == nil {
 			btp.log.Infof("Deleting fast resume data at %s", btp.fastResumeFile)
 			defer os.Remove(btp.fastResumeFile)
 		}
 
-		if btp.deleteAfter || askedToKeep == false {
+		if btp.deleteAfter || askedToDelete == true {
 			btp.log.Info("Removing the torrent and deleting files...")
 			btp.bts.Session.GetHandle().RemoveTorrent(btp.torrentHandle, int(libtorrent.SessionHandleDeleteFiles))
 		} else {

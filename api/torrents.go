@@ -300,16 +300,14 @@ func RemoveTorrent(btService *bittorrent.BTService) gin.HandlerFunc {
 			defer os.Remove(fastResumeFile)
 		}
 
-		askedToKeep := false
+		askedToDelete := false
 		if config.Get().KeepFilesAsk == true {
-			if xbmc.DialogConfirm("Quasar", "LOCALIZE[30267]") {
-				askedToKeep = true
+			if xbmc.DialogConfirm("Quasar", "LOCALIZE[30269]") {
+				askedToDelete = true
 			}
-		} else {
-			askedToKeep = true
 		}
 
-		if config.Get().KeepFilesAfterStop == false || askedToKeep == false {
+		if config.Get().KeepFilesAfterStop == false || askedToDelete == true {
 			torrentsLog.Info("Removing the torrent and deleting files...")
 			btService.Session.GetHandle().RemoveTorrent(torrentHandle, int(libtorrent.SessionHandleDeleteFiles))
 		} else {
