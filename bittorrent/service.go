@@ -12,8 +12,11 @@ import (
 	"path/filepath"
 
 	"github.com/op/go-logging"
+	"github.com/dustin/go-humanize"
 	"github.com/scakemyer/libtorrent-go"
 	"github.com/scakemyer/quasar/broadcast"
+	"github.com/scakemyer/quasar/diskusage"
+	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/tmdb"
 	"github.com/scakemyer/quasar/util"
 	"github.com/scakemyer/quasar/xbmc"
@@ -414,6 +417,54 @@ func (s *BTService) stopServices() {
 	s.Session.GetHandle().ApplySettings(s.packSettings)
 }
 
+func (s *BTService) checkAvailableSpace(torrentHandle libtorrent.TorrentHandle) {
+	var diskStatus *diskusage.DiskStatus
+	if dStatus, err := diskusage.DiskUsage(config.Get().DownloadPath); err != nil {
+		s.log.Warningf("Unable to retrieve the free space for %s, continuing anyway...", config.Get().DownloadPath)
+		return
+	} else {
+		diskStatus = dStatus
+	}
+
+	if diskStatus != nil {
+		torrentInfo := torrentHandle.TorrentFile()
+
+		if torrentInfo == nil || torrentInfo.Swigcptr() == 0 {
+			s.log.Warning("Missing torrent info to check available space.")
+			return
+		}
+
+		status := torrentHandle.Status(uint(libtorrent.TorrentHandleQueryAccurateDownloadCounters) | uint(libtorrent.TorrentHandleQuerySavePath))
+		sizeLeft := torrentInfo.TotalSize() - status.GetTotalDone()
+		availableSpace := diskStatus.Free
+		path := status.GetSavePath()
+
+		s.log.Infof("Checking for sufficient space on %s...", path)
+		s.log.Infof("Total size of download: %s", humanize.Bytes(uint64(torrentInfo.TotalSize())))
+		s.log.Infof("All time download: %s", humanize.Bytes(uint64(status.GetAllTimeDownload())))
+		s.log.Infof("Size total done: %s", humanize.Bytes(uint64(status.GetTotalDone())))
+		s.log.Infof("Size left to download: %s", humanize.Bytes(uint64(sizeLeft)))
+		s.log.Infof("Available space: %s", humanize.Bytes(uint64(availableSpace)))
+
+		if availableSpace < sizeLeft {
+			s.log.Errorf("Unsufficient free space on %s. Has %d, needs %d.", path, diskStatus.Free, sizeLeft)
+			xbmc.Notify("Quasar", "LOCALIZE[30207]", config.AddonIcon())
+
+			s.log.Infof("Pausing torrent %s", torrentHandle.Status(uint(libtorrent.TorrentHandleQueryName)).GetName())
+			torrentHandle.AutoManaged(false)
+			torrentHandle.Pause(1)
+		}
+	}
+}
+
+func (s *BTService) onStateChanged(stateAlert libtorrent.StateChangedAlert) {
+	switch stateAlert.GetState() {
+	case libtorrent.TorrentStatusDownloading:
+		torrentHandle := stateAlert.GetHandle()
+		s.checkAvailableSpace(torrentHandle)
+	}
+}
+
 func (s *BTService) saveResumeDataLoop() {
 	saveResumeWait := time.NewTicker(time.Duration(s.config.SessionSave) * time.Second)
 	defer saveResumeWait.Stop()
@@ -468,6 +519,10 @@ func (s *BTService) saveResumeDataConsumer() {
 				torrentContent := torrentFile.Generate()
 				bEncodedTorrent := []byte(libtorrent.Bencode(torrentContent))
 				ioutil.WriteFile(torrentFileName, bEncodedTorrent, 0644)
+
+			case libtorrent.StateChangedAlertAlertType:
+				stateAlert := libtorrent.SwigcptrStateChangedAlert(alert.Pointer)
+				s.onStateChanged(stateAlert)
 
 			case libtorrent.SaveResumeDataAlertAlertType:
 				saveResumeData := libtorrent.SwigcptrSaveResumeDataAlert(alert.Pointer)

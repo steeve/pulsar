@@ -245,11 +245,11 @@ func (btp *BTPlayer) CheckAvailableSpace() bool {
 		availableSpace := btp.diskStatus.Free
 
 		btp.log.Infof("Checking for sufficient space on %s...", btp.bts.config.DownloadPath)
-		btp.log.Infof("Total size of download: %d", btp.torrentInfo.TotalSize())
-		btp.log.Infof("All time download: %d", status.GetAllTimeDownload())
-		btp.log.Infof("Size total done: %d", status.GetTotalDone())
-		btp.log.Infof("Size left to download: %d", sizeLeft)
-		btp.log.Infof("Available space: %d", availableSpace)
+		btp.log.Infof("Total size of download: %s", humanize.Bytes(uint64(btp.torrentInfo.TotalSize())))
+		btp.log.Infof("All time download: %s", humanize.Bytes(uint64(status.GetAllTimeDownload())))
+		btp.log.Infof("Size total done: %s", humanize.Bytes(uint64(status.GetTotalDone())))
+		btp.log.Infof("Size left to download: %s", humanize.Bytes(uint64(sizeLeft)))
+		btp.log.Infof("Available space: %s", humanize.Bytes(uint64(availableSpace)))
 
 		if availableSpace < sizeLeft {
 			btp.log.Errorf("Unsufficient free space on %s. Has %d, needs %d.", btp.bts.config.DownloadPath, btp.diskStatus.Free, sizeLeft)

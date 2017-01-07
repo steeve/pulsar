@@ -16,7 +16,6 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/scakemyer/libtorrent-go"
 	"github.com/scakemyer/quasar/bittorrent"
-	"github.com/scakemyer/quasar/diskusage"
 	"github.com/scakemyer/quasar/config"
 	"github.com/scakemyer/quasar/xbmc"
 )
@@ -251,11 +250,6 @@ func AddTorrent(btService *bittorrent.BTService) gin.HandlerFunc {
 			xbmc.Notify("Quasar", "LOCALIZE[30113]", config.AddonIcon())
 			ctx.String(200, "Download path empty")
 			return
-		}
-
-		// TODO Need to check available space here too...
-		if _, err := diskusage.DiskUsage(config.Get().DownloadPath); err != nil {
-			torrentsLog.Warningf("Unable to retrieve the free space for %s, continuing anyway...", config.Get().DownloadPath)
 		}
 
 		torrentParams := libtorrent.NewAddTorrentParams()

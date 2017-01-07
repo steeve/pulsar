@@ -124,8 +124,9 @@ func (season *Season) ToListItem(show *Show) *xbmc.ListItem {
 		item.Art.FanArt = fanarts[rand.Intn(len(fanarts))]
 	}
 
-	// FIXME
-	item.Info.Genre = show.Genres[0].Name
+	if len(show.Genres) > 0 {
+		item.Info.Genre = show.Genres[0].Name
+	}
 
 	return item
 }
