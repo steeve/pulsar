@@ -589,6 +589,9 @@ func AddMovieWatchlist(ctx *gin.Context) {
 
 func WriteMovieStrm(tmdbId string, MoviesLibraryPath string) error {
 	movie := tmdb.GetMovieById(tmdbId, "en")
+	if movie == nil {
+		return errors.New("Unable to get movie")
+	}
 	MovieStrm := toFileName(fmt.Sprintf("%s (%s)", movie.OriginalTitle, strings.Split(movie.ReleaseDate, "-")[0]))
 	MoviePath := filepath.Join(MoviesLibraryPath, MovieStrm)
 
