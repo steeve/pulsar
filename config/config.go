@@ -94,7 +94,11 @@ func Reload() *Configuration {
 	info := xbmc.GetAddonInfo()
 	info.Path = xbmc.TranslatePath(info.Path)
 	info.Profile = xbmc.TranslatePath(info.Profile)
+	info.TempPath = filepath.Join(xbmc.TranslatePath("special://temp"), "quasar")
 	platform := xbmc.GetPlatform()
+
+	os.RemoveAll(info.TempPath)
+	os.MkdirAll(info.TempPath, 0777)
 
 	if platform.OS == "android" {
 		legacyPath := strings.Replace(info.Path, "/storage/emulated/0", "/storage/emulated/legacy", 1)

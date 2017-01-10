@@ -13,6 +13,7 @@ type AddonInfo struct {
 	Name        string
 	Path        string
 	Profile     string
+	TempPath    string
 	Stars       string
 	Summary     string
 	Type        string

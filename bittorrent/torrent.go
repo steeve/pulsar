@@ -1,7 +1,10 @@
 package bittorrent
 
 import (
+	"os"
+	"io"
 	"fmt"
+	"bytes"
 	"regexp"
 	"strings"
 	"net/url"
@@ -11,6 +14,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"encoding/base32"
+	"path/filepath"
 
 	"github.com/op/go-logging"
 	"github.com/scakemyer/quasar/cloudhole"
@@ -253,7 +257,7 @@ func (t *Torrent) Resolve() error {
 	// We don't need trackers for public torrents since we'll find them on the
 	// DHT or public trackers
 	if (t.InfoHash != "" && t.Name != "" && t.Peers > 0 && t.Seeds > 0) && (t.IsPrivate == false || len(t.Trackers) > 0) {
-		log.Noticef("Skipping torrent resolving for %s from %s (private: %b)", t.Name, t.Provider, t.IsPrivate)
+		log.Noticef("Skipping torrent resolving for %s from %s (private: %t)", t.Name, t.Provider, t.IsPrivate)
 		return nil
 	}
 
@@ -287,7 +291,9 @@ func (t *Torrent) Resolve() error {
 	if err != nil {
 		return err
 	}
-	dec := bencode.NewDecoder(resp.Body)
+	var buf bytes.Buffer
+	tee := io.TeeReader(resp.Body, &buf)
+	dec := bencode.NewDecoder(tee)
 
 	var torrentFile *TorrentFileRaw
 
@@ -307,7 +313,7 @@ func (t *Torrent) Resolve() error {
 
 	if torrentFile.Info["private"] != nil {
 		if torrentFile.Info["private"].(int64) == 1 {
-			log.Noticef("Torrent marked as private for %s", t.Name)
+			log.Noticef("%s marked as private", t.Name)
 			t.IsPrivate = true
 		}
 	}
@@ -318,6 +324,23 @@ func (t *Torrent) Resolve() error {
 			t.Trackers = append(t.Trackers, trackers...)
 		}
 	}
+
+	// Save torrent file in temp folder
+	torrentFileName := filepath.Join(config.Get().Info.TempPath, fmt.Sprintf("%s.torrent", t.InfoHash))
+	out, err := os.Create(torrentFileName)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		cerr := out.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
+	if _, err := io.Copy(out, &buf); err != nil {
+		return err
+	}
+	t.URI = torrentFileName
 
 	t.hasResolved = true
 
