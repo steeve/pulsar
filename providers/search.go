@@ -223,6 +223,12 @@ func processLinks(torrentsChan chan *bittorrent.Torrent, sortType int) []*bittor
 					log.Warningf("Tracker %s failed: %s", tracker, err)
 					return
 				}
+				select {
+				case _, ok := <-scrapeResults:
+					if !ok {
+						return
+					}
+				}
 				scrapeResults <- tracker.Scrape(torrents)
 			}(tracker)
 		}
