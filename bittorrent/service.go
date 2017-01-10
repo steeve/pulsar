@@ -8,6 +8,7 @@ import (
 	"strings"
 	"strconv"
 	"io/ioutil"
+	"math/rand"
 	"encoding/hex"
 	"path/filepath"
 
@@ -367,7 +368,11 @@ func (s *BTService) startServices() {
 	for p := s.config.LowerListenPort; p <= s.config.UpperListenPort; p++ {
 		listenPorts = append(listenPorts, strconv.Itoa(p))
 	}
-	listenInterfaces := "0.0.0.0:" + strings.Join(listenPorts, ",0.0.0.0:")
+	rand.Seed(time.Now().UTC().UnixNano())
+	listenInterfaces := "0.0.0.0:" + listenPorts[rand.Intn(len(listenPorts))]
+	if len(listenPorts) > 1 {
+		listenInterfaces += ",0.0.0.0:" + listenPorts[rand.Intn(len(listenPorts))]
+	}
 	s.packSettings.SetStr(libtorrent.SettingByName("listen_interfaces"), listenInterfaces)
 
 	s.log.Info("Starting LSD...")
