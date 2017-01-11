@@ -30,7 +30,7 @@ const (
 )
 
 var (
-	trackerTimeout = time.Duration(5) * time.Second
+	trackerTimeout = time.Duration(3) * time.Second
 	log = logging.MustGetLogger("linkssearch")
 )
 
@@ -212,7 +212,9 @@ func processLinks(torrentsChan chan *bittorrent.Torrent, sortType int) []*bittor
 
 	log.Infof("Scraping torrent metrics from %d trackers...\n", len(trackers))
 
-	scrapeResults := make(chan []bittorrent.ScrapeResponseEntry)
+	scrapeResults := make(chan []bittorrent.ScrapeResponseEntry, len(trackers))
+	stopChan := make(chan struct{})
+
 	go func() {
 		wg := sync.WaitGroup{}
 		for _, tracker := range trackers {
@@ -223,21 +225,27 @@ func processLinks(torrentsChan chan *bittorrent.Torrent, sortType int) []*bittor
 					log.Warningf("Tracker %s failed: %s", tracker, err)
 					return
 				}
+				// Check if we timed out before trying to scrape results
 				select {
-				case _, ok := <-scrapeResults:
-					if !ok {
-						return
-					}
+				case <- stopChan:
+					return
+				default:
 				}
-				scrapeResults <- tracker.Scrape(torrents)
+				scrapeResult := tracker.Scrape(torrents)
+				// Check again before sending to channel
+				select {
+				case <- stopChan:
+					return
+				case scrapeResults <- scrapeResult:
+				}
 			}(tracker)
 		}
-		// wg.Wait()
 		if waitTimeout(&wg, trackerTimeout) {
-			log.Error("Timed out waiting for trackers.")
+			log.Warning("Timed out waiting for trackers.")
 		} else {
 			log.Notice("Finished scraping trackers.")
 		}
+		close(stopChan)
 		close(scrapeResults)
 	}()
 
