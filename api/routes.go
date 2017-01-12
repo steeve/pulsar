@@ -100,8 +100,8 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 	}
 	movie := r.Group("/movie")
 	{
-		movie.GET("/:tmdbId/links", MovieLinks)
-		movie.GET("/:tmdbId/play", MoviePlay)
+		movie.GET("/:tmdbId/links", MovieLinks(btService))
+		movie.GET("/:tmdbId/play", MoviePlay(btService))
 		movie.GET("/:tmdbId/watchlist/add", AddMovieToWatchlist)
 		movie.GET("/:tmdbId/watchlist/remove", RemoveMovieFromWatchlist)
 		movie.GET("/:tmdbId/collection/add", AddMovieToCollection)
@@ -144,10 +144,10 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 	show := r.Group("/show")
 	{
 		show.GET("/:showId/seasons", cache.Cache(store, DefaultCacheTime), ShowSeasons)
-		show.GET("/:showId/season/:season/links", ShowSeasonLinks)
+		show.GET("/:showId/season/:season/links", ShowSeasonLinks(btService))
 		show.GET("/:showId/season/:season/episodes", cache.Cache(store, EpisodesCacheTime), ShowEpisodes)
-		show.GET("/:showId/season/:season/episode/:episode/play", ShowEpisodePlay)
-		show.GET("/:showId/season/:season/episode/:episode/links", ShowEpisodeLinks)
+		show.GET("/:showId/season/:season/episode/:episode/play", ShowEpisodePlay(btService))
+		show.GET("/:showId/season/:season/episode/:episode/links", ShowEpisodeLinks(btService))
 		show.GET("/:showId/watchlist/add", AddShowToWatchlist)
 		show.GET("/:showId/watchlist/remove", RemoveShowFromWatchlist)
 		show.GET("/:showId/collection/add", AddShowToCollection)
@@ -176,8 +176,8 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 		library.GET("/getpath", GetLibraryPath)
 		library.GET("/getcount", GetCount)
 		library.GET("/lookup", Lookup)
-		library.GET("/play/movie/:tmdbId", PlayMovie)
-		library.GET("/play/show/:showId/season/:season/episode/:episode", PlayShow)
+		library.GET("/play/movie/:tmdbId", PlayMovie(btService))
+		library.GET("/play/show/:showId/season/:season/episode/:episode", PlayShow(btService))
 	}
 
 	provider := r.Group("/provider")

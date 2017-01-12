@@ -273,8 +273,26 @@ func movieLinks(tmdbId string) []*bittorrent.Torrent {
 	return providers.SearchMovie(searchers, movie)
 }
 
-func MovieLinks(ctx *gin.Context) {
+func MovieLinks(btService *bittorrent.BTService) gin.HandlerFunc { return func(ctx *gin.Context) {
 	tmdbId := ctx.Params.ByName("tmdbId")
+
+	movie := tmdb.GetMovieById(tmdbId, config.Get().Language)
+	runtime := 120
+	if movie.Runtime > 0 {
+		runtime = movie.Runtime
+	}
+
+	existingTorrent := ExistingTorrent(btService, movie.Title)
+	if existingTorrent != "" && xbmc.DialogConfirm("Quasar", "LOCALIZE[30270]") {
+		rUrl := UrlQuery(
+			UrlForXBMC("/play"), "uri", existingTorrent,
+			                     "tmdb", tmdbId,
+			                     "type", "movie",
+			                     "runtime", strconv.Itoa(runtime))
+		ctx.Redirect(302, rUrl)
+		return
+	}
+
 	torrents := movieLinks(tmdbId)
 
 	if len(torrents) == 0 {
@@ -323,12 +341,6 @@ func MovieLinks(ctx *gin.Context) {
 		choices = append(choices, label)
 	}
 
-	movie := tmdb.GetMovieById(tmdbId, config.Get().Language)
-	runtime := 120
-	if movie.Runtime > 0 {
-		runtime = movie.Runtime
-	}
-
 	choice := xbmc.ListDialogLarge("LOCALIZE[30228]", movie.Title, choices...)
 	if choice >= 0 {
 		AddToTorrentsMap(tmdbId, torrents[choice])
@@ -339,20 +351,31 @@ func MovieLinks(ctx *gin.Context) {
 		                                      "runtime", strconv.Itoa(runtime))
 		ctx.Redirect(302, rUrl)
 	}
-}
+}}
 
-func MoviePlay(ctx *gin.Context) {
+func MoviePlay(btService *bittorrent.BTService) gin.HandlerFunc { return func(ctx *gin.Context) {
 	tmdbId := ctx.Params.ByName("tmdbId")
-	torrents := movieLinks(tmdbId)
-	if len(torrents) == 0 {
-		xbmc.Notify("Quasar", "LOCALIZE[30205]", config.AddonIcon())
-		return
-	}
 
 	movie := tmdb.GetMovieById(tmdbId, "")
 	runtime := 120
 	if movie.Runtime > 0 {
 		runtime = movie.Runtime
+	}
+
+	existingTorrent := ExistingTorrent(btService, movie.Title)
+	if existingTorrent != "" && xbmc.DialogConfirm("Quasar", "LOCALIZE[30270]") {
+		rUrl := UrlQuery(
+			UrlForXBMC("/play"), "uri", existingTorrent,
+			                     "tmdb", tmdbId,
+			                     "type", "movie",
+			                     "runtime", strconv.Itoa(runtime))
+		ctx.Redirect(302, rUrl)
+		return
+	}
+	torrents := movieLinks(tmdbId)
+	if len(torrents) == 0 {
+		xbmc.Notify("Quasar", "LOCALIZE[30205]", config.AddonIcon())
+		return
 	}
 
 	sort.Sort(sort.Reverse(providers.ByQuality(torrents)))
@@ -364,4 +387,4 @@ func MoviePlay(ctx *gin.Context) {
 	                                      "type", "movie",
 	                                      "runtime", strconv.Itoa(runtime))
 	ctx.Redirect(302, rUrl)
-}
+}}

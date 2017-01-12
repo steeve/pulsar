@@ -18,6 +18,7 @@ import (
 	"github.com/scakemyer/quasar/tmdb"
 	"github.com/scakemyer/quasar/trakt"
 	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/bittorrent"
 )
 
 const (
@@ -107,21 +108,21 @@ func isDuplicateShow(imdbID string, libraryShows *xbmc.VideoLibraryShows) bool {
 	return false
 }
 
-func PlayMovie(ctx *gin.Context) {
+func PlayMovie(btService *bittorrent.BTService) gin.HandlerFunc { return func(ctx *gin.Context) {
 	if config.Get().ChooseStreamAuto == true {
-		MoviePlay(ctx)
+		MoviePlay(btService)
 	} else {
-		MovieLinks(ctx)
+		MovieLinks(btService)
 	}
-}
+}}
 
-func PlayShow(ctx *gin.Context) {
+func PlayShow(btService *bittorrent.BTService) gin.HandlerFunc { return func(ctx *gin.Context) {
 	if config.Get().ChooseStreamAuto == true {
-		ShowEpisodePlay(ctx)
+		ShowEpisodePlay(btService)
 	} else {
-		ShowEpisodeLinks(ctx)
+		ShowEpisodeLinks(btService)
 	}
-}
+}}
 
 func Lookup(ctx *gin.Context) {
 	var db DataBase

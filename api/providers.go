@@ -57,13 +57,15 @@ func ProviderList(ctx *gin.Context) {
 		}
 
 		enabled := "[COLOR FF009900]Enabled[/COLOR]"
+		defaultAction := UrlForXBMC("/provider/%s/settings", provider.ID)
 		if provider.Enabled == false {
 			enabled = "[COLOR FF990000]Disabled[/COLOR]"
+			UrlForXBMC("/provider/%s/enable", provider.ID)
 		}
 
 		item := &xbmc.ListItem{
 			Label:      fmt.Sprintf("%s - %s - %s %s", status, enabled, provider.Name, provider.Version),
-			Path:       UrlForXBMC("/provider/%s/check", provider.ID),
+			Path:       defaultAction,
 			IsPlayable: false,
 		}
 		item.ContextMenu = [][]string{

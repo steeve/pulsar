@@ -14,6 +14,7 @@ import (
 	"github.com/op/go-logging"
 	"github.com/gin-gonic/gin"
 	"github.com/dustin/go-humanize"
+	"github.com/cloudflare/ahocorasick"
 	"github.com/scakemyer/libtorrent-go"
 	"github.com/scakemyer/quasar/bittorrent"
 	"github.com/scakemyer/quasar/config"
@@ -71,6 +72,51 @@ func InTorrentsMap(tmdbId string) (torrents []*bittorrent.Torrent) {
 		}
 	}
 	return torrents
+}
+
+func nameMatch(torrentName string, itemName string) bool {
+	patterns := strings.FieldsFunc(strings.ToLower(itemName), func(r rune) bool {
+		switch r {
+		case ' ', '.', '_', '-':
+			return true
+		}
+		return false
+	})
+
+	torrentsLog.Infof("Patterns from %s: %+v", itemName, patterns)
+
+	m := ahocorasick.NewStringMatcher(patterns)
+
+	found := m.Match([]byte(strings.ToLower(torrentName)))
+
+	if len(found) >= (80 * len(patterns) / 100) {
+		return true
+	}
+	return false
+}
+
+func ExistingTorrent(btService *bittorrent.BTService, longName string) (existingTorrent string) {
+	btService.Session.GetHandle().GetTorrents()
+	torrentsVector := btService.Session.GetHandle().GetTorrents()
+	torrentsVectorSize := int(torrentsVector.Size())
+
+	for i := 0; i < torrentsVectorSize; i++ {
+		torrentHandle := torrentsVector.Get(i)
+		if torrentHandle.IsValid() == false {
+			continue
+		}
+		torrentStatus := torrentHandle.Status()
+		torrentName := torrentStatus.GetName()
+
+		if nameMatch(torrentName, longName) {
+			shaHash := torrentStatus.GetInfoHash().ToString()
+			infoHash := hex.EncodeToString([]byte(shaHash))
+
+			torrentFile := filepath.Join(config.Get().TorrentsPath, fmt.Sprintf("%s.torrent", infoHash))
+			return torrentFile
+		}
+	}
+	return ""
 }
 
 func ListTorrents(btService *bittorrent.BTService) gin.HandlerFunc {
