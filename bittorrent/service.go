@@ -4,6 +4,7 @@ import (
 	"os"
 	"io"
 	"fmt"
+	"sync"
 	"time"
 	"strings"
 	"strconv"
@@ -111,6 +112,7 @@ type BTService struct {
 	dialogProgressBG  *xbmc.DialogProgressBG
 	packSettings      libtorrent.SettingsPack
 	closing           chan interface{}
+	mx                sync.Mutex
 }
 
 type activeTorrent struct {
@@ -130,6 +132,7 @@ func NewBTService(config BTConfiguration) *BTService {
 		alertsBroadcaster: broadcast.NewBroadcaster(),
 		config:            &config,
 		closing:           make(chan interface{}),
+		mx:                sync.Mutex{},
 	}
 
 	if _, err := os.Stat(s.config.TorrentsPath); os.IsNotExist(err) {
@@ -530,6 +533,8 @@ func (s *BTService) saveResumeDataConsumer() {
 				s.onStateChanged(stateAlert)
 
 			case libtorrent.SaveResumeDataAlertAlertType:
+				s.mx.Lock()
+				defer s.mx.Unlock()
 				saveResumeData := libtorrent.SwigcptrSaveResumeDataAlert(alert.Pointer)
 				if saveResumeData.Swigcptr() == 0 {
 					break
