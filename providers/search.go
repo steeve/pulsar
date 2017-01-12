@@ -114,20 +114,6 @@ func SearchEpisode(searchers []EpisodeSearcher, show *tmdb.Show, episode *tmdb.E
 	return processLinks(torrentsChan, SortShows)
 }
 
-func waitTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
-	c := make(chan struct{})
-	go func() {
-		defer close(c)
-		wg.Wait()
-	}()
-	select {
-	case <-c:
-		return false // completed normally
-	case <-time.After(timeout):
-		return true // timed out
-	}
-}
-
 func processLinks(torrentsChan chan *bittorrent.Torrent, sortType int) []*bittorrent.Torrent {
 	trackers := map[string]*bittorrent.Tracker{}
 	torrentsMap := map[string]*bittorrent.Torrent{}
@@ -204,7 +190,7 @@ func processLinks(torrentsChan chan *bittorrent.Torrent, sortType int) []*bittor
 		torrents = append(torrents, torrent)
 	}
 
-	log.Infof("Received %d links.\n", len(torrents))
+	log.Infof("Received %d links.", len(torrents))
 
 	if len(torrents) == 0 {
 		return torrents
@@ -213,7 +199,8 @@ func processLinks(torrentsChan chan *bittorrent.Torrent, sortType int) []*bittor
 	log.Infof("Scraping torrent metrics from %d trackers...\n", len(trackers))
 
 	scrapeResults := make(chan []bittorrent.ScrapeResponseEntry, len(trackers))
-	stopChan := make(chan struct{})
+	failedConnect := 0
+	failedScrape := 0
 
 	go func() {
 		wg := sync.WaitGroup{}
@@ -221,31 +208,50 @@ func processLinks(torrentsChan chan *bittorrent.Torrent, sortType int) []*bittor
 			wg.Add(1)
 			go func(tracker *bittorrent.Tracker) {
 				defer wg.Done()
-				if err := tracker.Connect(); err != nil {
-					log.Warningf("Tracker %s failed: %s", tracker, err)
-					return
-				}
-				// Check if we timed out before trying to scrape results
+
+				connected := make(chan struct{})
+				var scrapeResult []bittorrent.ScrapeResponseEntry
+
+				go func(tracker *bittorrent.Tracker) {
+					if err := tracker.Connect(); err != nil {
+						log.Warningf("Tracker %s failed: %s", tracker, err)
+						return
+					}
+					close(connected)
+				}(tracker)
+
 				select {
-				case <- stopChan:
+				case <- connected:
+					scraped := make(chan struct{})
+					go func(tracker *bittorrent.Tracker) {
+						scrapeResult = tracker.Scrape(torrents)
+						close(scraped)
+					}(tracker)
+
+					select {
+					case <-scraped:
+						scrapeResults <- scrapeResult
+						return
+					case <-time.After(trackerTimeout): // Scrape timeout...
+						failedScrape += 1
+						return
+					}
+				case <-time.After(trackerTimeout): // Connect timeout...
+					failedConnect += 1
 					return
-				default:
-				}
-				scrapeResult := tracker.Scrape(torrents)
-				// Check again before sending to channel
-				select {
-				case <- stopChan:
-					return
-				case scrapeResults <- scrapeResult:
 				}
 			}(tracker)
 		}
-		if waitTimeout(&wg, trackerTimeout) {
-			log.Warning("Timed out waiting for trackers.")
-		} else {
-			log.Notice("Finished scraping trackers.")
+		wg.Wait()
+		if failedConnect > 0 {
+			log.Warningf("Failed to connect to %d trackers.", failedConnect)
 		}
-		close(stopChan)
+		if failedScrape > 0 {
+			log.Warningf("Failed to scrape results from %d trackers.", failedScrape)
+		}
+		if failedConnect == 0 && failedScrape == 0 {
+			log.Notice("Scraped all trackers successfully.")
+		}
 		close(scrapeResults)
 	}()
 
