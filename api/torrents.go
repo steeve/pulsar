@@ -89,10 +89,7 @@ func nameMatch(torrentName string, itemName string) bool {
 
 	found := m.Match([]byte(strings.ToLower(torrentName)))
 
-	if len(found) >= (80 * len(patterns) / 100) {
-		return true
-	}
-	return false
+	return len(found) >= len(patterns)
 }
 
 func ExistingTorrent(btService *bittorrent.BTService, longName string) (existingTorrent string) {
