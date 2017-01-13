@@ -108,21 +108,21 @@ func isDuplicateShow(imdbID string, libraryShows *xbmc.VideoLibraryShows) bool {
 	return false
 }
 
-func PlayMovie(btService *bittorrent.BTService) gin.HandlerFunc { return func(ctx *gin.Context) {
+func PlayMovie(btService *bittorrent.BTService) gin.HandlerFunc {
 	if config.Get().ChooseStreamAuto == true {
-		MoviePlay(btService)
+		return MoviePlay(btService)
 	} else {
-		MovieLinks(btService)
+		return MovieLinks(btService)
 	}
-}}
+}
 
-func PlayShow(btService *bittorrent.BTService) gin.HandlerFunc { return func(ctx *gin.Context) {
+func PlayShow(btService *bittorrent.BTService) gin.HandlerFunc {
 	if config.Get().ChooseStreamAuto == true {
-		ShowEpisodePlay(btService)
+		return ShowEpisodePlay(btService)
 	} else {
-		ShowEpisodeLinks(btService)
+		return ShowEpisodeLinks(btService)
 	}
-}}
+}
 
 func Lookup(ctx *gin.Context) {
 	var db DataBase
