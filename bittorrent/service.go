@@ -534,7 +534,6 @@ func (s *BTService) saveResumeDataConsumer() {
 
 			case libtorrent.SaveResumeDataAlertAlertType:
 				s.mx.Lock()
-				defer s.mx.Unlock()
 				saveResumeData := libtorrent.SwigcptrSaveResumeDataAlert(alert.Pointer)
 				if saveResumeData.Swigcptr() == 0 {
 					break
@@ -548,10 +547,14 @@ func (s *BTService) saveResumeDataConsumer() {
 				}
 				entry := saveResumeData.ResumeData()
 				bEncoded := []byte(libtorrent.Bencode(entry))
-
-				// s.log.Infof("Saving resume data for %s to %s.fastresume", torrentStatus.GetName(), infoHash)
-				path := filepath.Join(s.config.TorrentsPath, fmt.Sprintf("%s.fastresume", infoHash))
-				ioutil.WriteFile(path, bEncoded, 0644)
+				if len(bEncoded) < 500 {
+					s.log.Warningf("Resume data corrupted for %s, only %d bytes received. Skipping...", torrentStatus.GetName(), len(bEncoded))
+				} else {
+					// s.log.Infof("Saving resume data for %s to %s.fastresume", torrentStatus.GetName(), infoHash)
+					path := filepath.Join(s.config.TorrentsPath, fmt.Sprintf("%s.fastresume", infoHash))
+					ioutil.WriteFile(path, bEncoded, 0644)
+				}
+				s.mx.Unlock()
 			}
 		}
 	}
