@@ -190,7 +190,7 @@ func processLinks(torrentsChan chan *bittorrent.Torrent, sortType int) []*bittor
 		torrents = append(torrents, torrent)
 	}
 
-	log.Infof("Received %d links.", len(torrents))
+	log.Infof("Received %d unique links.", len(torrents))
 
 	if len(torrents) == 0 {
 		return torrents
