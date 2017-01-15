@@ -246,7 +246,7 @@ type ReleaseDate struct {
 }
 
 const (
-	tmdbEndpoint            = "http://api.themoviedb.org/3/"
+	tmdbEndpoint            = "https://api.themoviedb.org/3/"
 	imageEndpoint           = "http://image.tmdb.org/t/p/"
 	burstRate               = 40
 	burstTime               = 15 * time.Second
