@@ -38,7 +38,7 @@ func Routes(btService *bittorrent.BTService) *gin.Engine {
 	store := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
 
 	r.GET("/", Index)
-	r.GET("/search", Search)
+	r.GET("/search", Search(btService))
 	r.GET("/playtorrent", PlayTorrent)
 
 	r.LoadHTMLGlob(filepath.Join(config.Get().Info.Path, "resources", "web", "*.html"))
