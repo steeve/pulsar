@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sync"
 	"time"
+	"bytes"
 	"strings"
 	"strconv"
 	"io/ioutil"
@@ -22,6 +23,7 @@ import (
 	"github.com/scakemyer/quasar/tmdb"
 	"github.com/scakemyer/quasar/util"
 	"github.com/scakemyer/quasar/xbmc"
+	"github.com/zeebo/bencode"
 )
 
 const (
@@ -547,8 +549,12 @@ func (s *BTService) saveResumeDataConsumer() {
 				}
 				entry := saveResumeData.ResumeData()
 				bEncoded := []byte(libtorrent.Bencode(entry))
-				if len(bEncoded) < 500 {
-					s.log.Warningf("Resume data corrupted for %s, only %d bytes received. Skipping...", torrentStatus.GetName(), len(bEncoded))
+
+				b := bytes.NewReader(bEncoded)
+				dec := bencode.NewDecoder(b)
+				var torrentFile *TorrentFileRaw
+				if err := dec.Decode(&torrentFile); err != nil {
+					s.log.Warningf("Resume data corrupted for %s, %d bytes received and failed to decode with: %s, skipping...", torrentStatus.GetName(), len(bEncoded), err.Error())
 				} else {
 					// s.log.Infof("Saving resume data for %s to %s.fastresume", torrentStatus.GetName(), infoHash)
 					path := filepath.Join(s.config.TorrentsPath, fmt.Sprintf("%s.fastresume", infoHash))
