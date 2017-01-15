@@ -1,21 +1,24 @@
 package osdb
 
 import (
-	"fmt"
 	"io"
 	"os"
+	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/kolo/xmlrpc"
+	"github.com/op/go-logging"
 )
 
 const (
-	DefaultOSDBServer = "http://api.opensubtitles.org/xml-rpc"
-	DefaultUserAgent  = "XBMC_Subtitles_v5.0.11" // XBMC OpenSubtitles Agent
+	DefaultOSDBServer = "https://api.opensubtitles.org/xml-rpc"
+	DefaultUserAgent  = "XBMC_Subtitles_Login_v5.0.16" // XBMC OpenSubtitles Agent
 	SearchLimit       = 100
 	StatusSuccess     = "200 OK"
 )
+
+var log = logging.MustGetLogger("osdb")
 
 type Client struct {
 	UserAgent string
@@ -85,6 +88,7 @@ func (c *Client) SearchSubtitles(payloads []SearchPayload) (Subtitles, error) {
 		payloads,
 	}
 	if err := c.Call("SearchSubtitles", args, &res); err != nil {
+		log.Error(err)
 		if !strings.Contains(err.Error(), "type mismatch") {
 			return nil, err
 		}

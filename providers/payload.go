@@ -18,6 +18,14 @@ type MovieSearchObject struct {
 	Titles map[string]string `json:"titles"`
 }
 
+type SeasonSearchObject struct {
+	IMDBId         string            `json:"imdb_id"`
+	TVDBId         int               `json:"tvdb_id"`
+	Title          string            `json:"title"`
+	Season         int               `json:"season"`
+	Titles         map[string]string `json:"titles"`
+}
+
 type EpisodeSearchObject struct {
 	IMDBId         string            `json:"imdb_id"`
 	TVDBId         int               `json:"tvdb_id"`

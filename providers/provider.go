@@ -1,9 +1,8 @@
 package providers
 
 import (
-	"github.com/steeve/pulsar/bittorrent"
-	"github.com/steeve/pulsar/tmdb"
-	"github.com/steeve/pulsar/tvdb"
+	"github.com/scakemyer/quasar/bittorrent"
+	"github.com/scakemyer/quasar/tmdb"
 )
 
 type Searcher interface {
@@ -14,6 +13,10 @@ type MovieSearcher interface {
 	SearchMovieLinks(movie *tmdb.Movie) []*bittorrent.Torrent
 }
 
+type SeasonSearcher interface {
+	SearchSeasonLinks(show *tmdb.Show, season *tmdb.Season) []*bittorrent.Torrent
+}
+
 type EpisodeSearcher interface {
-	SearchEpisodeLinks(show *tvdb.Show, episode *tvdb.Episode) []*bittorrent.Torrent
+	SearchEpisodeLinks(show *tmdb.Show, episode *tmdb.Episode) []*bittorrent.Torrent
 }

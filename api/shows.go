@@ -3,26 +3,29 @@ package api
 import (
 	"fmt"
 	"log"
+	"errors"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/op/go-logging"
-	"github.com/steeve/pulsar/bittorrent"
-	"github.com/steeve/pulsar/config"
-	"github.com/steeve/pulsar/providers"
-	"github.com/steeve/pulsar/tmdb"
-	"github.com/steeve/pulsar/tvdb"
-	"github.com/steeve/pulsar/xbmc"
+	"github.com/scakemyer/quasar/bittorrent"
+	"github.com/scakemyer/quasar/providers"
+	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/trakt"
+	"github.com/scakemyer/quasar/tmdb"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
-var (
-	showsLog = logging.MustGetLogger("shows")
-)
 
 func TVIndex(ctx *gin.Context) {
 	items := xbmc.ListItems{
-		{Label: "Search", Path: UrlForXBMC("/shows/search"), Thumbnail: config.AddonResource("img", "search.png")},
-		{Label: "Most Popular", Path: UrlForXBMC("/shows/popular"), Thumbnail: config.AddonResource("img", "popular.png")},
+		{Label: "LOCALIZE[30209]", Path: UrlForXBMC("/shows/search"), Thumbnail: config.AddonResource("img", "search.png")},
+		{Label: "LOCALIZE[30056]", Path: UrlForXBMC("/shows/trakt/"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{Label: "LOCALIZE[30238]", Path: UrlForXBMC("/shows/recent/episodes"), Thumbnail: config.AddonResource("img", "fresh.png")},
+		{Label: "LOCALIZE[30237]", Path: UrlForXBMC("/shows/recent/shows"), Thumbnail: config.AddonResource("img", "clock.png")},
+		{Label: "LOCALIZE[30210]", Path: UrlForXBMC("/shows/popular"), Thumbnail: config.AddonResource("img", "popular.png")},
+		{Label: "LOCALIZE[30211]", Path: UrlForXBMC("/shows/top"), Thumbnail: config.AddonResource("img", "top_rated.png")},
+		{Label: "LOCALIZE[30212]", Path: UrlForXBMC("/shows/mostvoted"), Thumbnail: config.AddonResource("img", "most_voted.png")},
 	}
 	for _, genre := range tmdb.GetTVGenres(config.Get().Language) {
 		slug, _ := genreSlugs[genre.Id]
@@ -30,6 +33,10 @@ func TVIndex(ctx *gin.Context) {
 			Label:     genre.Name,
 			Path:      UrlForXBMC("/shows/popular/%s", strconv.Itoa(genre.Id)),
 			Thumbnail: config.AddonResource("img", fmt.Sprintf("genre_%s.png", slug)),
+			ContextMenu: [][]string{
+				[]string{"LOCALIZE[30237]", fmt.Sprintf("Container.Update(%s)", UrlForXBMC("/shows/recent/shows/%s", strconv.Itoa(genre.Id)))},
+				[]string{"LOCALIZE[30238]", fmt.Sprintf("Container.Update(%s)", UrlForXBMC("/shows/recent/episodes/%s", strconv.Itoa(genre.Id)))},
+			},
 		})
 	}
 
@@ -49,17 +56,104 @@ func TVGenres(ctx *gin.Context) {
 	ctx.JSON(200, xbmc.NewView("", items))
 }
 
-func renderShows(shows tmdb.Shows, ctx *gin.Context) {
-	items := make(xbmc.ListItems, 0, len(shows))
+func TVTrakt(ctx *gin.Context) {
+	items := xbmc.ListItems{
+		{Label: "LOCALIZE[30263]", Path: UrlForXBMC("/shows/trakt/lists/"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{Label: "LOCALIZE[30246]", Path: UrlForXBMC("/shows/trakt/trending"), Thumbnail: config.AddonResource("img", "trending.png")},
+		{Label: "LOCALIZE[30210]", Path: UrlForXBMC("/shows/trakt/popular"), Thumbnail: config.AddonResource("img", "popular.png")},
+		{Label: "LOCALIZE[30247]", Path: UrlForXBMC("/shows/trakt/played"), Thumbnail: config.AddonResource("img", "most_played.png")},
+		{Label: "LOCALIZE[30248]", Path: UrlForXBMC("/shows/trakt/watched"), Thumbnail: config.AddonResource("img", "most_watched.png")},
+		{Label: "LOCALIZE[30249]", Path: UrlForXBMC("/shows/trakt/collected"), Thumbnail: config.AddonResource("img", "most_collected.png")},
+		{Label: "LOCALIZE[30250]", Path: UrlForXBMC("/shows/trakt/anticipated"), Thumbnail: config.AddonResource("img", "most_anticipated.png")},
+	}
+	ctx.JSON(200, xbmc.NewView("", items))
+}
+
+func TVTraktLists(ctx *gin.Context) {
+	items := xbmc.ListItems{
+		{
+			Label: "LOCALIZE[30254]",
+			Path: UrlForXBMC("/shows/trakt/lists/watchlist"),
+			Thumbnail: config.AddonResource("img", "trakt.png"),
+			ContextMenu: [][]string{
+				[]string{"LOCALIZE[30252]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/show/watchlist/add"))},
+			},
+		},
+		{
+			Label: "LOCALIZE[30257]",
+			Path: UrlForXBMC("/shows/trakt/lists/collection"),
+			Thumbnail: config.AddonResource("img", "trakt.png"),
+			ContextMenu: [][]string{
+				[]string{"LOCALIZE[30252]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/show/collection/add"))},
+			},
+		},
+	}
+
+	for _, list := range trakt.Userlists() {
+		item := &xbmc.ListItem{
+			Label: list.Name,
+			Path:  UrlForXBMC("/shows/trakt/lists/id/%d", list.IDs.Trakt),
+			Thumbnail: config.AddonResource("img", "trakt.png"),
+			ContextMenu: [][]string{
+				[]string{"LOCALIZE[30252]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/show/list/add/%d", list.IDs.Trakt))},
+			},
+		}
+		items = append(items, item)
+	}
+
+	ctx.JSON(200, xbmc.NewView("", items))
+}
+
+func renderShows(shows tmdb.Shows, ctx *gin.Context, page int, query string) {
+	nextPage := 0
+	if page >= 0 {
+		nextPage = 1
+	}
+	items := make(xbmc.ListItems, 0, len(shows) + nextPage)
 	for _, show := range shows {
 		if show == nil {
 			continue
 		}
 		item := show.ToListItem()
-		item.Path = UrlForXBMC("/show/%d/seasons", show.ExternalIDs.TVDBID)
+		item.Path = UrlForXBMC("/show/%d/seasons", show.Id)
+
+		libraryAction := []string{"LOCALIZE[30252]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/show/add/%d", show.Id))}
+		if inJsonDb, err := InJsonDB(strconv.Itoa(show.Id), LShow); err == nil && inJsonDb == true {
+			libraryAction = []string{"LOCALIZE[30253]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/show/remove/%d", show.Id))}
+		}
+
+		watchlistAction := []string{"LOCALIZE[30255]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/show/%d/watchlist/add", show.Id))}
+		if InShowsWatchlist(show.Id) {
+			watchlistAction = []string{"LOCALIZE[30256]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/show/%d/watchlist/remove", show.Id))}
+		}
+
+		collectionAction := []string{"LOCALIZE[30258]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/show/%d/collection/add", show.Id))}
+		if InShowsCollection(show.Id) {
+			collectionAction = []string{"LOCALIZE[30259]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/show/%d/collection/remove", show.Id))}
+		}
+
+		item.ContextMenu = [][]string{
+			libraryAction,
+			watchlistAction,
+			collectionAction,
+			[]string{"LOCALIZE[30203]", "XBMC.Action(Info)"},
+			[]string{"LOCALIZE[30035]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/setviewmode/tvshows"))},
+		}
 		items = append(items, item)
 	}
-
+	if page >= 0 {
+		path := ctx.Request.URL.Path
+		nextPath := UrlForXBMC(fmt.Sprintf("%s?page=%d", path, page + 1))
+		if query != "" {
+			nextPath = UrlForXBMC(fmt.Sprintf("%s?q=%s&page=%d", path, query, page + 1))
+		}
+		next := &xbmc.ListItem{
+			Label: "LOCALIZE[30218]",
+			Path: nextPath,
+			Thumbnail: config.AddonResource("img", "nextpage.png"),
+		}
+		items = append(items, next)
+	}
 	ctx.JSON(200, xbmc.NewView("tvshows", items))
 }
 
@@ -68,29 +162,63 @@ func PopularShows(ctx *gin.Context) {
 	if genre == "0" {
 		genre = ""
 	}
-	renderShows(tmdb.PopularShowsComplete(genre, config.Get().Language), ctx)
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "0"))
+	renderShows(tmdb.PopularShows(genre, config.Get().Language, page), ctx, page, "")
+}
+
+func RecentShows(ctx *gin.Context) {
+	genre := ctx.Params.ByName("genre")
+	if genre == "0" {
+		genre = ""
+	}
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "0"))
+	renderShows(tmdb.RecentShows(genre, config.Get().Language, page), ctx, page, "")
+}
+
+func RecentEpisodes(ctx *gin.Context) {
+	genre := ctx.Params.ByName("genre")
+	if genre == "0" {
+		genre = ""
+	}
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "0"))
+	renderShows(tmdb.RecentEpisodes(genre, config.Get().Language, page), ctx, page, "")
 }
 
 func TopRatedShows(ctx *gin.Context) {
-	renderShows(tmdb.TopRatedShowsComplete("", config.Get().Language), ctx)
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "0"))
+	renderShows(tmdb.TopRatedShows("", config.Get().Language, page), ctx, page, "")
 }
 
 func TVMostVoted(ctx *gin.Context) {
-	renderMovies(tmdb.MostVotedShowsComplete("", config.Get().Language), ctx)
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "0"))
+	renderShows(tmdb.MostVotedShows("", config.Get().Language, page), ctx, page, "")
 }
 
 func SearchShows(ctx *gin.Context) {
 	query := ctx.Request.URL.Query().Get("q")
 	if query == "" {
-		query = xbmc.Keyboard("", "Search TV Shows")
+		if len(searchHistory) > 0 && xbmc.DialogConfirm("Quasar", "LOCALIZE[30262]") {
+			choice := xbmc.ListDialog("LOCALIZE[30261]", searchHistory...)
+			query = searchHistory[choice]
+		} else {
+			query = xbmc.Keyboard("", "LOCALIZE[30201]")
+			if query == "" {
+				return
+			}
+			searchHistory = append(searchHistory, query)
+		}
 	}
-	renderShows(tmdb.SearchShows(query, config.Get().Language), ctx)
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "0"))
+	renderShows(tmdb.SearchShows(query, config.Get().Language, page), ctx, page, query)
 }
 
 func ShowSeasons(ctx *gin.Context) {
-	show, err := tvdb.NewShowCached(ctx.Params.ByName("showId"), config.Get().Language)
-	if err != nil {
-		ctx.Error(err)
+	showId, _ := strconv.Atoi(ctx.Params.ByName("showId"))
+
+	show := tmdb.GetShow(showId, config.Get().Language)
+
+	if show == nil {
+		ctx.Error(errors.New("Unable to find show"))
 		return
 	}
 
@@ -99,6 +227,10 @@ func ShowSeasons(ctx *gin.Context) {
 	for i := len(items) - 1; i >= 0; i-- {
 		item := items[i]
 		item.Path = UrlForXBMC("/show/%d/season/%d/episodes", show.Id, item.Info.Season)
+		item.ContextMenu = [][]string{
+			[]string{"LOCALIZE[30202]", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/show/%d/season/%d/links", show.Id, item.Info.Season))},
+			[]string{"LOCALIZE[30036]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/setviewmode/seasons"))},
+		}
 		reversedItems = append(reversedItems, item)
 	}
 	// xbmc.ListItems always returns false to Less() so that order is unchanged
@@ -107,28 +239,46 @@ func ShowSeasons(ctx *gin.Context) {
 }
 
 func ShowEpisodes(ctx *gin.Context) {
-	show, err := tvdb.NewShowCached(ctx.Params.ByName("showId"), config.Get().Language)
-	if err != nil {
-		ctx.Error(err)
+	showId, _ := strconv.Atoi(ctx.Params.ByName("showId"))
+	seasonNumber, _ := strconv.Atoi(ctx.Params.ByName("season"))
+	language := config.Get().Language
+
+	show := tmdb.GetShow(showId, language)
+	if show == nil {
+		ctx.Error(errors.New("Unable to find show"))
 		return
 	}
 
-	seasonNumber, _ := strconv.Atoi(ctx.Params.ByName("season"))
+	season := tmdb.GetSeason(showId, seasonNumber, language)
+	if season == nil {
+		ctx.Error(errors.New("Unable to find season"))
+		return
+	}
 
-	season := show.Seasons[seasonNumber]
-	items := season.Episodes.ToListItems(show)
+	items := season.Episodes.ToListItems(show, season)
+
 	for _, item := range items {
-		item.Path = UrlForXBMC("/show/%d/season/%d/episode/%d/play",
+		playUrl := UrlForXBMC("/show/%d/season/%d/episode/%d/play",
 			show.Id,
-			season.Season,
+			seasonNumber,
 			item.Info.Episode,
 		)
+		episodeLinksUrl := UrlForXBMC("/show/%d/season/%d/episode/%d/links",
+			show.Id,
+			seasonNumber,
+			item.Info.Episode,
+		)
+		if config.Get().ChooseStreamAuto == true {
+			item.Path = playUrl
+		} else {
+			item.Path = episodeLinksUrl
+		}
 		item.ContextMenu = [][]string{
-			[]string{"Choose stream...", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/show/%d/season/%d/episode/%d/links",
-				show.Id,
-				season.Season,
-				item.Info.Episode,
-			))},
+			[]string{"LOCALIZE[30202]", fmt.Sprintf("XBMC.PlayMedia(%s)", episodeLinksUrl)},
+			[]string{"LOCALIZE[30023]", fmt.Sprintf("XBMC.PlayMedia(%s)", playUrl)},
+			[]string{"LOCALIZE[30203]", "XBMC.Action(Info)"},
+			[]string{"LOCALIZE[30268]", "XBMC.Action(ToggleWatched)"},
+			[]string{"LOCALIZE[30037]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/setviewmode/episodes"))},
 		}
 		item.IsPlayable = true
 	}
@@ -136,71 +286,309 @@ func ShowEpisodes(ctx *gin.Context) {
 	ctx.JSON(200, xbmc.NewView("episodes", items))
 }
 
-func showEpisodeLinks(showId string, seasonNumber, episodeNumber int) ([]*bittorrent.Torrent, error) {
-	log.Println("Searching links for TVDB Id:", showId)
+func showSeasonLinks(showId int, seasonNumber int) ([]*bittorrent.Torrent, error) {
+	log.Println("Searching links for TMDB Id:", showId)
 
-	show, err := tvdb.NewShowCached(showId, config.Get().Language)
-	if err != nil {
-		return nil, err
+	show := tmdb.GetShow(showId, config.Get().Language)
+	if show == nil {
+		return nil, errors.New("Unable to find show")
 	}
 
-	episode := show.Seasons[seasonNumber].Episodes[episodeNumber-1]
+	season := tmdb.GetSeason(showId, seasonNumber, config.Get().Language)
+	if season == nil {
+		return nil, errors.New("Unable to find season")
+	}
 
-	log.Printf("Resolved %s to %s\n", showId, show.SeriesName)
+	log.Printf("Resolved %d to %s", showId, show.Name)
 
-	searchers := providers.GetEpisodeSearchers()
+	if torrents := InTorrentsMap(strconv.Itoa(season.Id)); len(torrents) > 0 {
+		return torrents, nil
+	}
+
+	searchers := providers.GetSeasonSearchers()
 	if len(searchers) == 0 {
-		xbmc.Notify("Pulsar", "Unable to find any providers", config.AddonIcon())
+		xbmc.Notify("Quasar", "LOCALIZE[30204]", config.AddonIcon())
 	}
 
-	return providers.SearchEpisode(searchers, show, episode), nil
+	return providers.SearchSeason(searchers, show, season), nil
 }
 
-func ShowEpisodeLinks(ctx *gin.Context) {
+func ShowSeasonLinks(btService *bittorrent.BTService) gin.HandlerFunc { return func(ctx *gin.Context) {
+	showId, _ := strconv.Atoi(ctx.Params.ByName("showId"))
 	seasonNumber, _ := strconv.Atoi(ctx.Params.ByName("season"))
-	episodeNumber, _ := strconv.Atoi(ctx.Params.ByName("episode"))
-	torrents, err := showEpisodeLinks(ctx.Params.ByName("showId"), seasonNumber, episodeNumber)
+
+	show := tmdb.GetShow(showId, "")
+	if show == nil {
+		ctx.Error(errors.New("Unable to find show"))
+		return
+	}
+
+	season := tmdb.GetSeason(showId, seasonNumber,"")
+	if season == nil {
+		ctx.Error(errors.New("Unable to find season"))
+		return
+	}
+
+	longName := fmt.Sprintf("%s Season %02d", show.Name, seasonNumber)
+
+	runtime := 45
+	if len(show.EpisodeRunTime) > 0 {
+		runtime = show.EpisodeRunTime[len(show.EpisodeRunTime) - 1]
+	}
+
+	existingTorrent := ExistingTorrent(btService, longName)
+	if existingTorrent != "" && xbmc.DialogConfirm("Quasar", "LOCALIZE[30270]") {
+		rUrl := UrlQuery(
+			UrlForXBMC("/play"), "uri", existingTorrent,
+			                     "tmdb", strconv.Itoa(season.Id),
+			                     "type", "episode",
+			                     "runtime", strconv.Itoa(runtime))
+		ctx.Redirect(302, rUrl)
+		return
+	}
+
+	torrents, err := showSeasonLinks(showId, seasonNumber)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
 	if len(torrents) == 0 {
-		xbmc.Notify("Pulsar", "No links were found", config.AddonIcon())
+		xbmc.Notify("Quasar", "LOCALIZE[30205]", config.AddonIcon())
 		return
 	}
 
 	choices := make([]string, 0, len(torrents))
 	for _, torrent := range torrents {
-		label := fmt.Sprintf("S:%d P:%d - %s",
+		resolution := ""
+		if torrent.Resolution > 0 {
+			resolution = fmt.Sprintf("[B][COLOR %s]%s[/COLOR][/B] ", bittorrent.Colors[torrent.Resolution], bittorrent.Resolutions[torrent.Resolution])
+		}
+
+		info := make([]string, 0)
+		if torrent.Size != "" {
+			info = append(info, fmt.Sprintf("[B][%s][/B]", torrent.Size))
+		}
+		if torrent.RipType > 0 {
+			info = append(info, bittorrent.Rips[torrent.RipType])
+		}
+		if torrent.VideoCodec > 0 {
+			info = append(info, bittorrent.Codecs[torrent.VideoCodec])
+		}
+		if torrent.AudioCodec > 0 {
+			info = append(info, bittorrent.Codecs[torrent.AudioCodec])
+		}
+		if torrent.Provider != "" {
+			info = append(info, fmt.Sprintf(" - [B]%s[/B]", torrent.Provider))
+		}
+
+		multi := ""
+		if torrent.Multi {
+			multi = "\nmulti"
+		}
+
+		label := fmt.Sprintf("%s(%d / %d) %s\n%s\n%s%s",
+			resolution,
 			torrent.Seeds,
 			torrent.Peers,
+			strings.Join(info, " "),
 			torrent.Name,
+			torrent.Icon,
+			multi,
 		)
 		choices = append(choices, label)
 	}
 
-	choice := xbmc.ListDialog("Choose stream", choices...)
+	choice := xbmc.ListDialogLarge("LOCALIZE[30228]", longName, choices...)
 	if choice >= 0 {
-		rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[choice].Magnet())
+		AddToTorrentsMap(strconv.Itoa(season.Id), torrents[choice])
+
+		rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[choice].URI)
 		ctx.Redirect(302, rUrl)
 	}
+}}
+
+func showEpisodeLinks(showId int, seasonNumber int, episodeNumber int) ([]*bittorrent.Torrent, error) {
+	log.Println("Searching links for TMDB Id:", showId)
+
+	show := tmdb.GetShow(showId, config.Get().Language)
+	if show == nil {
+		return nil, errors.New("Unable to find show")
+	}
+
+	season := tmdb.GetSeason(showId, seasonNumber, config.Get().Language)
+	if season == nil {
+		return nil, errors.New("Unable to find season")
+	}
+
+	episode := season.Episodes[episodeNumber - 1]
+
+	log.Printf("Resolved %d to %s", showId, show.Name)
+
+	if torrents := InTorrentsMap(strconv.Itoa(episode.Id)); len(torrents) > 0 {
+		return torrents, nil
+	}
+
+	searchers := providers.GetEpisodeSearchers()
+	if len(searchers) == 0 {
+		xbmc.Notify("Quasar", "LOCALIZE[30204]", config.AddonIcon())
+	}
+
+	return providers.SearchEpisode(searchers, show, episode), nil
 }
 
-func ShowEpisodePlay(ctx *gin.Context) {
+func ShowEpisodeLinks(btService *bittorrent.BTService) gin.HandlerFunc { return func(ctx *gin.Context) {
+	tmdbId := ctx.Params.ByName("showId")
+	showId, _ := strconv.Atoi(tmdbId)
 	seasonNumber, _ := strconv.Atoi(ctx.Params.ByName("season"))
 	episodeNumber, _ := strconv.Atoi(ctx.Params.ByName("episode"))
-	torrents, err := showEpisodeLinks(ctx.Params.ByName("showId"), seasonNumber, episodeNumber)
+
+	show := tmdb.GetShow(showId, "")
+	if show == nil {
+		ctx.Error(errors.New("Unable to find show"))
+		return
+	}
+
+	episode := tmdb.GetEpisode(showId, seasonNumber, episodeNumber, "")
+	if episode == nil {
+		ctx.Error(errors.New("Unable to find episode"))
+		return
+	}
+
+	longName := fmt.Sprintf("%s S%02dE%02d", show.Name, seasonNumber, episodeNumber)
+
+	runtime := 45
+	if len(show.EpisodeRunTime) > 0 {
+		runtime = show.EpisodeRunTime[len(show.EpisodeRunTime) - 1]
+	}
+
+	existingTorrent := ExistingTorrent(btService, longName)
+	if existingTorrent != "" && xbmc.DialogConfirm("Quasar", "LOCALIZE[30270]") {
+		rUrl := UrlQuery(
+			UrlForXBMC("/play"), "uri", existingTorrent,
+			                     "tmdb", strconv.Itoa(episode.Id),
+			                     "type", "episode",
+			                     "runtime", strconv.Itoa(runtime))
+		ctx.Redirect(302, rUrl)
+		return
+	}
+
+	torrents, err := showEpisodeLinks(showId, seasonNumber, episodeNumber)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
 	if len(torrents) == 0 {
-		xbmc.Notify("Pulsar", "No links were found", config.AddonIcon())
+		xbmc.Notify("Quasar", "LOCALIZE[30205]", config.AddonIcon())
 		return
 	}
 
-	rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[0].Magnet())
+	choices := make([]string, 0, len(torrents))
+	for _, torrent := range torrents {
+		resolution := ""
+		if torrent.Resolution > 0 {
+			resolution = fmt.Sprintf("[B][COLOR %s]%s[/COLOR][/B] ", bittorrent.Colors[torrent.Resolution], bittorrent.Resolutions[torrent.Resolution])
+		}
+
+		info := make([]string, 0)
+		if torrent.Size != "" {
+			info = append(info, fmt.Sprintf("[B][%s][/B]", torrent.Size))
+		}
+		if torrent.RipType > 0 {
+			info = append(info, bittorrent.Rips[torrent.RipType])
+		}
+		if torrent.VideoCodec > 0 {
+			info = append(info, bittorrent.Codecs[torrent.VideoCodec])
+		}
+		if torrent.AudioCodec > 0 {
+			info = append(info, bittorrent.Codecs[torrent.AudioCodec])
+		}
+		if torrent.Provider != "" {
+			info = append(info, fmt.Sprintf(" - [B]%s[/B]", torrent.Provider))
+		}
+
+		multi := ""
+		if torrent.Multi {
+			multi = "\nmulti"
+		}
+
+		label := fmt.Sprintf("%s(%d / %d) %s\n%s\n%s%s",
+			resolution,
+			torrent.Seeds,
+			torrent.Peers,
+			strings.Join(info, " "),
+			torrent.Name,
+			torrent.Icon,
+			multi,
+		)
+		choices = append(choices, label)
+	}
+
+	choice := xbmc.ListDialogLarge("LOCALIZE[30228]", longName, choices...)
+	if choice >= 0 {
+		AddToTorrentsMap(strconv.Itoa(episode.Id), torrents[choice])
+
+		rUrl := UrlQuery(
+			UrlForXBMC("/play"), "uri", torrents[choice].URI,
+			                     "tmdb", strconv.Itoa(episode.Id),
+			                     "type", "episode",
+			                     "runtime", strconv.Itoa(runtime))
+		ctx.Redirect(302, rUrl)
+	}
+}}
+
+func ShowEpisodePlay(btService *bittorrent.BTService) gin.HandlerFunc { return func(ctx *gin.Context) {
+	tmdbId := ctx.Params.ByName("showId")
+	showId, _ := strconv.Atoi(tmdbId)
+	seasonNumber, _ := strconv.Atoi(ctx.Params.ByName("season"))
+	episodeNumber, _ := strconv.Atoi(ctx.Params.ByName("episode"))
+
+	show := tmdb.GetShow(showId, "")
+	if show == nil {
+		ctx.Error(errors.New("Unable to find show"))
+		return
+	}
+
+	episode := tmdb.GetEpisode(showId, seasonNumber, episodeNumber, "")
+	if episode == nil {
+		ctx.Error(errors.New("Unable to find episode"))
+		return
+	}
+
+	runtime := 45
+	if len(show.EpisodeRunTime) > 0 {
+		runtime = show.EpisodeRunTime[len(show.EpisodeRunTime) - 1]
+	}
+
+	longName := fmt.Sprintf("%s S%02dE%02d", show.Name, seasonNumber, episodeNumber)
+	existingTorrent := ExistingTorrent(btService, longName)
+	if existingTorrent != "" && xbmc.DialogConfirm("Quasar", "LOCALIZE[30270]") {
+		rUrl := UrlQuery(
+			UrlForXBMC("/play"), "uri", existingTorrent,
+			                     "tmdb", strconv.Itoa(episode.Id),
+			                     "type", "episode",
+			                     "runtime", strconv.Itoa(runtime))
+		ctx.Redirect(302, rUrl)
+		return
+	}
+
+	torrents, err := showEpisodeLinks(showId, seasonNumber, episodeNumber)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	if len(torrents) == 0 {
+		xbmc.Notify("Quasar", "LOCALIZE[30205]", config.AddonIcon())
+		return
+	}
+
+	AddToTorrentsMap(strconv.Itoa(episode.Id), torrents[0])
+
+	rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[0].URI,
+	                                      "tmdb", strconv.Itoa(episode.Id),
+	                                      "type", "episode",
+	                                      "runtime", strconv.Itoa(runtime))
 	ctx.Redirect(302, rUrl)
-}
+}}

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/steeve/pulsar/xbmc"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
 func imageURL(path string) string {
@@ -34,7 +34,7 @@ func (seasons SeasonList) ToListItems(show *Show) []*xbmc.ListItem {
 		}
 		item := season.ToListItem(show)
 		if len(fanarts) > 0 {
-			item.Art.FanArt = fanarts[rand.Int()%len(fanarts)]
+			item.Art.FanArt = fanarts[rand.Intn(len(fanarts))]
 		}
 		items = append(items, item)
 	}
@@ -55,6 +55,9 @@ func (episodes EpisodeList) ToListItems(show *Show) []*xbmc.ListItem {
 	}
 	now := time.Now().UTC()
 	for _, episode := range episodes {
+		if episode.FirstAired == "" {
+			continue
+		}
 		airedDateTime := fmt.Sprintf("%s %s EST", episode.FirstAired, show.AirsTime)
 		firstAired, _ := time.Parse("2006-01-02 3:04 PM MST", airedDateTime)
 		if firstAired.Add(time.Duration(show.Runtime) * time.Minute).After(now) {
@@ -62,7 +65,7 @@ func (episodes EpisodeList) ToListItems(show *Show) []*xbmc.ListItem {
 		}
 		item := episode.ToListItem(show)
 		if len(fanarts) > 0 {
-			item.Art.FanArt = fanarts[rand.Int()%len(fanarts)]
+			item.Art.FanArt = fanarts[rand.Intn(len(fanarts))]
 		}
 		items = append(items, item)
 	}
@@ -118,6 +121,7 @@ func (episode *Episode) ToListItem(show *Show) *xbmc.ListItem {
 			TVShowTitle:   show.SeriesName,
 			Plot:          episode.Overview,
 			PlotOutline:   episode.Overview,
+			Aired:         episode.FirstAired,
 		},
 		Art: &xbmc.ListItemArt{
 			Thumbnail: imageURL(episode.FileName),

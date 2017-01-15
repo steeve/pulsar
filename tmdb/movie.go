@@ -2,75 +2,84 @@ package tmdb
 
 import (
 	"fmt"
-	"math/rand"
 	"path"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
+	"strconv"
+	"strings"
+	"math/rand"
 
 	"github.com/jmcvetta/napping"
-	"github.com/steeve/pulsar/cache"
-	"github.com/steeve/pulsar/config"
-	"github.com/steeve/pulsar/xbmc"
+	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/cache"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
-const (
-	moviesPerPage          = 20
-	popularMoviesMaxPages  = 20
-	popularMoviesStartPage = 1
-)
+// Unused...
+type ByPopularity Movies
+func (a ByPopularity) Len() int           { return len(a) }
+func (a ByPopularity) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByPopularity) Less(i, j int) bool { return a[i].Popularity < a[j].Popularity }
 
-type Movie struct {
-	Entity
-
-	IMDBId              string      `json:"imdb_id"`
-	Overview            string      `json:"overview"`
-	ProductionCompanies []*IdName   `json:"production_companies"`
-	Runtime             int         `json:"runtime"`
-	TagLine             string      `json:"tagline"`
-	RawPopularity       interface{} `json:"popularity"`
-	Popularity          float64     `json:"-"`
-	AlternativeTitles   *struct {
-		Titles []*AlternativeTitle `json:"titles"`
-	} `json:"alternative_titles"`
-	SpokenLanguages []*Language  `json:"spoken_languages"`
-	ExternalIDs     *ExternalIDs `json:"external_ids"`
-
-	Translations *struct {
-		Translations []*Language `json:"translations"`
-	} `json:"translations"`
-
-	Trailers *struct {
-		Youtube []*Trailer `json:"youtube"`
-	} `json:"trailers"`
-
-	Credits *Credits `json:"credits,omitempty"`
-	Images  *Images  `json:"images,omitempty"`
-}
-
-type Movies []*Movie
-
-func GetMovieFromIMDB(imdbId string, language string) *Movie {
-	return getMovieById(imdbId, language)
+func GetImages(movieId int) *Images {
+	var images *Images
+	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
+	key := fmt.Sprintf("com.tmdb.movie.%d.images", movieId)
+	if err := cacheStore.Get(key, &images); err != nil {
+		rateLimiter.Call(func() {
+			urlValues := napping.Params{
+				"api_key": apiKey,
+				"include_image_language": fmt.Sprintf("%s,en,null", config.Get().Language),
+			}.AsUrlValues()
+			resp, err := napping.Get(
+				tmdbEndpoint + "movie/" + strconv.Itoa(movieId) + "/images",
+				&urlValues,
+				&images,
+				nil,
+			)
+			if err != nil {
+				log.Error(err.Error())
+				xbmc.Notify("Quasar", "GetImages failed, check your logs.", config.AddonIcon())
+			} else if resp.Status() != 200 {
+				log.Warningf("GetImages bad status: %d", resp.Status())
+			}
+			if images != nil {
+				cacheStore.Set(key, images, cacheTime)
+			}
+		})
+	}
+	return images
 }
 
 func GetMovie(tmdbId int, language string) *Movie {
-	return getMovieById(strconv.Itoa(tmdbId), language)
+	return GetMovieById(strconv.Itoa(tmdbId), language)
 }
 
-func getMovieById(movieId string, language string) *Movie {
+func GetMovieById(movieId string, language string) *Movie {
 	var movie *Movie
 	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
 	key := fmt.Sprintf("com.tmdb.movie.%s.%s", movieId, language)
 	if err := cacheStore.Get(key, &movie); err != nil {
 		rateLimiter.Call(func() {
-			napping.Get(
-				tmdbEndpoint+"movie/"+movieId,
-				&napping.Params{"api_key": apiKey, "append_to_response": "credits,images,alternative_titles,translations,external_ids,trailers", "language": language},
+			urlValues := napping.Params{
+				"api_key": apiKey,
+				"append_to_response": "credits,images,alternative_titles,translations,external_ids,trailers,release_dates",
+				"language": language,
+			}.AsUrlValues()
+			resp, err := napping.Get(
+				tmdbEndpoint + "movie/" + movieId,
+				&urlValues,
 				&movie,
 				nil,
 			)
+			if err != nil {
+				log.Error(err.Error())
+				xbmc.Notify("Quasar", "GetMovie failed, check your logs.", config.AddonIcon())
+			} else if resp.Status() != 200 {
+				message := fmt.Sprintf("GetMovie bad status: %d", resp.Status())
+				log.Error(message)
+				xbmc.Notify("Quasar", message, config.AddonIcon())
+			}
 			if movie != nil {
 				cacheStore.Set(key, movie, cacheTime)
 			}
@@ -106,28 +115,51 @@ func GetMovies(tmdbIds []int, language string) Movies {
 func GetMovieGenres(language string) []*Genre {
 	genres := GenreList{}
 	rateLimiter.Call(func() {
-		napping.Get(
-			tmdbEndpoint+"genre/movie/list",
-			&napping.Params{"api_key": apiKey, "language": language},
+		urlValues := napping.Params{
+			"api_key": apiKey,
+			"language": language,
+		}.AsUrlValues()
+		resp, err := napping.Get(
+			tmdbEndpoint + "genre/movie/list",
+			&urlValues,
 			&genres,
 			nil,
 		)
+		if err != nil {
+			log.Error(err.Error())
+			xbmc.Notify("Quasar", "GetMovieGenres failed, check your logs.", config.AddonIcon())
+		} else if resp.Status() != 200 {
+			message := fmt.Sprintf("GetMovieGenres bad status: %d", resp.Status())
+			log.Error(message)
+			xbmc.Notify("Quasar", message, config.AddonIcon())
+		}
 	})
 	return genres.Genres
 }
 
-func SearchMovies(query string, language string) Movies {
+func SearchMovies(query string, language string, page int) Movies {
 	var results EntityList
+
 	rateLimiter.Call(func() {
-		napping.Get(
-			tmdbEndpoint+"search/movie",
-			&napping.Params{
-				"api_key": apiKey,
-				"query":   query,
-			},
+		urlValues := napping.Params{
+			"api_key": apiKey,
+			"query": query,
+			"page": strconv.Itoa(startPage + page),
+		}.AsUrlValues()
+		resp, err := napping.Get(
+			tmdbEndpoint + "search/movie",
+			&urlValues,
 			&results,
 			nil,
 		)
+		if err != nil {
+			log.Error(err.Error())
+			xbmc.Notify("Quasar", "SearchMovies failed, check your logs.", config.AddonIcon())
+		} else if resp.Status() != 200 {
+			message := fmt.Sprintf("SearchMovies bad status: %d", resp.Status())
+			log.Error(message)
+			xbmc.Notify("Quasar", message, config.AddonIcon())
+		}
 	})
 	tmdbIds := make([]int, 0, len(results.Results))
 	for _, movie := range results.Results {
@@ -136,109 +168,166 @@ func SearchMovies(query string, language string) Movies {
 	return GetMovies(tmdbIds, language)
 }
 
-func GetList(listId string, language string) Movies {
+func GetList(listId string, language string, page int) Movies {
 	var results *List
+	listResultsPerPage := config.Get().ResultsPerPage
+
 	rateLimiter.Call(func() {
-		napping.Get(
-			tmdbEndpoint+"list/"+listId,
-			&napping.Params{
-				"api_key": apiKey,
-			},
+		urlValues := napping.Params{
+			"api_key": apiKey,
+		}.AsUrlValues()
+		resp, err := napping.Get(
+			tmdbEndpoint + "list/" + listId,
+			&urlValues,
 			&results,
 			nil,
 		)
+		if err != nil {
+			log.Error(err.Error())
+			xbmc.Notify("Quasar", "GetList failed, check your logs.", config.AddonIcon())
+		} else if resp.Status() != 200 {
+			message := fmt.Sprintf("GetList bad status: %d", resp.Status())
+			log.Error(message)
+			xbmc.Notify("Quasar", message, config.AddonIcon())
+		}
 	})
-	tmdbIds := make([]int, 0, len(results.Items))
-	for _, movie := range results.Items {
+	tmdbIds := make([]int, 0, listResultsPerPage)
+	for i, movie := range results.Items {
+		if i < page * listResultsPerPage {
+			continue
+		}
 		tmdbIds = append(tmdbIds, movie.Id)
+		if i >= (startPage + page) * listResultsPerPage - 1 {
+			break
+		}
 	}
 	return GetMovies(tmdbIds, language)
 }
 
-type ByPopularity Movies
+func ListMovies(endpoint string, params napping.Params, page int) (movies Movies) {
+	var results *EntityList
 
-func (a ByPopularity) Len() int           { return len(a) }
-func (a ByPopularity) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByPopularity) Less(i, j int) bool { return a[i].Popularity < a[j].Popularity }
-
-func ListMoviesComplete(endpoint string, params napping.Params) Movies {
-	movies := make(Movies, popularMoviesMaxPages*moviesPerPage)
+	params["page"] = strconv.Itoa(startPage + page)
 	params["api_key"] = apiKey
+	p := params.AsUrlValues()
 
-	wg := sync.WaitGroup{}
-	for i := 0; i < popularMoviesMaxPages; i++ {
-		wg.Add(1)
-		go func(page int) {
-			defer wg.Done()
-			var tmp *EntityList
-			tmpParams := napping.Params{
-				"page": strconv.Itoa(popularMoviesStartPage + page),
-			}
-			for k, v := range params {
-				tmpParams[k] = v
-			}
-			rateLimiter.Call(func() {
-				napping.Get(
-					tmdbEndpoint+endpoint,
-					&tmpParams,
-					&tmp,
-					nil,
-				)
-			})
-			for i, movie := range tmp.Results {
-				movies[page*moviesPerPage+i] = GetMovie(movie.Id, params["language"])
-			}
-		}(i)
+	rateLimiter.Call(func() {
+		resp, err := napping.Get(
+			tmdbEndpoint + endpoint,
+			&p,
+			&results,
+			nil,
+		)
+		if err != nil {
+			log.Error(err.Error())
+			xbmc.Notify("Quasar", "ListMovies failed, check your logs.", config.AddonIcon())
+		} else if resp.Status() != 200 {
+			message := fmt.Sprintf("ListMovies bad status: %d", resp.Status())
+			log.Error(message)
+			xbmc.Notify("Quasar", message, config.AddonIcon())
+		}
+	})
+	if results != nil {
+		for _, movie := range results.Results {
+			movies = append(movies, GetMovie(movie.Id, params["language"]))
+		}
 	}
-	wg.Wait()
-
 	return movies
 }
 
-func PopularMoviesComplete(genre string, language string) Movies {
-	return ListMoviesComplete("discover/movie", napping.Params{
-		"language":                 language,
-		"sort_by":                  "popularity.desc",
-		"primary_release_date.lte": time.Now().UTC().Format("2006-01-02"),
-		"with_genres":              genre,
-	})
+func PopularMovies(genre string, language string, page int) Movies {
+	var p napping.Params
+	if genre == "" {
+		p = napping.Params{
+			"language":                 language,
+			"sort_by":                  "popularity.desc",
+			"primary_release_date.lte": time.Now().UTC().Format("2006-01-02"),
+		}
+	} else {
+		p = napping.Params{
+			"language":                 language,
+			"sort_by":                  "popularity.desc",
+			"primary_release_date.lte": time.Now().UTC().Format("2006-01-02"),
+			"with_genres":              genre,
+		}
+	}
+	return ListMovies("discover/movie", p, page)
 }
 
-func TopRatedMoviesComplete(genre string, language string) Movies {
-	return ListMoviesComplete("movie/top_rated", napping.Params{"language": language})
+func RecentMovies(genre string, language string, page int) Movies {
+	var p napping.Params
+	if genre == "" {
+		p = napping.Params{
+			"language":                 language,
+			"sort_by":                  "primary_release_date.desc",
+			"vote_count.gte":           "10",
+			"primary_release_date.lte": time.Now().UTC().Format("2006-01-02"),
+		}
+	} else {
+		p = napping.Params{
+			"language":                 language,
+			"sort_by":                  "primary_release_date.desc",
+			"vote_count.gte":           "10",
+			"primary_release_date.lte": time.Now().UTC().Format("2006-01-02"),
+			"with_genres":              genre,
+		}
+	}
+	return ListMovies("discover/movie", p, page)
 }
 
-func MostVotedMoviesComplete(genre string, language string) Movies {
-	return ListMoviesComplete("discover/movie", napping.Params{
-		"language":                 language,
-		"sort_by":                  "vote_count.desc",
-		"primary_release_date.lte": time.Now().UTC().Format("2006-01-02"),
-		"with_genres":              genre,
-	})
+func TopRatedMovies(genre string, language string, page int) Movies {
+	return ListMovies("movie/top_rated", napping.Params{"language": language}, page)
+}
+
+func MostVotedMovies(genre string, language string, page int) Movies {
+	var p napping.Params
+	if genre == "" {
+		p = napping.Params{
+			"language":                 language,
+			"sort_by":                  "vote_count.desc",
+			"primary_release_date.lte": time.Now().UTC().Format("2006-01-02"),
+		}
+	} else {
+		p = napping.Params{
+			"language":                 language,
+			"sort_by":                  "vote_count.desc",
+			"primary_release_date.lte": time.Now().UTC().Format("2006-01-02"),
+			"with_genres":              genre,
+		}
+	}
+	return ListMovies("discover/movie", p, page)
 }
 
 func (movie *Movie) ToListItem() *xbmc.ListItem {
 	year, _ := strconv.Atoi(strings.Split(movie.ReleaseDate, "-")[0])
 
+	title := movie.Title
+	if config.Get().UseOriginalTitle && movie.OriginalTitle != "" {
+		title = movie.OriginalTitle
+	}
+
 	item := &xbmc.ListItem{
-		Label: movie.OriginalTitle,
+		Label: title,
 		Info: &xbmc.ListItemInfo{
 			Year:          year,
 			Count:         rand.Int(),
-			Title:         movie.OriginalTitle,
-			OriginalTitle: movie.Title,
+			Title:         title,
+			OriginalTitle: movie.OriginalTitle,
 			Plot:          movie.Overview,
 			PlotOutline:   movie.Overview,
 			TagLine:       movie.TagLine,
-			Duration:      movie.Runtime,
+			Duration:      movie.Runtime * 60,
 			Code:          movie.IMDBId,
+			IMDBNumber:    movie.IMDBId,
 			Date:          movie.ReleaseDate,
 			Votes:         strconv.Itoa(movie.VoteCount),
 			Rating:        movie.VoteAverage,
+			DBTYPE:        "movie",
+			Mediatype:     "movie",
 		},
 		Art: &xbmc.ListItemArt{
-			FanArt: imageURL(movie.BackdropPath, "w1280"),
-			Poster: imageURL(movie.PosterPath, "w500"),
+			FanArt: ImageURL(movie.BackdropPath, "w1280"),
+			Poster: ImageURL(movie.PosterPath, "w500"),
 		},
 	}
 	item.Thumbnail = item.Art.Poster
@@ -253,6 +342,16 @@ func (movie *Movie) ToListItem() *xbmc.ListItem {
 		for _, trailer := range movie.Trailers.Youtube {
 			item.Info.Trailer = trailer.Source
 			break
+		}
+	}
+
+	if item.Info.Trailer == "" && config.Get().Language != "en" {
+		enMovie := GetMovie(movie.Id, "en")
+		if enMovie.Trailers != nil {
+			for _, trailer := range enMovie.Trailers.Youtube {
+				item.Info.Trailer = trailer.Source
+				break
+			}
 		}
 	}
 

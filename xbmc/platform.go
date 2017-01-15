@@ -1,8 +1,9 @@
 package xbmc
 
 type Platform struct {
-	OS   string
-	Arch string
+	OS      string
+	Arch    string
+	Version string
 }
 
 func GetPlatform() *Platform {

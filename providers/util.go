@@ -5,8 +5,8 @@ import (
 	"strings"
 	"unicode"
 
-	"code.google.com/p/go.text/transform"
-	"code.google.com/p/go.text/unicode/norm"
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 )
 
 var (

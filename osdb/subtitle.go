@@ -1,16 +1,16 @@
 package osdb
 
 import (
-	"compress/gzip"
-	"crypto/md5"
-	"encoding/base64"
-	"fmt"
 	"io"
-	"net/http"
 	"os"
+	"fmt"
 	"path"
 	"strconv"
 	"strings"
+	"net/http"
+	"crypto/md5"
+	"compress/gzip"
+	"encoding/base64"
 )
 
 // A Subtitle with its many OSDB attributes...
@@ -35,6 +35,10 @@ type Subtitle struct {
 	MovieYear          string `xmlrpc:"MovieYear"`
 	MovieFileName      string `xmlrpc:"MovieName"`
 	QueryNumber        string `xmlrpc:"QueryNumber"`
+	QueryParameters    struct {
+	                       query          string `xmlrpc:"query"`
+	                       sublanguageid  string `xmlrpc:"sublanguageid"`
+	                   } `xmlrpc:"QueryParameters"`
 	SeriesEpisode      string `xmlrpc:"SeriesEpisode"`
 	SeriesIMDBParent   string `xmlrpc:"SeriesIMDBParent"`
 	SeriesSeason       string `xmlrpc:"SeriesSeason"`
@@ -45,6 +49,7 @@ type Subtitle struct {
 	SubComments        string `xmlrpc:"SubComments"`
 	SubDownloadLink    string `xmlrpc:"SubDownloadLink"`
 	SubDownloadsCnt    string `xmlrpc:"SubDownloadsCnt"`
+	SubEncoding        string `xmlrpc:"SubEncoding"`
 	SubFeatured        string `xmlrpc:"SubFeatured"`
 	SubFileName        string `xmlrpc:"SubFileName"`
 	SubFormat          string `xmlrpc:"SubFormat"`
@@ -52,6 +57,7 @@ type Subtitle struct {
 	SubHD              string `xmlrpc:"SubHD"`
 	SubHearingImpaired string `xmlrpc:"SubHearingImpaired"`
 	SubLanguageID      string `xmlrpc:"SubLanguageID"`
+	SubLastTS          string `xmlrpc:"SubLastTS"`
 	SubRating          string `xmlrpc:"SubRating"`
 	SubSize            string `xmlrpc:"SubSize"`
 	SubSumCD           string `xmlrpc:"SubSumCD"`

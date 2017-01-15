@@ -2,49 +2,57 @@ package tmdb
 
 import (
 	"fmt"
-	"math/rand"
 	"path"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
+	"strconv"
+	"strings"
+	"math/rand"
+	"encoding/json"
+	"runtime"
 
 	"github.com/jmcvetta/napping"
-	"github.com/steeve/pulsar/cache"
-	"github.com/steeve/pulsar/config"
-	"github.com/steeve/pulsar/xbmc"
+	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/cache"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
-type Show struct {
-	Entity
-
-	EpisodeRunTime      []int        `json:"episode_run_time"`
-	Genres              []*Genre     `json:"genres"`
-	Homepage            string       `json:"homepage"`
-	InProduction        bool         `json:"in_production"`
-	FirstAirDate        string       `json:"first_air_date"`
-	LastAirDate         string       `json:"last_air_date"`
-	Networks            []*IdName    `json:"networks"`
-	NumberOfEpisodes    int          `json:"number_of_episodes"`
-	NumberOfSeasons     int          `json:"number_of_seasons"`
-	OriginalName        string       `json:"original_name"`
-	OriginCountry       []string     `json:"origin_country"`
-	Overview            string       `json:"overview"`
-	EpisodeRuntime      []int        `json:"runtime"`
-	RawPopularity       interface{}  `json:"popularity"`
-	Popularity          float64      `json:"-"`
-	ProductionCompanies []*IdName    `json:"production_companies"`
-	Status              string       `json:"status"`
-	ExternalIDs         *ExternalIDs `json:"external_ids"`
-	Translations        *struct {
-		Translations []*Language `json:"translations"`
-	} `json:"translations"`
-
-	Credits *Credits `json:"credits,omitempty"`
-	Images  *Images  `json:"images,omitempty"`
+func LogError(err error) {
+	if err != nil {
+		pc, fn, line, _ := runtime.Caller(1)
+		log.Errorf("in %s[%s:%d] %#v: %v)", runtime.FuncForPC(pc).Name(), fn, line, err, err)
+	}
 }
 
-type Shows []*Show
+func GetShowImages(showId int) *Images {
+	var images *Images
+	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
+	key := fmt.Sprintf("com.tmdb.show.%d.images", showId)
+	if err := cacheStore.Get(key, &images); err != nil {
+		rateLimiter.Call(func() {
+			urlValues := napping.Params{
+				"api_key": apiKey,
+				"include_image_language": fmt.Sprintf("%s,en,null", config.Get().Language),
+			}.AsUrlValues()
+			resp, err := napping.Get(
+				tmdbEndpoint + "tv/" + strconv.Itoa(showId) + "/images",
+				&urlValues,
+				&images,
+				nil,
+			)
+			if err != nil {
+				log.Error(err.Error())
+				xbmc.Notify("Quasar", "GetImages failed, check your logs.", config.AddonIcon())
+			} else if resp.Status() != 200 {
+				log.Warningf("GetImages bad status: %d", resp.Status())
+			}
+			if images != nil {
+				cacheStore.Set(key, images, cacheTime)
+			}
+		})
+	}
+	return images
+}
 
 func GetShow(showId int, language string) *Show {
 	var show *Show
@@ -52,12 +60,33 @@ func GetShow(showId int, language string) *Show {
 	key := fmt.Sprintf("com.tmdb.show.%d.%s", showId, language)
 	if err := cacheStore.Get(key, &show); err != nil {
 		rateLimiter.Call(func() {
-			napping.Get(
-				tmdbEndpoint+"tv/"+strconv.Itoa(showId),
-				&napping.Params{"api_key": apiKey, "append_to_response": "credits,images,alternative_titles,translations,external_ids", "language": language},
+			urlValues := napping.Params{
+				"api_key": apiKey,
+				"append_to_response": "credits,images,alternative_titles,translations,external_ids",
+				"language": language,
+			}.AsUrlValues()
+			resp, err := napping.Get(
+				tmdbEndpoint + "tv/" + strconv.Itoa(showId),
+				&urlValues,
 				&show,
 				nil,
 			)
+			if err != nil {
+				switch e := err.(type) {
+					case *json.UnmarshalTypeError:
+						log.Errorf("UnmarshalTypeError: Value[%s] Type[%v] Offset[%d] for %d", e.Value, e.Type, e.Offset, showId)
+					case *json.InvalidUnmarshalError:
+						log.Errorf("InvalidUnmarshalError: Type[%v]", e.Type)
+					default:
+						log.Error(err.Error())
+				}
+				LogError(err)
+				xbmc.Notify("Quasar", "GetShow failed, check your logs.", config.AddonIcon())
+			} else if resp.Status() != 200 {
+				message := fmt.Sprintf("GetShow bad status: %d", resp.Status())
+				log.Error(message)
+				xbmc.Notify("Quasar", message, config.AddonIcon())
+			}
 		})
 		if show != nil {
 			cacheStore.Set(key, show, cacheTime)
@@ -66,6 +95,7 @@ func GetShow(showId int, language string) *Show {
 	if show == nil {
 		return nil
 	}
+
 	switch t := show.RawPopularity.(type) {
 	case string:
 		if popularity, err := strconv.ParseFloat(t, 64); err == nil {
@@ -74,6 +104,7 @@ func GetShow(showId int, language string) *Show {
 	case float64:
 		show.Popularity = t
 	}
+
 	return show
 }
 
@@ -91,18 +122,28 @@ func GetShows(showIds []int, language string) Shows {
 	return shows
 }
 
-func SearchShows(query string, language string) Shows {
+func SearchShows(query string, language string, page int) Shows {
 	var results EntityList
 	rateLimiter.Call(func() {
-		napping.Get(
-			tmdbEndpoint+"search/tv",
-			&napping.Params{
-				"api_key": apiKey,
-				"query":   query,
-			},
+		urlValues := napping.Params{
+			"api_key": apiKey,
+			"query": query,
+			"page": strconv.Itoa(startPage + page),
+		}.AsUrlValues()
+		resp, err := napping.Get(
+			tmdbEndpoint + "search/tv",
+			&urlValues,
 			&results,
 			nil,
 		)
+		if err != nil {
+			log.Error(err.Error())
+			xbmc.Notify("Quasar", "SearchShows failed, check your logs.", config.AddonIcon())
+		} else if resp.Status() != 200 {
+			message := fmt.Sprintf("SearchShows bad status: %d", resp.Status())
+			log.Error(message)
+			xbmc.Notify("Quasar", message, config.AddonIcon())
+		}
 	})
 	tmdbIds := make([]int, 0, len(results.Results))
 	for _, entity := range results.Results {
@@ -111,98 +152,163 @@ func SearchShows(query string, language string) Shows {
 	return GetShows(tmdbIds, language)
 }
 
-func ListShowsComplete(endpoint string, params napping.Params) Shows {
-	shows := make(Shows, popularMoviesMaxPages*moviesPerPage)
+func ListShows(endpoint string, params napping.Params, page int) (shows Shows) {
+	var results *EntityList
 
+	params["page"] = strconv.Itoa(startPage + page)
 	params["api_key"] = apiKey
+	p := params.AsUrlValues()
 
-	wg := sync.WaitGroup{}
-	for i := 0; i < popularMoviesMaxPages; i++ {
-		wg.Add(1)
-		go func(page int) {
-			defer wg.Done()
-			var tmp *EntityList
-			tmpParams := napping.Params{
-				"page": strconv.Itoa(popularMoviesStartPage + page),
-			}
-			for k, v := range params {
-				tmpParams[k] = v
-			}
-			rateLimiter.Call(func() {
-				napping.Get(
-					tmdbEndpoint+endpoint,
-					&tmpParams,
-					&tmp,
-					nil,
-				)
-			})
-			for i, entity := range tmp.Results {
-				shows[page*moviesPerPage+i] = GetShow(entity.Id, params["language"])
-			}
-		}(i)
+	rateLimiter.Call(func() {
+		resp, err := napping.Get(
+			tmdbEndpoint + endpoint,
+			&p,
+			&results,
+			nil,
+		)
+		if err != nil {
+			log.Error(err.Error())
+			xbmc.Notify("Quasar", "ListShows failed, check your logs.", config.AddonIcon())
+		} else if resp.Status() != 200 {
+			message := fmt.Sprintf("ListShows bad status: %d", resp.Status())
+			log.Error(message)
+			xbmc.Notify("Quasar", message, config.AddonIcon())
+		}
+	})
+	if results != nil {
+		for _, show := range results.Results {
+			shows = append(shows, GetShow(show.Id, params["language"]))
+		}
 	}
-	wg.Wait()
-
 	return shows
 }
 
-func PopularShowsComplete(genre string, language string) Shows {
-	return ListShowsComplete("discover/tv", napping.Params{
-		"language":           language,
-		"sort_by":            "popularity.desc",
-		"first_air_date.lte": time.Now().UTC().Format("2006-01-02"),
-		"with_genres":        genre,
-	})
+func PopularShows(genre string, language string, page int) Shows {
+	var p napping.Params
+	if genre == "" {
+		p = napping.Params{
+			"language":           language,
+			"sort_by":            "popularity.desc",
+			"first_air_date.lte": time.Now().UTC().Format("2006-01-02"),
+		}
+	} else {
+		p = napping.Params{
+			"language":           language,
+			"sort_by":            "popularity.desc",
+			"first_air_date.lte": time.Now().UTC().Format("2006-01-02"),
+			"with_genres":        genre,
+		}
+	}
+	return ListShows("discover/tv", p, page)
 }
 
-func TopRatedShowsComplete(genre string, language string) Shows {
-	return ListShowsComplete("tv/top_rated", napping.Params{"language": language})
+func RecentShows(genre string, language string, page int) Shows {
+	var p napping.Params
+	if genre == "" {
+		p = napping.Params{
+			"language":           language,
+			"sort_by":            "first_air_date.desc",
+			"first_air_date.lte": time.Now().UTC().Format("2006-01-02"),
+		}
+	} else {
+		p = napping.Params{
+			"language":           language,
+			"sort_by":            "first_air_date.desc",
+			"first_air_date.lte": time.Now().UTC().Format("2006-01-02"),
+			"with_genres":        genre,
+		}
+	}
+	return ListShows("discover/tv", p, page)
 }
 
-func MostVotedShowsComplete(genre string, language string) Movies {
-	return ListMoviesComplete("discover/tv", napping.Params{
+func RecentEpisodes(genre string, language string, page int) Shows {
+	var p napping.Params
+
+	if genre == "" {
+		p = napping.Params{
+			"language":           language,
+			"air_date.gte": time.Now().UTC().AddDate(0, 0, -3).Format("2006-01-02"),
+			"first_air_date.lte": time.Now().UTC().Format("2006-01-02"),
+		}
+	} else {
+		p = napping.Params{
+			"language":           language,
+			"air_date.gte": time.Now().UTC().AddDate(0, 0, -3).Format("2006-01-02"),
+			"first_air_date.lte": time.Now().UTC().Format("2006-01-02"),
+			"with_genres":        genre,
+		}
+	}
+	return ListShows("discover/tv", p, page)
+}
+
+func TopRatedShows(genre string, language string, page int) Shows {
+	return ListShows("tv/top_rated", napping.Params{"language": language}, page)
+}
+
+func MostVotedShows(genre string, language string, page int) Shows {
+	return ListShows("discover/tv", napping.Params{
 		"language":           language,
 		"sort_by":            "vote_count.desc",
 		"first_air_date.lte": time.Now().UTC().Format("2006-01-02"),
 		"with_genres":        genre,
-	})
+	}, page)
 }
 
 func GetTVGenres(language string) []*Genre {
 	genres := GenreList{}
 	rateLimiter.Call(func() {
-		napping.Get(
-			tmdbEndpoint+"genre/tv/list",
-			&napping.Params{"api_key": apiKey, "language": language},
+		urlValues := napping.Params{
+			"api_key": apiKey,
+			"language": language,
+		}.AsUrlValues()
+		resp, err := napping.Get(
+			tmdbEndpoint + "genre/tv/list",
+			&urlValues,
 			&genres,
 			nil,
 		)
+		if err != nil {
+			log.Error(err.Error())
+			xbmc.Notify("Quasar", "GetTVGenres failed, check your logs.", config.AddonIcon())
+		} else if resp.Status() != 200 {
+			message := fmt.Sprintf("GetTVGenres bad status: %d", resp.Status())
+			log.Error(message)
+			xbmc.Notify("Quasar", message, config.AddonIcon())
+		}
 	})
 	return genres.Genres
 }
 
 func (show *Show) ToListItem() *xbmc.ListItem {
-	year, _ := strconv.Atoi(strings.Split(show.ReleaseDate, "-")[0])
+	year, _ := strconv.Atoi(strings.Split(show.FirstAirDate, "-")[0])
+
+	name := show.Name
+	if config.Get().UseOriginalTitle && show.OriginalName != "" {
+		name = show.OriginalName
+	}
 
 	item := &xbmc.ListItem{
-		Label: show.OriginalName,
+		Label: name,
 		Info: &xbmc.ListItemInfo{
 			Year:          year,
 			Count:         rand.Int(),
-			Title:         show.OriginalName,
-			OriginalTitle: show.Name,
+			Title:         name,
+			OriginalTitle: show.OriginalName,
 			Plot:          show.Overview,
 			PlotOutline:   show.Overview,
 			Code:          show.ExternalIDs.IMDBId,
-			Date:          show.ReleaseDate,
+			IMDBNumber:    show.ExternalIDs.IMDBId,
+			Date:          show.FirstAirDate,
 			Votes:         strconv.Itoa(show.VoteCount),
 			Rating:        show.VoteAverage,
 			TVShowTitle:   show.OriginalName,
 			Premiered:     show.FirstAirDate,
+			DBTYPE:        "tvshow",
+			Mediatype:     "tvshow",
 		},
 		Art: &xbmc.ListItemArt{
-			FanArt: imageURL(show.BackdropPath, "w1280"),
-			Poster: imageURL(show.PosterPath, "w500"),
+			FanArt: ImageURL(show.BackdropPath, "w1280"),
+			Poster: ImageURL(show.PosterPath, "w500"),
 		},
 	}
 	item.Thumbnail = item.Art.Poster

@@ -1,6 +1,10 @@
 package xbmc
 
-import "github.com/op/go-logging"
+import (
+	"github.com/op/go-logging"
+)
+
+var log = logging.MustGetLogger("xbmc")
 
 const (
 	LogDebug = iota

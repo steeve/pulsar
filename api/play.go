@@ -3,44 +3,99 @@ package api
 import (
 	"fmt"
 	"net/url"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/steeve/pulsar/bittorrent"
-	"github.com/steeve/pulsar/config"
-	"github.com/steeve/pulsar/providers"
-	"github.com/steeve/pulsar/util"
-	"github.com/steeve/pulsar/xbmc"
+	"github.com/scakemyer/quasar/bittorrent"
+	"github.com/scakemyer/quasar/util"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
 func Play(btService *bittorrent.BTService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		uri := ctx.Request.URL.Query().Get("uri")
-		if uri == "" {
+		index := ctx.Request.URL.Query().Get("index")
+		resume := ctx.Request.URL.Query().Get("resume")
+		contentType := ctx.Request.URL.Query().Get("type")
+		tmdb := ctx.Request.URL.Query().Get("tmdb")
+		runtime := ctx.Request.URL.Query().Get("runtime")
+
+		if uri == "" && resume == "" {
 			return
 		}
-		torrent := bittorrent.NewTorrent(uri)
-		magnet := torrent.Magnet()
-		boosters := url.Values{
-			"tr": providers.DefaultTrackers,
+
+		fileIndex := -1
+		if index != "" {
+			fIndex, err := strconv.Atoi(index)
+			if err == nil {
+				fileIndex = fIndex
+			}
 		}
-		magnet += "&" + boosters.Encode()
-		player := bittorrent.NewBTPlayer(btService, magnet, config.Get().KeepFilesAfterStop == false)
+
+		resumeIndex := -1
+		if resume != "" {
+			rIndex, err := strconv.Atoi(resume)
+			if err == nil && rIndex >= 0 {
+				resumeIndex = rIndex
+			}
+		}
+
+		tmdbId := -1
+		if tmdb != "" {
+			id, err := strconv.Atoi(tmdb)
+			if err == nil && id >= 0 {
+				tmdbId = id
+			}
+		}
+
+		runTime := -1
+		if tmdb != "" {
+			runtimeInt, err := strconv.Atoi(runtime)
+			if err == nil && runtimeInt >= 0 {
+				runTime = runtimeInt
+			}
+		}
+
+		params := bittorrent.BTPlayerParams{
+			URI: uri,
+			FileIndex: fileIndex,
+			ResumeIndex: resumeIndex,
+			ContentType: contentType,
+			TMDBId: tmdbId,
+			Runtime: runTime,
+		}
+
+		player := bittorrent.NewBTPlayer(btService, params)
 		if player.Buffer() != nil {
 			return
 		}
-		hostname := "localhost"
-		if localIP, err := util.LocalIP(); err == nil {
-			hostname = localIP.String()
-		}
-		rUrl, _ := url.Parse(fmt.Sprintf("http://%s:%d/files/%s", hostname, config.ListenPort, player.PlayURL()))
+
+		rUrl, _ := url.Parse(fmt.Sprintf("%s/files/%s", util.GetHTTPHost(), player.PlayURL()))
 		ctx.Redirect(302, rUrl.String())
 	}
 }
 
-func PasteURL(ctx *gin.Context) {
-	magnet := xbmc.Keyboard("", "Paste Magnet or URL")
-	if magnet == "" {
+func PlayTorrent(ctx *gin.Context) {
+	retval := xbmc.DialogInsert()
+	if retval["path"] == "" {
 		return
 	}
-	xbmc.PlayURL(UrlQuery(UrlForXBMC("/play"), "uri", magnet))
+	xbmc.PlayURL(UrlQuery(UrlForXBMC("/play"), "uri", retval["path"]))
+}
+
+func PlayURI(ctx *gin.Context) {
+	uri := ctx.Request.URL.Query().Get("uri")
+	resume := ctx.Request.URL.Query().Get("resume")
+
+	if uri == "" && resume == "" {
+		return
+	}
+
+	if uri != "" {
+		xbmc.PlayURL(UrlQuery(UrlForXBMC("/play"), "uri", uri))
+	} else {
+		xbmc.PlayURL(UrlQuery(UrlForXBMC("/play"), "resume", resume))
+	}
+	ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	ctx.String(200, "")
 }

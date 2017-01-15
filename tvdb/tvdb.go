@@ -1,19 +1,19 @@
 package tvdb
 
 import (
-	"archive/zip"
-	"bytes"
-	"encoding/xml"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"path"
 	"sort"
-	"strconv"
 	"time"
+	"bytes"
+	"strconv"
+	"net/http"
+	"io/ioutil"
+	"archive/zip"
+	"encoding/xml"
 
-	"github.com/steeve/pulsar/cache"
-	"github.com/steeve/pulsar/config"
+	"github.com/scakemyer/quasar/cache"
+	"github.com/scakemyer/quasar/config"
 )
 
 const (
@@ -113,7 +113,7 @@ type Actor struct {
 	SortOrder int    `xml:"SortOrder"`
 }
 
-func NewShow(tvdbId string, language string) (*Show, error) {
+func getShow(tvdbId int, language string) (*Show, error) {
 	var serie struct {
 		Serie    *Show      `xml:"Series"`
 		Episodes []*Episode `xml:"Episode"`
@@ -125,7 +125,7 @@ func NewShow(tvdbId string, language string) (*Show, error) {
 		Actors []*Actor `xml:"Actor"`
 	}
 
-	resp, err := http.Get(fmt.Sprintf("%s/%s/series/%s/all/%s.zip", tvdbEndpoint, apiKey, tvdbId, language))
+	resp, err := http.Get(fmt.Sprintf("%s/%s/series/%d/all/%s.zip", tvdbEndpoint, apiKey, tvdbId, language))
 	if err != nil {
 		return nil, err
 	}
@@ -193,12 +193,12 @@ func NewShow(tvdbId string, language string) (*Show, error) {
 	return show, nil
 }
 
-func NewShowCached(tvdbId string, language string) (*Show, error) {
+func GetShow(tvdbId int, language string) (*Show, error) {
 	var show *Show
 	cacheStore := cache.NewFileStore(path.Join(config.Get().ProfilePath, "cache"))
-	key := fmt.Sprintf("com.tvdb.show.%s.%s", tvdbId, language)
+	key := fmt.Sprintf("com.tvdb.show.%d.%s", tvdbId, language)
 	if err := cacheStore.Get(key, &show); err != nil {
-		newShow, err := NewShow(tvdbId, language)
+		newShow, err := getShow(tvdbId, language)
 		if err != nil {
 			return nil, err
 		}

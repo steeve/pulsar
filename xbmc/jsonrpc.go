@@ -3,7 +3,7 @@ package xbmc
 import (
 	"net"
 
-	"github.com/steeve/pulsar/jsonrpc"
+	"github.com/scakemyer/quasar/jsonrpc"
 )
 
 type Args []interface{}
@@ -13,11 +13,9 @@ var Results map[string]chan interface{}
 
 var (
 	XBMCJSONRPCHosts = []string{
-		net.JoinHostPort("::1", "9090"),
 		net.JoinHostPort("127.0.0.1", "9090"),
 	}
 	XBMCExJSONRPCHosts = []string{
-		net.JoinHostPort("::1", "65252"),
 		net.JoinHostPort("127.0.0.1", "65252"),
 	}
 )
@@ -35,13 +33,14 @@ func getConnection(hosts ...string) (net.Conn, error) {
 	return nil, err
 }
 
-func executeJSONRPC(method string, retVal interface{}, args []interface{}) error {
+func executeJSONRPC(method string, retVal interface{}, args Args) error {
 	if args == nil {
 		args = Args{}
 	}
 	conn, err := getConnection(XBMCJSONRPCHosts...)
 	if err != nil {
-		panic(err)
+		log.Error(err.Error())
+		Notify("Quasar", "executeJSONRPC failed, check your logs.", "")
 	}
 	defer conn.Close()
 
@@ -49,13 +48,29 @@ func executeJSONRPC(method string, retVal interface{}, args []interface{}) error
 	return client.Call(method, args, retVal)
 }
 
-func executeJSONRPCEx(method string, retVal interface{}, args []interface{}) error {
+func executeJSONRPCO(method string, retVal interface{}, args Object) error {
+	if args == nil {
+		args = Object{}
+	}
+	conn, err := getConnection(XBMCJSONRPCHosts...)
+	if err != nil {
+		log.Error(err.Error())
+		Notify("Quasar", "executeJSONRPCO failed, check your logs.", "")
+	}
+	defer conn.Close()
+
+	client := jsonrpc.NewClient(conn)
+	return client.Call(method, args, retVal)
+}
+
+func executeJSONRPCEx(method string, retVal interface{}, args Args) error {
 	if args == nil {
 		args = Args{}
 	}
 	conn, err := getConnection(XBMCExJSONRPCHosts...)
 	if err != nil {
-		panic(err)
+		log.Error(err.Error())
+		Notify("Quasar", "executeJSONRPCEx failed, check your logs.", "")
 	}
 	defer conn.Close()
 

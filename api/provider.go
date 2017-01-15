@@ -1,14 +1,16 @@
 package api
 
 import (
-	"encoding/json"
+	"fmt"
 	"log"
+	"errors"
 	"strconv"
+	"encoding/json"
 
 	"github.com/gin-gonic/gin"
-	"github.com/steeve/pulsar/providers"
-	"github.com/steeve/pulsar/tmdb"
-	"github.com/steeve/pulsar/tvdb"
+	"github.com/scakemyer/quasar/providers"
+	"github.com/scakemyer/quasar/tmdb"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
 type providerDebugResponse struct {
@@ -17,11 +19,11 @@ type providerDebugResponse struct {
 }
 
 func ProviderGetMovie(ctx *gin.Context) {
-	imdbId := ctx.Params.ByName("imdbId")
+	tmdbId := ctx.Params.ByName("tmdbId")
 	provider := ctx.Params.ByName("provider")
-	log.Println("Searching links for IMDB:", imdbId)
-	movie := tmdb.GetMovieFromIMDB(imdbId, "en")
-	log.Printf("Resolved %s to %s\n", imdbId, movie.Title)
+	log.Println("Searching links for:", tmdbId)
+	movie := tmdb.GetMovieById(tmdbId, "en")
+	log.Printf("Resolved %s to %s", tmdbId, movie.Title)
 
 	searcher := providers.NewAddonSearcher(provider)
 	torrents := searcher.SearchMovieLinks(movie)
@@ -35,6 +37,7 @@ func ProviderGetMovie(ctx *gin.Context) {
 		Results: torrents,
 	}, "", "    ")
 	if err != nil {
+		xbmc.AddonFailure(provider)
 		ctx.Error(err)
 	}
 	ctx.Data(200, "application/json", data)
@@ -42,20 +45,21 @@ func ProviderGetMovie(ctx *gin.Context) {
 
 func ProviderGetEpisode(ctx *gin.Context) {
 	provider := ctx.Params.ByName("provider")
-	showId := ctx.Params.ByName("showId")
+	showId, _ := strconv.Atoi(ctx.Params.ByName("showId"))
 	seasonNumber, _ := strconv.Atoi(ctx.Params.ByName("season"))
 	episodeNumber, _ := strconv.Atoi(ctx.Params.ByName("episode"))
 
-	log.Println("Searching links for TVDB Id:", showId)
+	log.Println("Searching links for TMDB Id:", showId)
 
-	show, err := tvdb.NewShowCached(showId, "en")
-	if err != nil {
-		ctx.Error(err)
+	show := tmdb.GetShow(showId, "en")
+	season := tmdb.GetSeason(showId, seasonNumber, "en")
+	if season == nil {
+		ctx.Error(errors.New(fmt.Sprintf("Unable to get season %d", seasonNumber)))
 		return
 	}
-	episode := show.Seasons[seasonNumber].Episodes[episodeNumber-1]
+	episode := season.Episodes[episodeNumber - 1]
 
-	log.Printf("Resolved %s to %s\n", showId, show.SeriesName)
+	log.Printf("Resolved %d to %s", showId, show.Name)
 
 	searcher := providers.NewAddonSearcher(provider)
 	torrents := searcher.SearchEpisodeLinks(show, episode)
@@ -69,6 +73,7 @@ func ProviderGetEpisode(ctx *gin.Context) {
 		Results: torrents,
 	}, "", "    ")
 	if err != nil {
+		xbmc.AddonFailure(provider)
 		ctx.Error(err)
 	}
 	ctx.Data(200, "application/json", data)

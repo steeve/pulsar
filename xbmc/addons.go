@@ -4,8 +4,11 @@ import "encoding/xml"
 
 type AddonsList struct {
 	Addons []*struct {
-		ID   string `json:"addonid"`
-		Type string `json:"type"`
+		ID      string `json:"addonid"`
+		Type    string `json:"type"`
+		Name    string `json:"name"`
+		Version string `json:"version"`
+		Enabled bool   `json:"enabled"`
 	} `json:"addons"`
 }
 
@@ -13,6 +16,11 @@ func GetAddons(args ...interface{}) *AddonsList {
 	addons := AddonsList{}
 	executeJSONRPC("Addons.GetAddons", &addons, args)
 	return &addons
+}
+
+func SetAddonEnabled(addonId string, enabled bool) (retval string) {
+	executeJSONRPC("Addons.SetAddonEnabled", &retval, Args{addonId, enabled})
+	return
 }
 
 func ExecuteAddon(addonId string, args ...interface{}) {

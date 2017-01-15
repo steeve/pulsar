@@ -10,23 +10,22 @@ import (
 	"time"
 
 	"github.com/op/go-logging"
-	"github.com/steeve/pulsar/api"
-	"github.com/steeve/pulsar/bittorrent"
-	"github.com/steeve/pulsar/config"
-	"github.com/steeve/pulsar/util"
-	"github.com/steeve/pulsar/xbmc"
+	"github.com/scakemyer/quasar/api"
+	"github.com/scakemyer/quasar/bittorrent"
+	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/util"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
 var log = logging.MustGetLogger("main")
 
 const (
-	PulsarLogo = `
-             .__
-______  __ __|  |   ___________ _______
-\____ \|  |  \  |  /  ___/\__  \\_  __ \
-|  |_> >  |  /  |__\___ \  / __ \|  | \/
-|   __/|____/|____/____  >(____  /__|
-|__|                   \/      \/
+	QuasarLogo = `________
+\_____  \  __ _______    ___________ _______
+ /  / \  \|  |  \__  \  /  ___/\__  \\_  __ \
+/   \_/.  \  |  // __ \_\___ \  / __ \|  | \/
+\_____\ \_/____/(____  /____  >(____  /__|
+       \__>          \/     \/      \/
 `
 )
 
@@ -36,16 +35,30 @@ func ensureSingleInstance() {
 
 func makeBTConfiguration(conf *config.Configuration) *bittorrent.BTConfiguration {
 	btConfig := &bittorrent.BTConfiguration{
-		LowerListenPort: conf.BTListenPortMin,
-		UpperListenPort: conf.BTListenPortMax,
-		DownloadPath:    conf.DownloadPath,
-		MaxUploadRate:   conf.UploadRateLimit,
-		MaxDownloadRate: conf.DownloadRateLimit,
+		SpoofUserAgent:      conf.SpoofUserAgent,
+		BackgroundHandling:  conf.BackgroundHandling,
+		BufferSize:          conf.BufferSize,
+		MaxUploadRate:       conf.UploadRateLimit,
+		MaxDownloadRate:     conf.DownloadRateLimit,
+		LimitAfterBuffering: conf.LimitAfterBuffering,
+		ConnectionsLimit:    conf.ConnectionsLimit,
+		SessionSave:         conf.SessionSave,
+		ShareRatioLimit:     conf.ShareRatioLimit,
+		SeedTimeRatioLimit:  conf.SeedTimeRatioLimit,
+		SeedTimeLimit:       conf.SeedTimeLimit,
+		DisableDHT:          conf.DisableDHT,
+		DisableUPNP:         conf.DisableUPNP,
+		EncryptionPolicy:    conf.EncryptionPolicy,
+		LowerListenPort:     conf.BTListenPortMin,
+		UpperListenPort:     conf.BTListenPortMax,
+		TunedStorage:        conf.TunedStorage,
+		DownloadPath:        conf.DownloadPath,
+		TorrentsPath:        conf.TorrentsPath,
 	}
 
 	if conf.SocksEnabled == true {
 		btConfig.Proxy = &bittorrent.ProxySettings{
-			Type:     bittorrent.ProxyTypeSocks5Password,
+			Type:     conf.ProxyType,
 			Hostname: conf.SocksHost,
 			Port:     conf.SocksPort,
 			Username: conf.SocksLogin,
@@ -60,22 +73,23 @@ func main() {
 	// Make sure we are properly multithreaded.
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	logging.SetFormatter(logging.MustStringFormatter("%{time:2006-01-02 15:04:05}  %{level:.4s}  %{module:-15s}  %{message}"))
+	// logging.SetFormatter(logging.MustStringFormatter("%{time:2006-01-02 15:04:05}  %{level:.4s}  %{module:-15s}  %{message}"))
+	logging.SetFormatter(logging.MustStringFormatter(
+		`%{color}%{level:.4s}  %{module:-12s} ▶ %{shortfunc:-15s}  %{color:reset}%{message}`,
+	))
 	logging.SetBackend(logging.NewLogBackend(os.Stdout, "", 0))
 
-	for _, line := range strings.Split(PulsarLogo, "\n") {
-		log.Info(line)
+	for _, line := range strings.Split(QuasarLogo, "\n") {
+		log.Debug(line)
 	}
-	log.Info("Version: %s Git: %s Go: %s", util.Version, util.GitCommit, runtime.Version())
+	log.Infof("Version: %s Go: %s", util.Version[1:len(util.Version) - 1], runtime.Version())
 
 	conf := config.Reload()
 
+	log.Infof("Addon: %s v%s", conf.Info.Id, conf.Info.Version)
+
 	ensureSingleInstance()
 	Migrate()
-
-	xbmc.CloseAllDialogs()
-
-	log.Info("Addon: %s v%s", conf.Info.Id, conf.Info.Version)
 
 	btService := bittorrent.NewBTService(*makeBTConfiguration(conf))
 
@@ -88,9 +102,8 @@ func main() {
 
 	var watchParentProcess = func() {
 		for {
-			// did the parent die? shutdown!
 			if os.Getppid() == 1 {
-				log.Warning("Parent shut down. Me too.")
+				log.Warning("Parent shut down, shutting down too...")
 				go shutdown()
 				break
 			}
@@ -111,7 +124,12 @@ func main() {
 		shutdown()
 	}))
 
-	xbmc.Notify("Pulsar", "Pulsar daemon has started", config.AddonIcon())
+	xbmc.ResetRPC()
+
+	log.Info("Updating Kodi add-on repositories...")
+	xbmc.UpdateAddonRepos()
+
+	xbmc.Notify("Quasar", "LOCALIZE[30208]", config.AddonIcon())
 
 	http.ListenAndServe(":"+strconv.Itoa(config.ListenPort), nil)
 }

@@ -2,8 +2,8 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/steeve/pulsar/config"
-	"github.com/steeve/pulsar/xbmc"
+	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
 func init() {
@@ -18,10 +18,11 @@ func Index(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, xbmc.NewView("", xbmc.ListItems{
-		{Label: "Movies", Path: UrlForXBMC("/movies/"), Thumbnail: config.AddonResource("img", "movies.png")},
-		{Label: "TV Shows", Path: UrlForXBMC("/shows/"), Thumbnail: config.AddonResource("img", "tv.png")},
-
-		{Label: "Search", Path: UrlForXBMC("/search"), Thumbnail: config.AddonResource("img", "search.png")},
-		{Label: "Paste URL", Path: UrlForXBMC("/pasted"), Thumbnail: config.AddonResource("img", "magnet.png")},
+		{Label: "LOCALIZE[30214]", Path: UrlForXBMC("/movies/"), Thumbnail: config.AddonResource("img", "movies.png")},
+		{Label: "LOCALIZE[30215]", Path: UrlForXBMC("/shows/"), Thumbnail: config.AddonResource("img", "tv.png")},
+		{Label: "LOCALIZE[30209]", Path: UrlForXBMC("/search"), Thumbnail: config.AddonResource("img", "search.png")},
+		{Label: "LOCALIZE[30216]", Path: UrlForXBMC("/playtorrent"), Thumbnail: config.AddonResource("img", "magnet.png")},
+		{Label: "LOCALIZE[30229]", Path: UrlForXBMC("/torrents/"), Thumbnail: config.AddonResource("img", "cloud.png")},
+		{Label: "LOCALIZE[30239]", Path: UrlForXBMC("/provider/"), Thumbnail: config.AddonResource("img", "shield.png")},
 	}))
 }

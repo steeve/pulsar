@@ -75,6 +75,9 @@ type ListItemInfo struct {
 	Votes         string         `json:"votes,omitempty"`
 	Trailer       string         `json:"trailer,omitempty"`
 	DateAdded     string         `json:"dateadded,omitempty"`
+	DBTYPE        string         `json:"dbtype,omitempty"`
+	Mediatype     string         `json:"mediatype,omitempty"`
+	IMDBNumber    string         `json:"imdbnumber,omitempty"`
 
 	// Music Values
 	Lyrics string `json:"lyrics,omitempty"`
@@ -113,6 +116,22 @@ type StreamInfoEntry struct {
 	Duration int     `json:"duration,omitempty"`
 	Language string  `json:"language,omitempty"`
 	Channels int     `json:"channels,omitempty"`
+}
+
+type VideoLibraryMovies struct {
+	Movies []*struct {
+		ID         int    `json:"movieid"`
+		Title      string `json:"label"`
+		IMDBNumber string `json:"imdbnumber"`
+	} `json:"movies"`
+}
+
+type VideoLibraryShows struct {
+	Shows []*struct {
+		ID         int    `json:"tvshowid"`
+		Title      string `json:"label"`
+		IMDBNumber string `json:"imdbnumber"`
+	} `json:"tvshows"`
 }
 
 func NewView(contentType string, items ListItems) *View {

@@ -5,7 +5,7 @@ package bittorrent
 import (
 	"runtime"
 
-	"github.com/steeve/libtorrent-go"
+	"github.com/scakemyer/libtorrent-go"
 )
 
 const (
@@ -17,8 +17,8 @@ const (
 // (or, rather, a single cpu arm machine, no need to be specific to RPi) and
 // set those limits.
 // See https://github.com/steeve/plugin.video.pulsar/issues/24
-func setPlatformSpecificSettings(settings libtorrent.Session_settings) {
+func setPlatformSpecificSettings(settings libtorrent.SettingsPack) {
 	if runtime.NumCPU() == 1 { // single core?
-		settings.SetConnections_limit(maxSingleCoreConnections)
+		settings.SetInt(libtorrent.SettingByName("connections_limit"), maxSingleCoreConnections)
 	}
 }

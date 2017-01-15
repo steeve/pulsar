@@ -8,11 +8,12 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/steeve/pulsar/bittorrent"
-	"github.com/steeve/pulsar/config"
-	"github.com/steeve/pulsar/providers"
-	"github.com/steeve/pulsar/tmdb"
-	"github.com/steeve/pulsar/xbmc"
+	"github.com/scakemyer/quasar/bittorrent"
+	"github.com/scakemyer/quasar/providers"
+	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/trakt"
+	"github.com/scakemyer/quasar/tmdb"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
 // Maps TMDB movie genre ids to slugs for images
@@ -50,11 +51,13 @@ var genreSlugs = map[int]string{
 
 func MoviesIndex(ctx *gin.Context) {
 	items := xbmc.ListItems{
-		{Label: "Search", Path: UrlForXBMC("/movies/search"), Thumbnail: config.AddonResource("img", "search.png")},
-		{Label: "Most Popular", Path: UrlForXBMC("/movies/popular"), Thumbnail: config.AddonResource("img", "popular.png")},
-		{Label: "Top Rated", Path: UrlForXBMC("/movies/top"), Thumbnail: config.AddonResource("img", "top_rated.png")},
-		{Label: "Most Voted", Path: UrlForXBMC("/movies/mostvoted"), Thumbnail: config.AddonResource("img", "most_voted.png")},
-		{Label: "IMDB Top 250", Path: UrlForXBMC("/movies/imdb250"), Thumbnail: config.AddonResource("img", "imdb.png")},
+		{Label: "LOCALIZE[30209]", Path: UrlForXBMC("/movies/search"), Thumbnail: config.AddonResource("img", "search.png")},
+		{Label: "LOCALIZE[30056]", Path: UrlForXBMC("/movies/trakt/"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{Label: "LOCALIZE[30210]", Path: UrlForXBMC("/movies/popular"), Thumbnail: config.AddonResource("img", "popular.png")},
+		{Label: "LOCALIZE[30211]", Path: UrlForXBMC("/movies/top"), Thumbnail: config.AddonResource("img", "top_rated.png")},
+		{Label: "LOCALIZE[30212]", Path: UrlForXBMC("/movies/mostvoted"), Thumbnail: config.AddonResource("img", "most_voted.png")},
+		{Label: "LOCALIZE[30236]", Path: UrlForXBMC("/movies/recent"), Thumbnail: config.AddonResource("img", "clock.png")},
+		{Label: "LOCALIZE[30213]", Path: UrlForXBMC("/movies/imdb250"), Thumbnail: config.AddonResource("img", "imdb.png")},
 	}
 	for _, genre := range tmdb.GetMovieGenres(config.Get().Language) {
 		slug, _ := genreSlugs[genre.Id]
@@ -62,27 +65,124 @@ func MoviesIndex(ctx *gin.Context) {
 			Label:     genre.Name,
 			Path:      UrlForXBMC("/movies/popular/%s", strconv.Itoa(genre.Id)),
 			Thumbnail: config.AddonResource("img", fmt.Sprintf("genre_%s.png", slug)),
+			ContextMenu: [][]string{
+				[]string{"LOCALIZE[30236]", fmt.Sprintf("Container.Update(%s)", UrlForXBMC("/movies/recent/%s", strconv.Itoa(genre.Id)))},
+			},
 		})
 	}
 	ctx.JSON(200, xbmc.NewView("", items))
 }
 
-func renderMovies(movies tmdb.Movies, ctx *gin.Context) {
-	items := make(xbmc.ListItems, 0, len(movies))
+func MoviesTrakt(ctx *gin.Context) {
+	items := xbmc.ListItems{
+		{Label: "LOCALIZE[30263]", Path: UrlForXBMC("/movies/trakt/lists/"), Thumbnail: config.AddonResource("img", "trakt.png")},
+		{Label: "LOCALIZE[30246]", Path: UrlForXBMC("/movies/trakt/trending"), Thumbnail: config.AddonResource("img", "trending.png")},
+		{Label: "LOCALIZE[30210]", Path: UrlForXBMC("/movies/trakt/popular"), Thumbnail: config.AddonResource("img", "popular.png")},
+		{Label: "LOCALIZE[30247]", Path: UrlForXBMC("/movies/trakt/played"), Thumbnail: config.AddonResource("img", "most_played.png")},
+		{Label: "LOCALIZE[30248]", Path: UrlForXBMC("/movies/trakt/watched"), Thumbnail: config.AddonResource("img", "most_watched.png")},
+		{Label: "LOCALIZE[30249]", Path: UrlForXBMC("/movies/trakt/collected"), Thumbnail: config.AddonResource("img", "most_collected.png")},
+		{Label: "LOCALIZE[30250]", Path: UrlForXBMC("/movies/trakt/anticipated"), Thumbnail: config.AddonResource("img", "most_anticipated.png")},
+		{Label: "LOCALIZE[30251]", Path: UrlForXBMC("/movies/trakt/boxoffice"), Thumbnail: config.AddonResource("img", "box_office.png")},
+	}
+	ctx.JSON(200, xbmc.NewView("", items))
+}
+
+func MoviesTraktLists(ctx *gin.Context) {
+	items := xbmc.ListItems{
+		{
+			Label: "LOCALIZE[30254]",
+			Path: UrlForXBMC("/movies/trakt/lists/watchlist"),
+			Thumbnail: config.AddonResource("img", "trakt.png"),
+			ContextMenu: [][]string{
+				[]string{"LOCALIZE[30252]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/movie/watchlist/add"))},
+			},
+		},
+		{
+			Label: "LOCALIZE[30257]",
+			Path: UrlForXBMC("/movies/trakt/lists/collection"),
+			Thumbnail: config.AddonResource("img", "trakt.png"),
+			ContextMenu: [][]string{
+				[]string{"LOCALIZE[30252]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/movie/collection/add"))},
+			},
+		},
+	}
+
+	for _, list := range trakt.Userlists() {
+		item := &xbmc.ListItem{
+			Label: list.Name,
+			Path:  UrlForXBMC("/movies/trakt/lists/id/%d", list.IDs.Trakt),
+			Thumbnail: config.AddonResource("img", "trakt.png"),
+			ContextMenu: [][]string{
+				[]string{"LOCALIZE[30252]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/movie/list/add/%d", list.IDs.Trakt))},
+			},
+		}
+		items = append(items, item)
+	}
+
+	ctx.JSON(200, xbmc.NewView("", items))
+}
+
+func renderMovies(movies tmdb.Movies, ctx *gin.Context, page int, query string) {
+	nextPage := 0
+	if page >= 0 {
+		nextPage = 1
+	}
+	items := make(xbmc.ListItems, 0, len(movies) + nextPage)
 	for _, movie := range movies {
 		if movie == nil {
 			continue
 		}
 		item := movie.ToListItem()
-		item.Path = UrlForXBMC("/movie/%s/play", movie.IMDBId)
+		playUrl := UrlForXBMC("/movie/%d/play", movie.Id)
+		movieLinksUrl := UrlForXBMC("/movie/%d/links", movie.Id)
+		if config.Get().ChooseStreamAuto == true {
+			item.Path = playUrl
+		} else {
+			item.Path = movieLinksUrl
+		}
+
+		libraryAction := []string{"LOCALIZE[30252]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/movie/add/%d", movie.Id))}
+		if inJsonDb, err := InJsonDB(strconv.Itoa(movie.Id), LMovie); err == nil && inJsonDb == true {
+			libraryAction = []string{"LOCALIZE[30253]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/library/movie/remove/%d", movie.Id))}
+		}
+
+		watchlistAction := []string{"LOCALIZE[30255]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/movie/%d/watchlist/add", movie.Id))}
+		if InMoviesWatchlist(movie.Id) {
+			watchlistAction = []string{"LOCALIZE[30256]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/movie/%d/watchlist/remove", movie.Id))}
+		}
+
+		collectionAction := []string{"LOCALIZE[30258]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/movie/%d/collection/add", movie.Id))}
+		if InMoviesCollection(movie.Id) {
+			collectionAction = []string{"LOCALIZE[30259]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/movie/%d/collection/remove", movie.Id))}
+		}
+
+		item.ContextMenu = [][]string{
+			[]string{"LOCALIZE[30202]", fmt.Sprintf("XBMC.PlayMedia(%s)", movieLinksUrl)},
+			[]string{"LOCALIZE[30023]", fmt.Sprintf("XBMC.PlayMedia(%s)", playUrl)},
+			[]string{"LOCALIZE[30203]", "XBMC.Action(Info)"},
+			[]string{"LOCALIZE[30268]", "XBMC.Action(ToggleWatched)"},
+			libraryAction,
+			watchlistAction,
+			collectionAction,
+			[]string{"LOCALIZE[30034]", fmt.Sprintf("XBMC.RunPlugin(%s)", UrlForXBMC("/setviewmode/movies"))},
+		}
 		item.Info.Trailer = UrlForHTTP("/youtube/%s", item.Info.Trailer)
 		item.IsPlayable = true
-		item.ContextMenu = [][]string{
-			[]string{"Choose stream...", fmt.Sprintf("XBMC.PlayMedia(%s)", UrlForXBMC("/movie/%s/links", movie.IMDBId))},
-		}
 		items = append(items, item)
 	}
-
+	if page >= 0 {
+		path := ctx.Request.URL.Path
+		nextPath := UrlForXBMC(fmt.Sprintf("%s?page=%d", path, page + 1))
+		if query != "" {
+			nextPath = UrlForXBMC(fmt.Sprintf("%s?q=%s&page=%d", path, query, page + 1))
+		}
+		next := &xbmc.ListItem{
+			Label: "LOCALIZE[30218]",
+			Path: nextPath,
+			Thumbnail: config.AddonResource("img", "nextpage.png"),
+		}
+		items = append(items, next)
+	}
 	ctx.JSON(200, xbmc.NewView("movies", items))
 }
 
@@ -91,7 +191,17 @@ func PopularMovies(ctx *gin.Context) {
 	if genre == "0" {
 		genre = ""
 	}
-	renderMovies(tmdb.PopularMoviesComplete(genre, config.Get().Language), ctx)
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "0"))
+	renderMovies(tmdb.PopularMovies(genre, config.Get().Language, page), ctx, page, "")
+}
+
+func RecentMovies(ctx *gin.Context) {
+	genre := ctx.Params.ByName("genre")
+	if genre == "0" {
+		genre = ""
+	}
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "0"))
+	renderMovies(tmdb.RecentMovies(genre, config.Get().Language, page), ctx, page, "")
 }
 
 func TopRatedMovies(ctx *gin.Context) {
@@ -99,23 +209,36 @@ func TopRatedMovies(ctx *gin.Context) {
 	if genre == "0" {
 		genre = ""
 	}
-	renderMovies(tmdb.TopRatedMoviesComplete(genre, config.Get().Language), ctx)
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "0"))
+	renderMovies(tmdb.TopRatedMovies(genre, config.Get().Language, page), ctx, page, "")
 }
 
 func IMDBTop250(ctx *gin.Context) {
-	renderMovies(tmdb.GetList("522effe419c2955e9922fcf3", config.Get().Language), ctx)
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "0"))
+	renderMovies(tmdb.GetList("522effe419c2955e9922fcf3", config.Get().Language, page), ctx, page, "")
 }
 
 func MoviesMostVoted(ctx *gin.Context) {
-	renderMovies(tmdb.MostVotedMoviesComplete("", config.Get().Language), ctx)
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "0"))
+	renderMovies(tmdb.MostVotedMovies("", config.Get().Language, page), ctx, page, "")
 }
 
 func SearchMovies(ctx *gin.Context) {
 	query := ctx.Request.URL.Query().Get("q")
 	if query == "" {
-		query = xbmc.Keyboard("", "Search Movies")
+		if len(searchHistory) > 0 && xbmc.DialogConfirm("Quasar", "LOCALIZE[30262]") {
+			choice := xbmc.ListDialog("LOCALIZE[30261]", searchHistory...)
+			query = searchHistory[choice]
+		} else {
+			query = xbmc.Keyboard("", "LOCALIZE[30206]")
+			if query == "" {
+				return
+			}
+			searchHistory = append(searchHistory, query)
+		}
 	}
-	renderMovies(tmdb.SearchMovies(query, config.Get().Language), ctx)
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "0"))
+	renderMovies(tmdb.SearchMovies(query, config.Get().Language, page), ctx, page, query)
 }
 
 func MovieGenres(ctx *gin.Context) {
@@ -131,37 +254,65 @@ func MovieGenres(ctx *gin.Context) {
 	ctx.JSON(200, xbmc.NewView("", items))
 }
 
-func movieLinks(imdbId string) []*bittorrent.Torrent {
-	log.Println("Searching links for IMDB:", imdbId)
+func movieLinks(tmdbId string) []*bittorrent.Torrent {
+	log.Println("Searching links for:", tmdbId)
 
-	movie := tmdb.GetMovieFromIMDB(imdbId, config.Get().Language)
+	movie := tmdb.GetMovieById(tmdbId, config.Get().Language)
 
-	log.Printf("Resolved %s to %s\n", imdbId, movie.Title)
+	log.Printf("Resolved %s to %s", tmdbId, movie.Title)
+
+	if torrents := InTorrentsMap(tmdbId); len(torrents) > 0 {
+		return torrents
+	}
 
 	searchers := providers.GetMovieSearchers()
 	if len(searchers) == 0 {
-		xbmc.Notify("Pulsar", "Unable to find any providers", config.AddonIcon())
+		xbmc.Notify("Quasar", "LOCALIZE[30204]", config.AddonIcon())
 	}
 
 	return providers.SearchMovie(searchers, movie)
 }
 
-func MovieLinks(ctx *gin.Context) {
-	torrents := movieLinks(ctx.Params.ByName("imdbId"))
+func MovieLinks(btService *bittorrent.BTService) gin.HandlerFunc { return func(ctx *gin.Context) {
+	tmdbId := ctx.Params.ByName("tmdbId")
+
+	movie := tmdb.GetMovieById(tmdbId, config.Get().Language)
+	runtime := 120
+	if movie.Runtime > 0 {
+		runtime = movie.Runtime
+	}
+
+	existingTorrent := ExistingTorrent(btService, movie.Title)
+	if existingTorrent != "" && xbmc.DialogConfirm("Quasar", "LOCALIZE[30270]") {
+		rUrl := UrlQuery(
+			UrlForXBMC("/play"), "uri", existingTorrent,
+			                     "tmdb", tmdbId,
+			                     "type", "movie",
+			                     "runtime", strconv.Itoa(runtime))
+		ctx.Redirect(302, rUrl)
+		return
+	}
+
+	torrents := movieLinks(tmdbId)
 
 	if len(torrents) == 0 {
-		xbmc.Notify("Pulsar", "No links were found", config.AddonIcon())
+		xbmc.Notify("Quasar", "LOCALIZE[30205]", config.AddonIcon())
 		return
 	}
 
 	choices := make([]string, 0, len(torrents))
 	for _, torrent := range torrents {
+		resolution := ""
+		if torrent.Resolution > 0 {
+			resolution = fmt.Sprintf("[B][COLOR %s]%s[/COLOR][/B] ", bittorrent.Colors[torrent.Resolution], bittorrent.Resolutions[torrent.Resolution])
+		}
+
 		info := make([]string, 0)
+		if torrent.Size != "" {
+			info = append(info, fmt.Sprintf("[B][%s][/B]", torrent.Size))
+		}
 		if torrent.RipType > 0 {
 			info = append(info, bittorrent.Rips[torrent.RipType])
-		}
-		if torrent.Resolution > 0 {
-			info = append(info, bittorrent.Resolutions[torrent.Resolution])
 		}
 		if torrent.VideoCodec > 0 {
 			info = append(info, bittorrent.Codecs[torrent.VideoCodec])
@@ -169,30 +320,71 @@ func MovieLinks(ctx *gin.Context) {
 		if torrent.AudioCodec > 0 {
 			info = append(info, bittorrent.Codecs[torrent.AudioCodec])
 		}
+		if torrent.Provider != "" {
+			info = append(info, fmt.Sprintf(" - [B]%s[/B]", torrent.Provider))
+		}
 
-		label := fmt.Sprintf("S:%d P:%d - %s - %s",
+		multi := ""
+		if torrent.Multi {
+			multi = "\nmulti"
+		}
+
+		label := fmt.Sprintf("%s(%d / %d) %s\n%s\n%s%s",
+			resolution,
 			torrent.Seeds,
 			torrent.Peers,
 			strings.Join(info, " "),
 			torrent.Name,
+			torrent.Icon,
+			multi,
 		)
 		choices = append(choices, label)
 	}
 
-	choice := xbmc.ListDialog("Choose stream", choices...)
+	choice := xbmc.ListDialogLarge("LOCALIZE[30228]", movie.Title, choices...)
 	if choice >= 0 {
-		rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[choice].Magnet())
+		AddToTorrentsMap(tmdbId, torrents[choice])
+
+		rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[choice].URI,
+		                                      "tmdb", tmdbId,
+		                                      "type", "movie",
+		                                      "runtime", strconv.Itoa(runtime))
 		ctx.Redirect(302, rUrl)
 	}
-}
+}}
 
-func MoviePlay(ctx *gin.Context) {
-	torrents := movieLinks(ctx.Params.ByName("imdbId"))
-	if len(torrents) == 0 {
-		xbmc.Notify("Pulsar", "No links were found", config.AddonIcon())
+func MoviePlay(btService *bittorrent.BTService) gin.HandlerFunc { return func(ctx *gin.Context) {
+	tmdbId := ctx.Params.ByName("tmdbId")
+
+	movie := tmdb.GetMovieById(tmdbId, "")
+	runtime := 120
+	if movie.Runtime > 0 {
+		runtime = movie.Runtime
+	}
+
+	existingTorrent := ExistingTorrent(btService, movie.Title)
+	if existingTorrent != "" && xbmc.DialogConfirm("Quasar", "LOCALIZE[30270]") {
+		rUrl := UrlQuery(
+			UrlForXBMC("/play"), "uri", existingTorrent,
+			                     "tmdb", tmdbId,
+			                     "type", "movie",
+			                     "runtime", strconv.Itoa(runtime))
+		ctx.Redirect(302, rUrl)
 		return
 	}
+	torrents := movieLinks(tmdbId)
+	if len(torrents) == 0 {
+		xbmc.Notify("Quasar", "LOCALIZE[30205]", config.AddonIcon())
+		return
+	}
+
 	sort.Sort(sort.Reverse(providers.ByQuality(torrents)))
-	rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[0].Magnet())
+
+	AddToTorrentsMap(tmdbId, torrents[0])
+
+	rUrl := UrlQuery(UrlForXBMC("/play"), "uri", torrents[0].URI,
+	                                      "tmdb", tmdbId,
+	                                      "type", "movie",
+	                                      "runtime", strconv.Itoa(runtime))
 	ctx.Redirect(302, rUrl)
-}
+}}

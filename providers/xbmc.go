@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -13,12 +12,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/op/go-logging"
-	"github.com/steeve/pulsar/bittorrent"
-	"github.com/steeve/pulsar/config"
-	"github.com/steeve/pulsar/tmdb"
-	"github.com/steeve/pulsar/tvdb"
-	"github.com/steeve/pulsar/util"
-	"github.com/steeve/pulsar/xbmc"
+	"github.com/scakemyer/quasar/bittorrent"
+	"github.com/scakemyer/quasar/config"
+	"github.com/scakemyer/quasar/tmdb"
+	"github.com/scakemyer/quasar/tvdb"
+	"github.com/scakemyer/quasar/util"
+	"github.com/scakemyer/quasar/xbmc"
 )
 
 const (
@@ -28,6 +27,7 @@ const (
 
 type AddonSearcher struct {
 	MovieSearcher
+	SeasonSearcher
 	EpisodeSearcher
 
 	addonId string
@@ -72,7 +72,7 @@ func CallbackHandler(ctx *gin.Context) {
 func getSearchers() []interface{} {
 	list := make([]interface{}, 0)
 	for _, addon := range xbmc.GetAddons("xbmc.python.script", "executable", true).Addons {
-		if strings.HasPrefix(addon.ID, "script.pulsar.") {
+		if strings.HasPrefix(addon.ID, "script.quasar.") {
 			list = append(list, NewAddonSearcher(addon.ID))
 		}
 	}
@@ -83,6 +83,14 @@ func GetMovieSearchers() []MovieSearcher {
 	searchers := make([]MovieSearcher, 0)
 	for _, searcher := range getSearchers() {
 		searchers = append(searchers, searcher.(MovieSearcher))
+	}
+	return searchers
+}
+
+func GetSeasonSearchers() []SeasonSearcher {
+	searchers := make([]SeasonSearcher, 0)
+	for _, searcher := range getSearchers() {
+		searchers = append(searchers, searcher.(SeasonSearcher))
 	}
 	return searchers
 }
@@ -128,45 +136,64 @@ func (as *AddonSearcher) GetMovieSearchObject(movie *tmdb.Movie) *MovieSearchObj
 	return sObject
 }
 
-func (as *AddonSearcher) GetEpisodeSearchObject(show *tvdb.Show, episode *tvdb.Episode) *EpisodeSearchObject {
-	seriesName := show.SeriesName
-	absoluteNumber := 0
-	tmdbFindResults := tmdb.Find(strconv.Itoa(show.Id), "tvdb_id")
+func (as *AddonSearcher) GetSeasonSearchObject(show *tmdb.Show, season *tmdb.Season) *SeasonSearchObject {
+	title := show.OriginalName
+	if title == "" {
+		title = show.Name
+	}
 
-	// FIXME: This can crash
-	if tmdbFindResults != nil {
-		var tmdbShow *tmdb.Show
-		for _, result := range tmdbFindResults.TVResults {
-			tmdbShow = tmdb.GetShow(result.Id, "en")
-			break
-		}
-		if tmdbShow != nil {
-			seriesName = tmdbShow.Name
-		}
-		// is this an anime?
+	return &SeasonSearchObject{
+		IMDBId:         show.ExternalIDs.IMDBId,
+		TVDBId:         util.StrInterfaceToInt(show.ExternalIDs.TVDBID),
+		Title:          NormalizeTitle(title),
+		Season:         season.Season,
+	}
+}
+
+func (as *AddonSearcher) GetEpisodeSearchObject(show *tmdb.Show, episode *tmdb.Episode) *EpisodeSearchObject {
+	title := show.OriginalName
+	if title == "" {
+		title = show.Name
+	}
+
+	tvdbId := util.StrInterfaceToInt(show.ExternalIDs.TVDBID)
+
+	// Is this an Anime?
+	absoluteNumber := 0
+	if util.StrInterfaceToInt(show.ExternalIDs.TVDBID) > 0 {
 		countryIsJP := false
-		for _, country := range tmdbShow.OriginCountry {
+		for _, country := range show.OriginCountry {
 			if country == "JP" {
 				countryIsJP = true
 				break
 			}
 		}
 		genreIsAnim := false
-		for _, genre := range tmdbShow.Genres {
+		for _, genre := range show.Genres {
 			if genre.Name == "Animation" {
 				genreIsAnim = true
 				break
 			}
 		}
 		if countryIsJP && genreIsAnim {
-			absoluteNumber = episode.AbsoluteNumber
+			tvdbShow, err := tvdb.GetShow(tvdbId, config.Get().Language)
+			if err == nil && len(tvdbShow.Seasons) >= episode.SeasonNumber + 1 {
+				tvdbSeason := tvdbShow.Seasons[episode.SeasonNumber]
+				if len(tvdbSeason.Episodes) >= episode.EpisodeNumber {
+					tvdbEpisode := tvdbSeason.Episodes[episode.EpisodeNumber - 1]
+					if tvdbEpisode.AbsoluteNumber > 0 {
+						absoluteNumber = tvdbEpisode.AbsoluteNumber
+					}
+					title = tvdbShow.SeriesName
+				}
+			}
 		}
 	}
 
 	return &EpisodeSearchObject{
-		IMDBId:         show.ImdbId,
-		TVDBId:         show.Id,
-		Title:          NormalizeTitle(seriesName),
+		IMDBId:         show.ExternalIDs.IMDBId,
+		TVDBId:         tvdbId,
+		Title:          NormalizeTitle(title),
 		Season:         episode.SeasonNumber,
 		Episode:        episode.EpisodeNumber,
 		AbsoluteNumber: absoluteNumber,
@@ -187,14 +214,13 @@ func (as *AddonSearcher) call(method string, searchObject interface{}) []*bittor
 	xbmc.ExecuteAddon(as.addonId, payload.String())
 
 	timeout := providerTimeout()
-	conf := config.Get()
-	if conf.CustomProviderTimeoutEnabled == true {
-		timeout = time.Duration(conf.CustomProviderTimeout) * time.Second
+	if config.Get().CustomProviderTimeoutEnabled == true {
+		timeout = time.Duration(config.Get().CustomProviderTimeout) * time.Second
 	}
 
 	select {
 	case <-time.After(timeout):
-		as.log.Info("Provider %s was too slow. Ignored.", as.addonId)
+		as.log.Warningf("Provider %s was too slow. Ignored.", as.addonId)
 		RemoveCallback(cid)
 	case result := <-c:
 		json.Unmarshal(result, &torrents)
@@ -211,27 +237,10 @@ func (as *AddonSearcher) SearchMovieLinks(movie *tmdb.Movie) []*bittorrent.Torre
 	return as.call("search_movie", as.GetMovieSearchObject(movie))
 }
 
-func (as *AddonSearcher) SearchEpisodeLinks(show *tvdb.Show, episode *tvdb.Episode) []*bittorrent.Torrent {
-	epSearchObject := as.GetEpisodeSearchObject(show, episode)
-	torrents := as.call("search_episode", epSearchObject)
-	epMatch := regexp.MustCompile(fmt.Sprintf("(s%02de%02d|%dx%02d)",
-		epSearchObject.Season, epSearchObject.Episode,
-		epSearchObject.Season, epSearchObject.Episode))
-	if epSearchObject.AbsoluteNumber > 0 {
-		epMatch = regexp.MustCompile(fmt.Sprintf("%02d", epSearchObject.AbsoluteNumber))
-	}
+func (as *AddonSearcher) SearchSeasonLinks(show *tmdb.Show, season *tmdb.Season) []*bittorrent.Torrent {
+	return as.call("search_season", as.GetSeasonSearchObject(show, season))
+}
 
-	cleanTorrents := make([]*bittorrent.Torrent, 0)
-	for _, torrent := range torrents {
-		lowerName := strings.ToLower(torrent.Name)
-		if epMatch.MatchString(lowerName) {
-			cleanTorrents = append(cleanTorrents, torrent)
-		}
-	}
-
-	if len(cleanTorrents) < len(torrents) {
-		as.log.Info("Filtered %d irrelevant items", len(torrents)-len(cleanTorrents))
-	}
-
-	return cleanTorrents
+func (as *AddonSearcher) SearchEpisodeLinks(show *tmdb.Show, episode *tmdb.Episode) []*bittorrent.Torrent {
+	return as.call("search_episode", as.GetEpisodeSearchObject(show, episode))
 }
